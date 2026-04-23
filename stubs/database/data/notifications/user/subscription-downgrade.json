@@ -1,0 +1,5 @@
+{
+  "label": "Subscription downgrade",
+  "subject": "[{{$app->name}}] Subscription Changed - Your Subscription Downgraded",
+  "type": "user:subscription-downgrade"
+}

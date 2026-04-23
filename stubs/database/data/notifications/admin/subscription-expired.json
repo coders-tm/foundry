@@ -1,0 +1,5 @@
+{
+  "label": "[Admin] Subscription expired",
+  "subject": "[{{$app->name}}] Subscription Expired for {{USER_NAME}}",
+  "type": "admin:subscription-expired"
+}

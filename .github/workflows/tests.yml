@@ -1,0 +1,61 @@
+name: tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: true
+      matrix:
+        php: [8.3, 8.4]
+        laravel: [12]
+
+    name: PHP ${{ matrix.php }} - Laravel ${{ matrix.laravel }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: dom, curl, libxml, mbstring, zip
+          ini-values: error_reporting=E_ALL
+          tools: composer:v2
+          coverage: none
+
+      - name: Install dependencies
+        run: |
+          composer update --prefer-dist --no-interaction --no-progress --with="illuminate/contracts=^${{ matrix.laravel }}"
+
+      - name: Execute tests
+        run: |
+          vendor/bin/testbench workbench:build
+          vendor/bin/testbench package:test
+        env:
+          STRIPE_KEY: ${{ secrets.STRIPE_KEY }}
+          STRIPE_SECRET: ${{ secrets.STRIPE_SECRET }}
+          PAYSTACK_PUBLIC_KEY: ${{ secrets.PAYSTACK_PUBLIC_KEY }}
+          PAYSTACK_SECRET_KEY: ${{ secrets.PAYSTACK_SECRET_KEY }}
+          XENDIT_PUBLIC_KEY: ${{ secrets.XENDIT_PUBLIC_KEY }}
+          XENDIT_SECRET_KEY: ${{ secrets.XENDIT_SECRET_KEY }}
+          FLUTTERWAVE_CLIENT_ID: ${{ secrets.FLUTTERWAVE_CLIENT_ID }}
+          FLUTTERWAVE_CLIENT_SECRET: ${{ secrets.FLUTTERWAVE_CLIENT_SECRET }}
+          FLUTTERWAVE_ENCRYPTION_KEY: ${{ secrets.FLUTTERWAVE_ENCRYPTION_KEY }}
+          GOCARDLESS_ACCESS_TOKEN: ${{ secrets.GOCARDLESS_ACCESS_TOKEN }}
+          KLARNA_API_KEY: ${{ secrets.KLARNA_API_KEY }}
+          KLARNA_API_SECRET: ${{ secrets.KLARNA_API_SECRET }}
+          PAYPAL_CLIENT_ID: ${{ secrets.PAYPAL_CLIENT_ID }}
+          PAYPAL_CLIENT_SECRET: ${{ secrets.PAYPAL_CLIENT_SECRET }}
+          RAZORPAY_API_KEY: ${{ secrets.RAZORPAY_API_KEY }}
+          RAZORPAY_API_SECRET: ${{ secrets.RAZORPAY_API_SECRET }}
+          CACHE_DRIVER: array

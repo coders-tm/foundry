@@ -1,0 +1,5 @@
+{
+  "label": "[Admin] Contact Us Notification",
+  "subject": "[{{ $app->name }}] Enquiry #{{ $support_ticket->ticket_number }} - Contact Us Submitted by {{ $user->name }}",
+  "type": "admin:contact-us-notification"
+}

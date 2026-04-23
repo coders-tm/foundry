@@ -1,0 +1,6 @@
+{
+  "type": "common:user-login",
+  "label": "User Login Notification",
+  "subject": "A new device has logged in to your account",
+  "description": "Sent to users when a new device logs into their account"
+}

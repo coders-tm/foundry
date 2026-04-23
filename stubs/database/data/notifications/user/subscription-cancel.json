@@ -1,0 +1,5 @@
+{
+  "label": "Subscription cancel",
+  "subject": "[{{$app->name}}] Subscription Cancellation Notification - Your Subscription Has Canceled",
+  "type": "user:subscription-cancel"
+}

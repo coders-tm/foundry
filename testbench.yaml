@@ -1,0 +1,43 @@
+laravel: "@testbench"
+
+providers:
+  - Barryvdh\DomPDF\ServiceProvider
+  - Qirolab\Theme\ThemeServiceProvider
+  - Stevebauman\Location\LocationServiceProvider
+  - Vedmant\LaravelShortcodes\LaravelShortcodesServiceProvider
+  - Foundry\Providers\FoundryServiceProvider
+  - Foundry\Providers\FoundryPermissionsServiceProvider
+  - Foundry\Providers\FoundryEventServiceProvider
+  - Foundry\Providers\ShortcodeServiceProvider
+  - Coderstm\PageBuilder\Providers\PageBuilderServiceProvider
+  - Workbench\App\Providers\WorkbenchServiceProvider
+
+migrations:
+  - workbench/database/migrations
+
+seeders:
+  - Workbench\Database\Seeders\DatabaseSeeder
+
+workbench:
+  start: "/"
+  user: "hello@foundry.com"
+  install: true
+  health: false
+  discovers:
+    web: false
+    api: false
+    commands: true
+    components: false
+    factories: true
+    views: true
+  build:
+    - asset-publish
+    - foundry:install --no-interaction --force
+    - create-sqlite-db
+    - db-wipe
+    - migrate-fresh
+  assets:
+    - foundry-assets
+  sync:
+    - from: ./config/auth.php
+      to: workbench/config/auth.php

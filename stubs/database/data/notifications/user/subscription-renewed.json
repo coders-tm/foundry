@@ -1,0 +1,5 @@
+{
+  "label": "Subscription renewed",
+  "subject": "Your Subscription Has Been Successfully Renewed!",
+  "type": "user:subscription-renewed"
+}

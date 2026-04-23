@@ -1,0 +1,5 @@
+{
+  "label": "Payment Success",
+  "subject": "Payment Successful - Order {{ $order->number }}",
+  "type": "user:payment-success"
+}

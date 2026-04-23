@@ -1,0 +1,5 @@
+{
+  "label": "Support Ticket Confirmation",
+  "subject": "[{{ $app->name }}] Support Ticket #{{ $support_ticket->ticket_number }} - Support Ticket Confirmation",
+  "type": "user:support-ticket-confirmation"
+}

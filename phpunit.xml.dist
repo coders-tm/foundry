@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit colors="true">
+  <testsuites>
+    <testsuite name="Unit">
+      <directory suffix="Test.php">./tests/Unit</directory>
+    </testsuite>
+    <testsuite name="Feature">
+      <directory suffix="Test.php">./tests/Feature</directory>
+    </testsuite>
+  </testsuites>
+  <php>
+    <ini name="memory_limit" value="512M" />
+    <env name="APP_NAME" value="AppName" />
+    <env name="DB_CONNECTION" value="sqlite" />
+    <env name="DB_DATABASE" value=":memory:" />
+    <env name="QUEUE_CONNECTION" value="sync" />
+    <env name="CACHE_DRIVER" value="array" />
+    <env name="APP_KEY" value="base64:2fl+Ktvkfl+Fuz4Qp/A75G2RTiWVA/ZoKZvp6fiiM10=" />
+    <env name="MAIL_MAILER" value="log" />
+    <env name="APP_DOMAIN" value="localhost" />
+    <env name="APP_ADMIN_EMAIL" value="hello@example.com" />
+    <env name="MAIL_FROM_ADDRESS" value="hello@example.com" />
+    <!-- <env name="STRIPE_KEY" value="test_stripe_key" /> -->
+    <!-- <env name="STRIPE_SECRET" value="test_stripe_secret" /> -->
+    <!-- <env name="STRIPE_WEBHOOK_SECRET" value="test_stripe_webhook_secret" /> -->
+    <!-- <env name="PAYSTACK_PUBLIC_KEY" value="test_paystack_public_key" /> -->
+    <!-- <env name="PAYSTACK_SECRET_KEY" value="test_paystack_secret_key" /> -->
+    <!-- <env name="XENDIT_PUBLIC_KEY" value="test_xendit_public_key" /> -->
+    <!-- <env name="XENDIT_SECRET_KEY" value="test_xendit_secret_key" /> -->
+    <!-- <env name="FLUTTERWAVE_CLIENT_ID" value="test_flutterwave_client_id" /> -->
+    <!-- <env name="FLUTTERWAVE_CLIENT_SECRET" value="test_flutterwave_client_secret" /> -->
+    <!-- <env name="FLUTTERWAVE_ENCRYPTION_KEY" value="test_flutterwave_encryption_key" /> -->
+    <!-- <env name="GOCARDLESS_ACCESS_TOKEN" value="test_gocardless_access_token" /> -->
+    <!-- <env name="GOCARDLESS_WEBHOOK_SECRET" value="test_gocardless_webhook_secret" /> -->
+    <!-- <env name="KLARNA_API_KEY" value="test_klarna_api_key" /> -->
+    <!-- <env name="KLARNA_API_SECRET" value="test_klarna_api_secret" /> -->
+    <!-- <env name="PAYPAL_CLIENT_ID" value="test_paypal_client_id" /> -->
+    <!-- <env name="PAYPAL_CLIENT_SECRET" value="test_paypal_client_secret" /> -->
+    <!-- <env name="RAZORPAY_API_KEY" value="test_razorpay_api_key" /> -->
+    <!-- <env name="RAZORPAY_API_SECRET" value="test_razorpay_api_secret" /> -->
+  </php>
+</phpunit>

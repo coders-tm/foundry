@@ -1,0 +1,56 @@
+{
+  "Staff": {
+    "sort_order": 2,
+    "icon": "fas fa-user-shield",
+    "url": "staff",
+    "sub_items": ["Read", "Write", "Editor"]
+  },
+  "Groups": {
+    "sort_order": 3,
+    "icon": "fas fa-user-group",
+    "url": "groups",
+    "sub_items": ["Read", "Write", "Editor"]
+  },
+  "Users": {
+    "sort_order": 4,
+    "icon": "fas fa-user-tag",
+    "url": "users",
+    "sub_items": ["Read", "Write", "Editor"]
+  },
+  "Plans": {
+    "sort_order": 4,
+    "icon": "fas fa-bookmark",
+    "url": "plans",
+    "sub_items": ["Read", "Write", "Editor"]
+  },
+  "Coupons": {
+    "sort_order": 4,
+    "icon": "fas fa-badge-percent",
+    "url": "coupons",
+    "sub_items": ["Read", "Write", "Editor"]
+  },
+  "Blogs": {
+    "sort_order": 1,
+    "icon": "fas fa-square-rss",
+    "url": "blogs",
+    "sub_items": ["Read", "Write", "Editor"]
+  },
+  "Pages": {
+    "sort_order": 1,
+    "icon": "fas fa-browser",
+    "url": "pages",
+    "sub_items": ["Read", "Write", "Editor"]
+  },
+  "Support Tickets": {
+    "sort_order": 1,
+    "icon": "fas fa-browser",
+    "url": "support-tickets",
+    "sub_items": ["Read", "Write", "Editor"]
+  },
+  "Settings": {
+    "sort_order": 5,
+    "icon": "fas fa-gear",
+    "url": "settings",
+    "sub_items": ["Read", "Write", "Editor"]
+  }
+}

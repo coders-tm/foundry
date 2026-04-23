@@ -1,0 +1,114 @@
+<?php
+
+namespace Foundry\Database\Factories;
+
+use Carbon\Carbon;
+use DateTimeInterface;
+use Foundry\Contracts\SubscriptionStatus;
+use Foundry\Foundry;
+use Foundry\Models\Subscription;
+use Foundry\Services\Period;
+use Illuminate\Database\Eloquent\Factories\Factory;
+
+class SubscriptionFactory extends Factory
+{
+    /**
+     * The name of the factory's corresponding model.
+     *
+     * @var string
+     */
+    protected $model = Subscription::class;
+
+    /**
+     * Define the model's default state.
+     *
+     * @return array<string, mixed>
+     */
+    public function definition(): array
+    {
+        $model = Foundry::$userModel;
+        $startsAt = now();
+        $plan = Foundry::$planModel::inRandomOrder()->first();
+
+        return [
+            (new $model)->getForeignKey() => ($model)::factory(),
+            'plan_id' => $plan?->id,
+            'type' => 'default',
+            'status' => SubscriptionStatus::ACTIVE,
+            'trial_ends_at' => null,
+            'starts_at' => $startsAt,
+            'expires_at' => $plan ? $this->calculateExpiresAt($plan, $startsAt) : $startsAt->copy()->addMonth(),
+            'billing_interval' => $plan?->interval,
+            'billing_interval_count' => $plan?->interval_count ?? 1,
+        ];
+    }
+
+    /**
+     * Calculate expires_at based on plan interval
+     *
+     * @param  mixed  $plan
+     * @param  DateTimeInterface  $startsAt
+     * @return Carbon
+     */
+    protected function calculateExpiresAt($plan, $startsAt)
+    {
+        $period = new Period(
+            $plan->interval->value,
+            $plan->interval_count,
+            $startsAt
+        );
+
+        return $period->getEndDate();
+    }
+
+    /**
+     * Mark the subscription as active.
+     *
+     * @return $this
+     */
+    public function active(): static
+    {
+        return $this->state([
+            'status' => SubscriptionStatus::ACTIVE,
+        ]);
+    }
+
+    /**
+     * Mark the subscription as being within a trial period.
+     *
+     * @return $this
+     */
+    public function trialing(?DateTimeInterface $trialEndsAt = null): static
+    {
+        return $this->state([
+            'status' => SubscriptionStatus::TRIALING,
+            'trial_ends_at' => $trialEndsAt,
+        ]);
+    }
+
+    /**
+     * Mark the subscription as canceled.
+     *
+     * @return $this
+     */
+    public function canceled(): static
+    {
+        return $this->state([
+            'status' => SubscriptionStatus::CANCELED,
+            'expires_at' => now(),
+            'canceled_at' => now(),
+        ]);
+    }
+
+    /**
+     * Mark the subscription as incomplete.
+     *
+     * @return $this
+     */
+    public function incomplete(): static
+    {
+        return $this->state([
+            'status' => SubscriptionStatus::INCOMPLETE,
+        ]);
+    }
+}

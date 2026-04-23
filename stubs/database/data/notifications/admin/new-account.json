@@ -1,0 +1,5 @@
+{
+  "label": "[Admin] New Staff Welcome",
+  "subject": "Welcome to {{$app->name}} - Your New Staff Account Details",
+  "type": "admin:new-account"
+}

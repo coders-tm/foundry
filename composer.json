@@ -1,0 +1,142 @@
+{
+    "name": "coderstm/foundry",
+    "description": "Foundry – Where SaaS applications are forged.",
+    "keywords": [
+        "laravel",
+        "sanctum",
+        "auth",
+        "enquiry",
+        "multi auth guard",
+        "tasks management",
+        "log",
+        "subscription",
+        "foundry"
+    ],
+    "license": "MIT",
+    "support": {
+        "issues": "https://github.com/coders-tm/foundry/issues",
+        "source": "https://github.com/coders-tm/foundry"
+    },
+    "authors": [
+        {
+            "name": "Dipak Sarkar",
+            "email": "hello@dipaksarkar.in"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "ext-json": "*",
+        "barryvdh/laravel-dompdf": "^3.1",
+        "coderstm/laravel-page-builder": "^1.0",
+        "creativeorange/gravatar": "^1.0",
+        "doctrine/dbal": "^3.4",
+        "firebase/php-jwt": "^7.0",
+        "flutterwavedev/flutterwave-v3": "^1.1",
+        "gocardless/gocardless-pro": "^6.6",
+        "illuminate/console": "^11.0|^12.0|^13.0",
+        "illuminate/contracts": "^11.0|^12.0|^13.0",
+        "illuminate/database": "^11.0|^12.0|^13.0",
+        "illuminate/http": "^11.0|^12.0|^13.0",
+        "illuminate/log": "^11.0|^12.0|^13.0",
+        "illuminate/notifications": "^11.0|^12.0|^13.0",
+        "illuminate/pagination": "^11.0|^12.0|^13.0",
+        "illuminate/routing": "^11.0|^12.0|^13.0",
+        "illuminate/support": "^11.0|^12.0|^13.0",
+        "illuminate/view": "^11.0|^12.0|^13.0",
+        "inertiajs/inertia-laravel": "^3.0",
+        "jenssegers/agent": "^2.6",
+        "laravel/fortify": "^1.0",
+        "moneyphp/money": "^4.0",
+        "league/csv": "^9.15",
+        "league/iso3166": "^4.3",
+        "mercadopago/dx-php": "^3.5",
+        "nesbot/carbon": "^3.0",
+        "qirolab/laravel-themer": "^2.4",
+        "razorpay/razorpay": "^2.9",
+        "spatie/laravel-sluggable": "^3.7",
+        "spatie/simple-excel": "^3.0",
+        "srmklive/paypal": "^3.0",
+        "stevebauman/location": "^7.2.0",
+        "stripe/stripe-php": "^17.3.0",
+        "symfony/console": "^7.0",
+        "symfony/http-kernel": "^7.0",
+        "symfony/polyfill-intl-icu": "^1.22.1",
+        "vedmant/laravel-shortcodes": "^1.1",
+        "intervention/image": "^3.0",
+        "xendit/xendit-php": "^7.0",
+        "yabacon/paystack-php": "^2.2",
+        "yansongda/laravel-pay": "^3.7.0"
+    },
+    "require-dev": {
+        "laravel/pint": "^1.27",
+        "mockery/mockery": "^1.6",
+        "nunomaduro/collision": "^8.1",
+        "orchestra/testbench": "^10.6",
+        "phpstan/phpstan": "^1.10",
+        "phpunit/phpunit": "^11.5"
+    },
+    "suggest": {
+        "ext-intl": "Allows for more locales besides the default \"en\" when formatting money values.",
+        "dompdf/dompdf": "Required when generating and downloading invoice PDF's using Dompdf (^2.0).",
+        "inertiajs/inertia-laravel": "Required for Inertia.js SPA response support (^2.0|^3.0)."
+    },
+    "autoload": {
+        "psr-4": {
+            "Foundry\\": "src/",
+            "Foundry\\Database\\Factories\\": "database/factories/",
+            "Foundry\\Database\\Seeders\\": "database/seeders/"
+        },
+        "files": [
+            "lib/helpers.php"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Foundry\\Tests\\": "tests/",
+            "Workbench\\App\\": "workbench/app/",
+            "Workbench\\Database\\Factories\\": "workbench/database/factories/",
+            "Workbench\\Database\\Seeders\\": "workbench/database/seeders/",
+            "App\\": "vendor/orchestra/testbench-core/laravel/app/",
+            "Database\\Factories\\": "vendor/orchestra/testbench-core/laravel/database/factories/",
+            "Database\\Seeders\\": "vendor/orchestra/testbench-core/laravel/database/seeders/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Foundry\\Providers\\FoundryServiceProvider",
+                "Foundry\\Providers\\FoundryPermissionsServiceProvider",
+                "Foundry\\Providers\\FoundryEventServiceProvider",
+                "Foundry\\Providers\\ShortcodeServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "scripts": {
+        "lint": [
+            "@php vendor/bin/phpstan analyse --verbose --ansi"
+        ],
+        "pint": [
+            "@php vendor/bin/pint --ansi"
+        ],
+        "test": [
+            "@php vendor/bin/testbench package:test --ansi"
+        ],
+        "post-autoload-dump": [
+            "@clear",
+            "@prepare"
+        ],
+        "clear": "@php vendor/bin/testbench package:purge-skeleton --ansi",
+        "prepare": "@php vendor/bin/testbench package:discover --ansi",
+        "build": "@php vendor/bin/testbench workbench:build --ansi",
+        "serve": [
+            "Composer\\Config::disableProcessTimeout",
+            "@build",
+            "@php vendor/bin/testbench serve --ansi"
+        ]
+    }
+}

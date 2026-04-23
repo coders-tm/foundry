@@ -1,0 +1,184 @@
+<?php
+
+namespace Foundry\Database\Factories;
+
+use Foundry\Models\Coupon;
+use Illuminate\Database\Eloquent\Factories\Factory;
+
+/**
+ * @template TModel of \Foundry\Models\Coupon
+ *
+ * @extends Factory<TModel>
+ */
+class CouponFactory extends Factory
+{
+    /**
+     * The name of the factory's corresponding model.
+     *
+     * @var class-string<TModel>
+     */
+    protected $model = Coupon::class;
+
+    /**
+     * Define the model's default state.
+     *
+     * @return array<string, mixed>
+     */
+    public function definition(): array
+    {
+        return [
+            'name' => $this->faker->words(2, true).' Coupon',
+            'promotion_code' => strtoupper($this->faker->lexify('????').$this->faker->numerify('##')),
+            'type' => $this->faker->randomElement(['plan']),
+            'discount_type' => $this->faker->randomElement(['percentage', 'fixed', 'override']),
+            'value' => $this->faker->randomFloat(2, 5, 50),
+            'active' => true,
+            'auto_apply' => $this->faker->boolean(30), // 30% chance of auto-apply
+            'max_redemptions' => $this->faker->boolean() ? $this->faker->numberBetween(10, 100) : null,
+            'expires_at' => $this->faker->boolean() ? $this->faker->dateTimeBetween('now', '+1 year') : null,
+            'duration' => $this->faker->randomElement(['forever', 'once', 'repeating']),
+            'duration_in_months' => $this->faker->boolean() ? $this->faker->numberBetween(1, 12) : null,
+        ];
+    }
+
+    public function active()
+    {
+        return $this->state(function (array $attributes) {
+            return [
+                'active' => true,
+            ];
+        });
+    }
+
+    public function inactive()
+    {
+        return $this->state(function (array $attributes) {
+            return [
+                'active' => false,
+            ];
+        });
+    }
+
+    public function percentage($value = null)
+    {
+        return $this->state(function (array $attributes) use ($value) {
+            return [
+                'discount_type' => 'percentage',
+                'value' => $value ?? $this->faker->randomFloat(2, 5, 50),
+            ];
+        });
+    }
+
+    public function fixedAmount($value = null)
+    {
+        return $this->state(function (array $attributes) use ($value) {
+            return [
+                'discount_type' => 'fixed',
+                'value' => $value ?? $this->faker->randomFloat(2, 10, 100),
+            ];
+        });
+    }
+
+    public function override($value = null)
+    {
+        return $this->state(function (array $attributes) use ($value) {
+            return [
+                'discount_type' => 'override',
+                'value' => $value ?? $this->faker->randomFloat(2, 5, 25),
+            ];
+        });
+    }
+
+    public function autoApply()
+    {
+        return $this->state(function (array $attributes) {
+            return [
+                'auto_apply' => true,
+            ];
+        });
+    }
+
+    public function noAutoApply()
+    {
+        return $this->state(function (array $attributes) {
+            return [
+                'auto_apply' => false,
+            ];
+        });
+    }
+
+    public function withExpiry($date = null)
+    {
+        return $this->state(function (array $attributes) use ($date) {
+            return [
+                'expires_at' => $date ?? $this->faker->dateTimeBetween('now', '+6 months'),
+            ];
+        });
+    }
+
+    public function withoutExpiry()
+    {
+        return $this->state(function (array $attributes) {
+            return [
+                'expires_at' => null,
+            ];
+        });
+    }
+
+    public function withMaxRedemptions($max = null)
+    {
+        return $this->state(function (array $attributes) use ($max) {
+            return [
+                'max_redemptions' => $max ?? $this->faker->numberBetween(10, 100),
+            ];
+        });
+    }
+
+    public function unlimited()
+    {
+        return $this->state(function (array $attributes) {
+            return [
+                'max_redemptions' => null,
+            ];
+        });
+    }
+
+    public function forPlans()
+    {
+        return $this->state(function (array $attributes) {
+            return [
+                'type' => 'plan',
+            ];
+        });
+    }
+
+    public function forever()
+    {
+        return $this->state(function (array $attributes) {
+            return [
+                'duration' => 'forever',
+                'duration_in_months' => null,
+            ];
+        });
+    }
+
+    public function once()
+    {
+        return $this->state(function (array $attributes) {
+            return [
+                'duration' => 'once',
+                'duration_in_months' => null,
+            ];
+        });
+    }
+
+    public function repeating($months = null)
+    {
+        return $this->state(function (array $attributes) use ($months) {
+            return [
+                'duration' => 'repeating',
+                'duration_in_months' => $months ?? $this->faker->numberBetween(1, 12),
+            ];
+        });
+    }
+}

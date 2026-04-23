@@ -1,0 +1,5 @@
+{
+  "label": "Support Ticket Reply Notification",
+  "subject": "[{{ $app->name }}] Support Ticket Reply #{{ $support_ticket->ticket_number }} - {{ $support_ticket->subject }}",
+  "type": "user:support-ticket-reply-notification"
+}

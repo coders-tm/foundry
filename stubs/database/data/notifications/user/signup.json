@@ -1,0 +1,5 @@
+{
+  "label": "Signup",
+  "subject": "Welcome to {{$app->name}} - Your Subscription Details",
+  "type": "user:signup"
+}

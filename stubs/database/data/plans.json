@@ -1,0 +1,32 @@
+[
+    {
+        "label": "Free",
+        "description": "<strong>1</strong> Locations\n<strong>5</strong> Staff Accounts\n<strong>Unlimited</strong> Members\n<strong>24/7</strong> chat support\nPOS Lite",
+        "price": 0,
+        "features": {
+            "locations": 2,
+            "staff": 5,
+            "support": true
+        }
+    },
+    {
+        "label": "Basic",
+        "description": "<strong>5</strong> Locations\n<strong>50</strong> Staff Accounts\n<strong>Unlimited</strong> Members\n<strong>24/7</strong> chat support\nPOS Lite",
+        "price": 4.99,
+        "features": {
+            "locations": 5,
+            "staff": 50,
+            "support": true
+        }
+    },
+    {
+        "label": "Pro",
+        "description": "<strong>10</strong> Locations\n<strong>100</strong> Staff Accounts\n<strong>Unlimited</strong> Members\n<strong>24/7</strong> chat support\nPOS Lite",
+        "price": 9.99,
+        "features": {
+            "locations": 10,
+            "staff": 100,
+            "support": true
+        }
+    }
+]

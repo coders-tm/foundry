@@ -1,0 +1,5 @@
+{
+  "label": "Partial Refund",
+  "subject": "Partial Refund Processed - Order {{ $order->number }}",
+  "type": "user:partial-refund"
+}

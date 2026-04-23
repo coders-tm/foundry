@@ -1,0 +1,5 @@
+{
+  "label": "Import Completed",
+  "subject": "[{{ $app->name }}] {{ $import->model }} import completed (Status: {{ $import->status }})",
+  "type": "admin:import-completed"
+}

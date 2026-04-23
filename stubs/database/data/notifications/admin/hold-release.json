@@ -1,0 +1,5 @@
+{
+  "label": "[Admin] Hold release",
+  "subject": "[{{$app->name}}] Hold Release for {{USER_NAME}} - Member Access Restored",
+  "type": "admin:hold-release"
+}

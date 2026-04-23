@@ -1,0 +1,100 @@
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="icon" href="{{ asset('installer/img/favicon/favicon.ico') }}">
+
+    <title>License Manager</title>
+    <!-- Bootstrap core CSS -->
+    <link href="https://getbootstrap.com/docs/4.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        html,
+        body {
+            height: 100%;
+        }
+
+        body {
+            display: -ms-flexbox;
+            display: -webkit-box;
+            display: flex;
+            -ms-flex-align: center;
+            -ms-flex-pack: center;
+            -webkit-box-align: center;
+            align-items: center;
+            -webkit-box-pack: center;
+            justify-content: center;
+            padding-top: 40px;
+            padding-bottom: 40px;
+        }
+
+        .form-container {
+            width: 450px;
+            max-width: 95vw;
+            padding: 25px;
+            margin: 0 auto;
+            background-color: #f5f5f5;
+        }
+    </style>
+</head>
+
+<body>
+    <form method="post" action="{{ route('license-update') }}" class="form-container">
+        @csrf
+        <div class="text-center form-group">
+            <svg style="width: 75px" class="mb-4" width="104" height="119" viewBox="0 0 104 119" fill="none"
+                xmlns="http://www.w3.org/2000/svg">
+                <path
+                    d="M103.168 29.592L51.9213 -1.32739e-05L0.553314 29.6613V88.9733L51.9213 118.635L101.772 89.852L103.168 29.592Z"
+                    fill="#01DA96" />
+                <path
+                    d="M51.7597 71.9911C47.8117 75.8698 43.6557 77.3925 38.6011 77.3925C28.6971 77.3925 20.4557 71.4365 20.4557 59.3178C20.4557 47.1978 28.6971 41.2418 38.6011 41.2418C43.4491 41.2418 47.1891 42.6271 50.9277 46.2965L45.5957 51.9071C43.5877 50.1058 41.0931 49.2058 38.7397 49.2058C33.0611 49.2058 28.9051 53.3618 28.9051 59.3178C28.9051 65.8271 33.3371 69.2898 38.6011 69.2898C41.3024 69.2898 44.0024 68.5285 46.0811 66.4511L51.7597 71.9911Z"
+                    fill="#1B1464" />
+                <path d="M66.0124 41.3804L51.8951 77.3351H60.7004L74.8617 41.3804H66.0124Z" fill="#1B1464" />
+                <path
+                    d="M84.7818 59.3524L73.8392 48.8244V48.4097L79.3112 43.0084L95.2392 58.7977V59.8364L79.3112 75.6271L73.8392 70.2244V69.8097L84.7818 59.3524Z"
+                    fill="#1B1464" />
+                <path d="M74.862 41.3804L60.6993 77.3351H51.8953L66.0127 41.3804H74.862Z" fill="#1B1464" />
+                <path
+                    d="M90.5397 81.4631V81.6165L51.9211 103.908L13.3024 81.6165V37.0191L51.9211 14.7258L90.5397 37.0191V37.2671L90.8077 37.0058L103.168 29.5925L51.9211 0.000475007L0.55307 29.6618V88.9725L51.9211 118.635L101.772 89.8525L90.8077 81.6298L90.5397 81.4631Z"
+                    fill="#1B1464" />
+            </svg>
+            <h1 class="h4 mb-3 font-weight-normal">License Manager</h1>
+            <p>Manage and Update Your Application License.</p>
+        </div>
+        <div class="form-group">
+            <label for="email">Email address</label>
+            <input type="email" value="{{ old('email') }}" name="email" class="form-control" id="email"
+                aria-describedby="emailHelp" placeholder="admin@example.com">
+            @error('email')
+                <small id="emailHelp" class="form-text text-danger">{{ $message }}</small>
+            @else
+                <small id="emailHelp" class="form-text text-muted">Your admin login email adrress</small>
+            @enderror
+        </div>
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input name="password" type="password" class="form-control" id="password" placeholder="Password">
+            @error('password')
+                <small id="passwordHelp" class="form-text text-danger">{{ $message }}</small>
+            @else
+                <small id="passwordHelp" class="form-text text-muted">Your admin login password</small>
+            @enderror
+        </div>
+        <div class="form-group">
+            <label for="license">License key</label>
+            <input name=license value="{{ old('license') }}" class="form-control" id="license"
+                placeholder="23224D84-2E7A4C5D-9187AADD-E41DCCDD">
+            @error('license')
+                <small id="passwordHelpError" class="form-text text-danger">{{ $message }}</small>
+            @enderror
+            <small id="licenseHelp" class="form-text text-muted">To obtain or renew your license, please <a
+                    href="https://foundry.com/licenses" target="_blank">visit our website</a></small>
+        </div>
+        <button class="btn btn-primary btn-block" type="submit">Update</button>
+    </form>
+</body>
+
+</html>

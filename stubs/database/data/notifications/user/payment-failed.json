@@ -1,0 +1,5 @@
+{
+  "label": "Payment Failed",
+  "subject": "Payment Failed - Order {{ $order->number }}",
+  "type": "user:payment-failed"
+}

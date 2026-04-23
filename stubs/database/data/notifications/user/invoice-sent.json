@@ -1,0 +1,6 @@
+{
+  "label": "Invoice Sent",
+  "subject": "Invoice for Order {{ $order->number }}",
+  "is_default": true,
+  "type": "user:invoice-sent"
+}

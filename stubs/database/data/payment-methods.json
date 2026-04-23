@@ -1,0 +1,599 @@
+[
+  {
+    "name": "Stripe",
+    "provider": "stripe",
+    "link": "https://stripe.com/",
+    "webhook": "{{API_URL}}/stripe/webhook",
+    "active": true,
+    "logo": "fab fa-cc-stripe",
+    "description": "Millions of businesses of all sizes—from startups to large enterprises—use Stripe’s software and APIs to accept payments, send payouts, and manage their businesses online.",
+    "credentials": [
+      {
+        "key": "API_KEY",
+        "value": "",
+        "label": "Publishable key",
+        "publish": true
+      },
+      {
+        "key": "API_SECRET",
+        "value": "",
+        "label": "Secret key"
+      },
+      {
+        "key": "WEBHOOK_SECRET",
+        "value": "",
+        "label": "Webhook secret"
+      }
+    ],
+    "methods": [
+      {
+        "key": "visa",
+        "label": "Visa",
+        "enabled": true,
+        "type": "CREDIT_CARD"
+      },
+      {
+        "key": "mastercard",
+        "label": "Mastercard",
+        "enabled": true,
+        "type": "CREDIT_CARD"
+      },
+      {
+        "key": "american_express",
+        "label": "American Express",
+        "enabled": true,
+        "type": "CREDIT_CARD"
+      },
+      {
+        "key": "rupay",
+        "label": "RuPay",
+        "enabled": true,
+        "type": "CREDIT_CARD"
+      }
+    ]
+  },
+  {
+    "name": "GoCardless",
+    "provider": "gocardless",
+    "link": "https://gocardless.com/",
+    "webhook": "{{API_URL}}/gocardless/webhook",
+    "active": false,
+    "logo": "fas fa-university",
+    "description": "GoCardless is a global leader in Direct Debit, helping businesses collect recurring and one-off payments with minimal effort.",
+    "credentials": [
+      {
+        "key": "ACCESS_TOKEN",
+        "value": "",
+        "label": "Access Token"
+      },
+      {
+        "key": "WEBHOOK_SECRET",
+        "value": "",
+        "label": "Webhook Secret"
+      }
+    ],
+    "methods": [
+      {
+        "key": "direct_debit",
+        "label": "Direct Debit",
+        "enabled": true,
+        "type": "DIRECT_DEBIT"
+      }
+    ]
+  },
+  {
+    "name": "Razorpay (Cards, UPI, NetBanking, Wallets, Paypal)",
+    "provider": "razorpay",
+    "link": "https://razorpay.com/",
+    "logo": "https://foundry.com/logos/razorpay-logo.svg",
+    "webhook": "{{API_URL}}/razorpay/webhook",
+    "description": "Accept payments from customers. Automate payouts to vendors & employees. Never run out of working capital.",
+    "credentials": [
+      {
+        "key": "API_KEY",
+        "value": "",
+        "label": "API Key ID",
+        "publish": true
+      },
+      {
+        "key": "API_SECRET",
+        "value": "",
+        "label": "API Key Secret"
+      }
+    ],
+    "methods": [
+      {
+        "key": "visa",
+        "label": "Visa",
+        "enabled": true,
+        "type": "CREDIT_CARD"
+      },
+      {
+        "key": "mastercard",
+        "label": "Mastercard",
+        "enabled": true,
+        "type": "CREDIT_CARD"
+      },
+      {
+        "key": "american_express",
+        "label": "American Express",
+        "enabled": true,
+        "type": "CREDIT_CARD"
+      },
+      {
+        "key": "rupay",
+        "label": "RuPay",
+        "enabled": true,
+        "type": "CREDIT_CARD"
+      },
+      {
+        "key": "airtel_money",
+        "label": "Airtel Money",
+        "enabled": true,
+        "type": "OTHER"
+      },
+      {
+        "key": "freecharge",
+        "label": "Freecharge",
+        "enabled": true,
+        "type": "OTHER"
+      },
+      {
+        "key": "ola_money",
+        "label": "Ola Money",
+        "enabled": true,
+        "type": "OTHER"
+      },
+      {
+        "key": "paytm",
+        "label": "Paytm",
+        "enabled": true,
+        "type": "OTHER"
+      },
+      {
+        "key": "mobikwik",
+        "label": "MobiKwik",
+        "enabled": true,
+        "type": "OTHER"
+      },
+      {
+        "key": "payzapp",
+        "label": "PayZapp",
+        "enabled": true,
+        "type": "OTHER"
+      }
+    ]
+  },
+  {
+    "name": "Paypal Express Checkout",
+    "provider": "paypal",
+    "link": "https://www.paypal.com/us/cgi-bin/webscr?cmd=_additional-payment-overview-outside",
+    "logo": "fab fa-cc-paypal",
+    "webhook": "{{API_URL}}/paypal/webhook",
+    "description": "Receive payments in foreign currencies with PayPal. Manage payment approval in payment preferences in PayPal.",
+    "credentials": [
+      {
+        "key": "CLIENT_ID",
+        "value": "",
+        "label": "Client ID",
+        "publish": true
+      },
+      {
+        "key": "CLIENT_SECRET",
+        "value": "",
+        "label": "Client Secret"
+      }
+    ]
+  },
+  {
+    "name": "Apple Pay",
+    "provider": "apple_pay",
+    "integration_via": "stripe",
+    "link": "https://developer.apple.com/apple-pay/",
+    "logo": "fab fa-apple-pay",
+    "description": "Fast, secure payments with Touch ID, Face ID, or passcode on iPhone, iPad, Apple Watch, and Mac.",
+    "credentials": [],
+    "methods": [
+      {
+        "key": "apple_pay",
+        "label": "Apple Pay",
+        "enabled": true,
+        "type": "DIGITAL_WALLET"
+      }
+    ]
+  },
+  {
+    "name": "Google Pay",
+    "provider": "google_pay",
+    "integration_via": "stripe",
+    "link": "https://developers.google.com/pay",
+    "logo": "fab fa-google-pay",
+    "description": "Simple, secure, and fast checkout with Google Pay.",
+    "credentials": [],
+    "methods": [
+      {
+        "key": "google_pay",
+        "label": "Google Pay",
+        "enabled": true,
+        "type": "DIGITAL_WALLET"
+      }
+    ]
+  },
+  {
+    "name": "Klarna",
+    "provider": "klarna",
+    "link": "https://www.klarna.com/",
+    "webhook": "{{API_URL}}/klarna/webhook",
+    "logo": "https://x.klarnacdn.net/payment-method/assets/badges/generic/klarna.svg",
+    "description": "Pay in 4 interest-free installments or pay later in 30 days. Perfect for gym memberships and equipment purchases.",
+    "credentials": [
+      {
+        "key": "API_KEY",
+        "value": "",
+        "label": "API Username",
+        "publish": true
+      },
+      {
+        "key": "API_SECRET",
+        "value": "",
+        "label": "API Password"
+      }
+    ],
+    "methods": [
+      {
+        "key": "pay_in_4",
+        "label": "Pay in 4 installments",
+        "enabled": true,
+        "type": "BNPL"
+      },
+      {
+        "key": "pay_later",
+        "label": "Pay in 30 days",
+        "enabled": true,
+        "type": "BNPL"
+      },
+      {
+        "key": "financing",
+        "label": "Financing options",
+        "enabled": true,
+        "type": "BNPL"
+      }
+    ]
+  },
+  {
+    "name": "MercadoPago",
+    "provider": "mercadopago",
+    "link": "https://www.mercadopago.com/",
+    "webhook": "{{API_URL}}/mercadopago/webhook",
+    "logo": "https://cdn.worldvectorlogo.com/logos/mercadolibre.svg",
+    "description": "Leading payment platform in Latin America. Accept cards, cash, and local payment methods.",
+    "credentials": [
+      {
+        "key": "PUBLIC_KEY",
+        "value": "",
+        "label": "Public Key",
+        "publish": true
+      },
+      {
+        "key": "ACCESS_TOKEN",
+        "value": "",
+        "label": "Access Token"
+      }
+    ],
+    "methods": [
+      {
+        "key": "visa",
+        "label": "Visa",
+        "enabled": true,
+        "type": "CREDIT_CARD"
+      },
+      {
+        "key": "mastercard",
+        "label": "Mastercard",
+        "enabled": true,
+        "type": "CREDIT_CARD"
+      },
+      {
+        "key": "american_express",
+        "label": "American Express",
+        "enabled": true,
+        "type": "CREDIT_CARD"
+      },
+      {
+        "key": "pix",
+        "label": "PIX (Brazil)",
+        "enabled": true,
+        "type": "INSTANT_PAYMENT"
+      },
+      {
+        "key": "boleto",
+        "label": "Boleto Bancário",
+        "enabled": true,
+        "type": "BANK_TRANSFER"
+      }
+    ]
+  },
+  {
+    "name": "Paystack",
+    "provider": "paystack",
+    "link": "https://paystack.com/",
+    "webhook": "{{API_URL}}/paystack/webhook",
+    "logo": "https://cdn.worldvectorlogo.com/logos/paystack-2.svg",
+    "description": "Modern online and offline payments for African businesses. Accept cards, bank transfers, USSD, and mobile money.",
+    "credentials": [
+      {
+        "key": "PUBLIC_KEY",
+        "value": "",
+        "label": "Public Key",
+        "publish": true
+      },
+      {
+        "key": "SECRET_KEY",
+        "value": "",
+        "label": "Secret Key"
+      }
+    ],
+    "methods": [
+      {
+        "key": "visa",
+        "label": "Visa",
+        "enabled": true,
+        "type": "CREDIT_CARD"
+      },
+      {
+        "key": "mastercard",
+        "label": "Mastercard",
+        "enabled": true,
+        "type": "CREDIT_CARD"
+      },
+      {
+        "key": "verve",
+        "label": "Verve",
+        "enabled": true,
+        "type": "CREDIT_CARD"
+      },
+      {
+        "key": "bank_transfer",
+        "label": "Bank Transfer",
+        "enabled": true,
+        "type": "BANK_TRANSFER"
+      },
+      {
+        "key": "ussd",
+        "label": "USSD",
+        "enabled": true,
+        "type": "OTHER"
+      },
+      {
+        "key": "mobile_money",
+        "label": "Mobile Money",
+        "enabled": true,
+        "type": "OTHER"
+      }
+    ]
+  },
+  {
+    "name": "Xendit",
+    "provider": "xendit",
+    "link": "https://www.xendit.co/",
+    "webhook": "{{API_URL}}/xendit/webhook",
+    "logo": "https://www.xendit.co/wp-content/uploads/2024/04/logo-xendit-2023.svg",
+    "description": "Complete payment infrastructure for Southeast Asia. Accept cards, e-wallets, bank transfers, and cash payments.",
+    "credentials": [
+      {
+        "key": "PUBLIC_KEY",
+        "value": "",
+        "label": "Public Key",
+        "publish": true
+      },
+      {
+        "key": "SECRET_KEY",
+        "value": "",
+        "label": "Secret Key"
+      }
+    ],
+    "methods": [
+      {
+        "key": "visa",
+        "label": "Visa",
+        "enabled": true,
+        "type": "CREDIT_CARD"
+      },
+      {
+        "key": "mastercard",
+        "label": "Mastercard",
+        "enabled": true,
+        "type": "CREDIT_CARD"
+      },
+      {
+        "key": "ovo",
+        "label": "OVO",
+        "enabled": true,
+        "type": "E_WALLET"
+      },
+      {
+        "key": "dana",
+        "label": "DANA",
+        "enabled": true,
+        "type": "E_WALLET"
+      },
+      {
+        "key": "gopay",
+        "label": "GoPay",
+        "enabled": true,
+        "type": "E_WALLET"
+      },
+      {
+        "key": "shopeepay",
+        "label": "ShopeePay",
+        "enabled": true,
+        "type": "E_WALLET"
+      },
+      {
+        "key": "gcash",
+        "label": "GCash",
+        "enabled": true,
+        "type": "E_WALLET"
+      },
+      {
+        "key": "paymaya",
+        "label": "PayMaya",
+        "enabled": true,
+        "type": "E_WALLET"
+      }
+    ]
+  },
+  {
+    "name": "Flutterwave",
+    "provider": "flutterwave",
+    "link": "https://flutterwave.com/",
+    "webhook": "{{API_URL}}/flutterwave/webhook",
+    "logo": "https://flutterwave.com/images/logo/full.svg",
+    "description": "Secure payment infrastructure for global merchants and payment service providers. Accept payments from customers across Africa and globally.",
+    "credentials": [
+      {
+        "key": "CLIENT_ID",
+        "value": "",
+        "label": "Client ID",
+        "publish": true
+      },
+      {
+        "key": "CLIENT_SECRET",
+        "value": "",
+        "label": "Client Secret"
+      },
+      {
+        "key": "ENCRYPTION_KEY",
+        "value": "",
+        "label": "Encryption Key"
+      }
+    ],
+    "methods": [
+      {
+        "key": "visa",
+        "label": "Visa",
+        "enabled": true,
+        "type": "CREDIT_CARD"
+      },
+      {
+        "key": "mastercard",
+        "label": "Mastercard",
+        "enabled": true,
+        "type": "CREDIT_CARD"
+      },
+      {
+        "key": "american_express",
+        "label": "American Express",
+        "enabled": true,
+        "type": "CREDIT_CARD"
+      },
+      {
+        "key": "bank_transfer",
+        "label": "Bank Transfer",
+        "enabled": true,
+        "type": "BANK_TRANSFER"
+      },
+      {
+        "key": "ussd",
+        "label": "USSD",
+        "enabled": true,
+        "type": "OTHER"
+      },
+      {
+        "key": "mobile_money",
+        "label": "Mobile Money",
+        "enabled": true,
+        "type": "OTHER"
+      },
+      {
+        "key": "mpesa",
+        "label": "M-Pesa",
+        "enabled": true,
+        "type": "OTHER"
+      },
+      {
+        "key": "ghana_mobile_money",
+        "label": "Ghana Mobile Money",
+        "enabled": true,
+        "type": "OTHER"
+      },
+      {
+        "key": "uganda_mobile_money",
+        "label": "Uganda Mobile Money",
+        "enabled": true,
+        "type": "OTHER"
+      },
+      {
+        "key": "francophone_mobile_money",
+        "label": "Francophone Mobile Money",
+        "enabled": true,
+        "type": "OTHER"
+      },
+      {
+        "key": "rwanda_mobile_money",
+        "label": "Rwanda Mobile Money",
+        "enabled": true,
+        "type": "OTHER"
+      },
+      {
+        "key": "zambia_mobile_money",
+        "label": "Zambia Mobile Money",
+        "enabled": true,
+        "type": "OTHER"
+      }
+    ]
+  },
+  {
+    "name": "Alipay",
+    "provider": "alipay",
+    "link": "https://www.alipay.com/",
+    "logo": "fab fa-alipay",
+    "active": false,
+    "description": "Alipay is a leading digital payment platform, providing safe and convenient payment services to millions of users and merchants worldwide.",
+    "credentials": [
+      {
+        "key": "APP_ID",
+        "value": "",
+        "label": "APP ID",
+        "publish": false
+      },
+      {
+        "key": "ALI_PUBLIC_KEY",
+        "value": "",
+        "label": "Ali Public Key",
+        "publish": false
+      },
+      {
+        "key": "PRIVATE_KEY",
+        "value": "",
+        "label": "Private Key",
+        "publish": false
+      }
+    ],
+    "methods": [
+      {
+        "key": "alipay",
+        "label": "Alipay",
+        "enabled": true,
+        "type": "DIGITAL_WALLET"
+      }
+    ]
+  },
+  {
+    "name": "Wallet Balance",
+    "provider": "wallet",
+    "active": true,
+    "logo": "fas fa-wallet",
+    "description": "Pay using your wallet balance. Fast, secure, and instant payment from your account balance.",
+    "credentials": [],
+    "methods": []
+  },
+  {
+    "name": "Bank Transfer",
+    "provider": "manual",
+    "active": true,
+    "logo": "fas fa-university",
+    "description": "Pay via bank transfer",
+    "payment_instructions": "Please transfer the amount to the following bank account:\n\n**Bank Name:** Your Bank Name\n**Account Number:** 1234567890\n**Account Name:** Your Account Name\n\nOnce the transfer is complete, please send us a confirmation email with the transaction details."
+  }
+]

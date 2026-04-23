@@ -1,0 +1,5 @@
+{
+  "label": "[Admin] Subscription cancel",
+  "subject": "[{{$app->name}}] Subscription Cancellation by {{USER_NAME}}",
+  "type": "admin:subscription-cancel"
+}
