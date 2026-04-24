@@ -5,6 +5,7 @@ namespace Foundry\Providers;
 use Foundry\Commands;
 use Foundry\Contracts\ConfigurationInterface;
 use Foundry\Contracts\StateInterface;
+use Foundry\Facades\Guard;
 use Foundry\Foundry;
 use Foundry\Http\Middleware;
 use Foundry\Models;
@@ -187,11 +188,11 @@ class FoundryServiceProvider extends ServiceProvider
         });
 
         Authenticate::redirectUsing(function ($request) {
-            return route(app(GuardManager::class)->loginRoute($request));
+            return route(Guard::loginRoute($request));
         });
 
         RedirectIfAuthenticated::redirectUsing(function ($request) {
-            return app(GuardManager::class)->home($request);
+            return Guard::home($request);
         });
     }
 

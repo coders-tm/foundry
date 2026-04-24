@@ -5,32 +5,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Workbench\App\Http\Controllers\Admin\ReportExportsController;
 use Workbench\App\Http\Controllers\Admin\ReportsController;
-use Workbench\App\Models\Admin;
-use Workbench\App\Models\User;
-
-// Login and set token to session
-Route::get('/_workbench', function () {
-    $admin = Admin::first();
-    $user = User::first();
-
-    $tokenAdmin = $admin->createToken('workbench-admin', ['admins']);
-    $tokenUser = $user->createToken('workbench-user', ['users']);
-
-    // Store tokens in session
-    session([
-        'admin_token' => $tokenAdmin->plainTextToken,
-        'user_token' => $tokenUser->plainTextToken,
-        'admin_user' => $admin->toArray(),
-        'user_user' => $user->toArray(),
-    ]);
-
-    return redirect()->route('home');
-})->name('_workbench');
-
-// Home page with links to all test pages
-Route::get('/home', function () {
-    return view('index');
-})->name('home');
 
 // Reports & Analytics
 Route::group([

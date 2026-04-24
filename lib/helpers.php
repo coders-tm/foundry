@@ -1,11 +1,11 @@
 <?php
 
+use Foundry\Facades\Guard;
 use Foundry\Foundry;
 use Foundry\Models\Blog;
 use Foundry\Models\Setting;
 use Foundry\Models\Tax;
 use Foundry\Services\AdminNotification;
-use Foundry\Services\GuardManager;
 use Foundry\Services\ShortcodeProcessor;
 use Foundry\Support\FluentData;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -26,7 +26,7 @@ if (! function_exists('guard')) {
      */
     function guard(...$args)
     {
-        $currentGuard = app(GuardManager::class)->guard();
+        $currentGuard = Guard::current();
 
         if (empty($args)) {
             return $currentGuard;

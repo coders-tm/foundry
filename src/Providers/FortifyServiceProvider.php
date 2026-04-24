@@ -3,6 +3,7 @@
 namespace Foundry\Providers;
 
 use Foundry\Actions\Fortify\RedirectIfTwoFactorAuthenticatable;
+use Foundry\Facades\Guard;
 use Foundry\Http\Responses\PasswordResetResponse;
 use Foundry\Http\Responses\TwoFactorLoginResponse;
 use Foundry\Services\GuardManager;
@@ -69,7 +70,7 @@ class FortifyServiceProvider extends ServiceProvider
                 ]);
             }
 
-            return view(app(GuardManager::class)->isAdmin($request) ? 'admin.login' : 'auth.login', [
+            return view(Guard::isAdmin() ? 'admin.login' : 'auth.login', [
                 'status' => $request->session()->get('status'),
             ]);
         });
@@ -140,10 +141,8 @@ class FortifyServiceProvider extends ServiceProvider
     protected function configurePasswordResetUrl(): void
     {
         ResetPassword::createUrlUsing(function (object $notifiable, string $token) {
-            $guardManager = app(GuardManager::class);
-
             return url(route(
-                $guardManager->passwordResetRoute(),
+                Guard::passwordResetRoute(),
                 [
                     'token' => $token,
                     'email' => $notifiable->getEmailForPasswordReset(),
