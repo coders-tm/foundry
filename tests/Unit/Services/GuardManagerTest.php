@@ -10,26 +10,30 @@ class GuardManagerTest extends BaseTestCase
 {
     public function test_it_resolves_default_context_from_request()
     {
-        $request = Request::create('/admin');
+        $this->instance('request', Request::create('/admin'));
         $this->assertEquals('admin', Guard::current());
 
-        $request = Request::create('/dashboard');
+        Guard::forgetResolved();
+        $this->instance('request', Request::create('/dashboard'));
         $this->assertEquals('user', Guard::current());
     }
 
     public function test_it_can_set_and_get_request()
     {
         $request = Request::create('/admin');
+        $this->instance('request', $request);
+
         $this->assertSame($request, Guard::getRequest());
         $this->assertTrue(Guard::is('admin'));
     }
 
     public function test_set_request_clears_resolved_state()
     {
-        Request::create('/admin');
+        $this->instance('request', Request::create('/admin'));
         $this->assertEquals('admin', Guard::current());
 
-        Request::create('/dashboard');
+        Guard::forgetResolved();
+        $this->instance('request', Request::create('/dashboard'));
         $this->assertEquals('user', Guard::current());
     }
 
@@ -45,13 +49,13 @@ class GuardManagerTest extends BaseTestCase
     {
         config(['foundry.guards.admin.home' => '/custom-admin-home']);
 
-        Request::create('/admin');
+        $this->instance('request', Request::create('/admin'));
         $this->assertEquals('/custom-admin-home', Guard::home());
     }
 
     public function test_it_falls_back_to_hardcoded_defaults()
     {
-        Request::create('/admin');
+        $this->instance('request', Request::create('/admin'));
 
         // These should come from defaultValue() match block
         $this->assertEquals('/admin', Guard::home());
@@ -73,22 +77,20 @@ class GuardManagerTest extends BaseTestCase
 
     public function test_forget_resolved_works()
     {
-        $request = Request::create('/admin');
-        Guard::setRequest($request);
-        Guard::current(); // Resolve it
+        $this->instance('request', Request::create('/admin'));
+        Guard::current(); // Resolve it ('admin')
 
         Guard::forgetResolved();
 
-        // Manually change config to see if it re-resolves
-        config(['foundry.guards.admin.paths' => ['something-else']]);
+        // Change the prefix to something else so /admin no longer matches
+        config(['foundry.admin_prefix' => 'portal']);
 
-        $this->assertEquals('user', Guard::current()); // Now /admin doesn't match admin paths
+        $this->assertEquals('user', Guard::current());
     }
 
     public function test_aliases_work()
     {
-        $request = Request::create('/admin');
-        Guard::setRequest($request);
+        $this->instance('request', Request::create('/admin'));
 
         $this->assertEquals('admin', Guard::current());
         $this->assertEquals('admin', Guard::key());
