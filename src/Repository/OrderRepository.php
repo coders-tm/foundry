@@ -17,11 +17,20 @@ class OrderRepository extends BaseRepository
      */
     public static function fromRequest(Request $request, Order $order): Order
     {
-        // Process line items
+        // Process line items and their discounts
         $line_items = collect($request->line_items ?? [])->map(function ($product) {
-            return LineItem::firstOrNew([
+            $item = LineItem::firstOrNew([
                 'id' => $product['id'] ?? null,
             ], $product)->fill($product);
+
+            // Manually hydrate line-item level discount relation
+            if (isset($product['discount'])) {
+                $item->setRelation('discount', DiscountLine::firstOrNew([
+                    'id' => $product['discount']['id'] ?? null,
+                ], $product['discount'])->fill($product['discount']));
+            }
+
+            return $item;
         });
 
         $order->created_at = $order->created_at ?? now();
@@ -40,17 +49,6 @@ class OrderRepository extends BaseRepository
         }
 
         $order->setRelation('line_items', $line_items);
-
-        // Process line item discounts
-        if ($request->filled('line_items')) {
-            foreach ($request->line_items as $key => $product) {
-                if (isset($product['discount'])) {
-                    $order->line_items[$key]->setRelation('discount', DiscountLine::firstOrNew([
-                        'id' => $product['discount']['id'] ?? null,
-                    ], $product['discount'])->fill($product['discount']));
-                }
-            }
-        }
 
         // Set order discount
         $order->setRelation('discount', $request->filled('discount') ? new DiscountLine($request->discount) : null);
@@ -74,16 +72,20 @@ class OrderRepository extends BaseRepository
         $order->setRelation('contact', $request->filled('contact') ? new Contact($request->contact) : null);
 
         // Calculate using CartRepository
-        $cartRepository = new self($order->toArray());
+        // Note: passing relations explicitly helps BaseRepository if it expects them
+        $repository = new self(array_merge($order->attributesToArray(), [
+            'line_items' => $order->line_items,
+            'discount' => $order->discount,
+        ]));
 
-        // Apply calculated values to order
-        $order->setRelation('tax_lines', $cartRepository->tax_lines);
+        // Apply calculated values back to order
+        $order->setRelation('tax_lines', $repository->tax_lines);
         $order->fill([
-            'sub_total' => $cartRepository->sub_total,
-            'tax_total' => $cartRepository->tax_total,
-            'discount_total' => $cartRepository->discount_total,
-            'grand_total' => $cartRepository->grand_total,
-            'line_items_quantity' => $cartRepository->line_items_quantity,
+            'sub_total' => $repository->sub_total,
+            'tax_total' => $repository->tax_total,
+            'discount_total' => $repository->discount_total,
+            'grand_total' => $repository->grand_total,
+            'line_items_quantity' => $repository->line_items_quantity,
         ]);
 
         return $order;

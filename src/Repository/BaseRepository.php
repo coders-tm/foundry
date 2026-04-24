@@ -101,15 +101,11 @@ abstract class BaseRepository extends Model
 
         // Set default tax lines if not provided
         if (empty($taxLines)) {
-            // Use tax lines based on billing address if provided
             if (! empty($attributes['billing_address'])) {
                 $taxLines = $this->getBillingAddressTax($attributes['billing_address']);
-            } else {
-                // Use default tax configuration if no billing address is available
-                $taxLines = $this->getDefaultTax();
             }
 
-            // Ensure tax_lines is always set
+            // Ensure tax_lines is always set (even if empty)
             $attributes['tax_lines'] = $taxLines;
         }
 
@@ -288,7 +284,14 @@ abstract class BaseRepository extends Model
                 $item['taxable'] = true;
             }
 
-            return new LineItem($item);
+            $lineItem = new LineItem($item);
+
+            // Hydrate discount relation if present in the data
+            if (is_array($item) && isset($item['discount'])) {
+                $lineItem->setRelation('discount', new DiscountLine($item['discount']));
+            }
+
+            return $lineItem;
         });
     }
 
@@ -381,7 +384,8 @@ abstract class BaseRepository extends Model
                         return 0;
                     }
 
-                    return round($this->line_items->sum('total'), 2);
+                    // sub_total represents the gross amount (price * quantity)
+                    return round($this->line_items->sum(fn ($item) => $item->sub_total), 2);
                 });
             }
         );
@@ -396,7 +400,7 @@ abstract class BaseRepository extends Model
                         return 0;
                     }
 
-                    return $this->line_items->where('taxable', true)->sum('total');
+                    return $this->line_items->where('taxable', true)->sum(fn ($item) => $item->sub_total);
                 });
             }
         );
@@ -407,16 +411,22 @@ abstract class BaseRepository extends Model
         return Attribute::make(
             get: function () {
                 return $this->getCalculated('discount_total', function () {
+                    // Sum line-item discounts
+                    $discountTotal = $this->line_items?->sum(fn ($item) => $item->discount_amount) ?? 0;
+
+                    // Add order-level discount
                     $discount = $this->discount;
                     if ($discount && $discount instanceof DiscountLine) {
                         if ($discount->isFixedAmount()) {
-                            return round($discount->value, 2);
+                            $discountTotal += $discount->value;
                         } else {
-                            return round($this->sub_total * $discount->value / 100, 2);
+                            // Apply percentage to net subtotal (gross - line discounts)
+                            $netSubTotal = $this->sub_total - $this->line_items?->sum(fn ($item) => $item->discount_amount);
+                            $discountTotal += round($netSubTotal * $discount->value / 100, 2);
                         }
                     }
 
-                    return 0;
+                    return round($discountTotal, 2);
                 });
             }
         );
@@ -442,11 +452,25 @@ abstract class BaseRepository extends Model
         return Attribute::make(
             get: function () {
                 return $this->getCalculated('taxable_discount', function () {
+                    // Start with line-item discounts for taxable items
+                    $taxableDiscount = $this->line_items?->where('taxable', true)->sum(fn ($item) => $item->discount_amount) ?? 0;
+
+                    // Add allocated order-level discount
                     if ($this->hasDiscount()) {
-                        return $this->discount_per_item * $this->taxable_line_items;
+                        $orderDiscount = $this->discount;
+                        $netSubTotal = max(0.01, $this->sub_total - $this->line_items?->sum(fn ($item) => $item->discount_amount));
+                        $netTaxableSubTotal = $this->line_items?->where('taxable', true)->sum(fn ($item) => $item->total) ?? 0;
+
+                        if ($orderDiscount->isFixedAmount()) {
+                            // Proportional allocation of fixed discount
+                            $taxableDiscount += round($orderDiscount->value * ($netTaxableSubTotal / $netSubTotal), 2);
+                        } else {
+                            // Percentage of net taxable items
+                            $taxableDiscount += round($netTaxableSubTotal * $orderDiscount->value / 100, 2);
+                        }
                     }
 
-                    return 0;
+                    return round($taxableDiscount, 2);
                 });
             }
         );

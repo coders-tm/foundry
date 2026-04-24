@@ -77,8 +77,7 @@ class SubscriptionService
 
             if ($pendingInvoice) {
                 $invoiceData = $subscription->upcomingInvoice(false)->toArray();
-                $invoiceData['id'] = $pendingInvoice->id;
-                Foundry::$orderModel::create($invoiceData);
+                $pendingInvoice->update($invoiceData);
             } else {
                 $subscription->saveAndInvoice();
             }

@@ -128,7 +128,7 @@ trait OrderStatus
         $this->fill([
             'payment_status' => static::STATUS_REFUNDED,
             'status' => static::STATUS_REFUNDED,
-        ]);
+        ])->save();
 
         return $this;
     }
