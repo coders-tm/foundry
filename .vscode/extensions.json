@@ -1,0 +1,11 @@
+{
+  "recommendations": [
+    "editorconfig.editorconfig",
+    "bmewburn.vscode-intelephense-client",
+    "shufo.vscode-blade-formatter",
+    "onecentlin.laravel-extension-pack",
+    "DEVSENSE.phptools-vscode",
+    "laravel.vscode-laravel"
+  ],
+  "unwantedRecommendations": []
+}
