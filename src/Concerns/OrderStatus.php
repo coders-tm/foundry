@@ -89,7 +89,7 @@ trait OrderStatus
 
         $this->logs()->create([
             'type' => 'canceled',
-            'message' => 'Order has been canceled. Reason: ' . $reasonMessage,
+            'message' => 'Order has been canceled. Reason: '.$reasonMessage,
         ]);
 
         return $this;

@@ -2,8 +2,8 @@
 
 namespace Foundry\Models;
 
-use Foundry\Database\Factories\PaymentMethodFactory;
 use Foundry\Concerns\Core;
+use Foundry\Database\Factories\PaymentMethodFactory;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -90,21 +90,21 @@ class PaymentMethod extends Model
     protected function label(): Attribute
     {
         return Attribute::make(
-            get: fn($value) => $value ?? $this->name,
+            get: fn ($value) => $value ?? $this->name,
         );
     }
 
     protected function parent(): Attribute
     {
         return Attribute::make(
-            get: fn($value) => $this->integration_via && config($this->integration_via . '.enabled', false),
+            get: fn ($value) => $this->integration_via && config($this->integration_via.'.enabled', false),
         );
     }
 
     protected function configs(): Attribute
     {
         return Attribute::make(
-            get: fn() => $this->getConfigs(),
+            get: fn () => $this->getConfigs(),
         );
     }
 

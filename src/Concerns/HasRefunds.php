@@ -102,7 +102,7 @@ trait HasRefunds
             $transaction = $this->customer->creditWallet(
                 amount: $refundAmount,
                 source: 'refund',
-                description: "Refund for order #{$this->number}" . ($reason ? ": {$reason}" : ''),
+                description: "Refund for order #{$this->number}".($reason ? ": {$reason}" : ''),
                 transactionable: $this,
                 metadata: [
                     'order_id' => $this->id,
@@ -153,7 +153,7 @@ trait HasRefunds
             $transaction = $this->customer->creditWallet(
                 amount: $refundAmount,
                 source: 'refund',
-                description: "Refund for payment #{$payment->transaction_id}" . ($reason ? ": {$reason}" : ''),
+                description: "Refund for payment #{$payment->transaction_id}".($reason ? ": {$reason}" : ''),
                 transactionable: $this, // Still link to order as transactionable? or payment? Usually order.
                 metadata: [
                     'order_id' => $this->id,
@@ -221,7 +221,7 @@ trait HasRefunds
         // Check if processor supports refund
         if (! $processor->supportsRefund()) {
             throw new RefundException(
-                "Refunds are not supported for the {$paymentMethod->provider} payment method. " .
+                "Refunds are not supported for the {$paymentMethod->provider} payment method. ".
                     "Use 'Refund to Wallet' option to credit the customer's wallet balance.",
                 ['error_type' => 'not_supported']
             );

@@ -29,12 +29,12 @@ trait Actionable
 
     public function scopeHasAction($query, string $name): void
     {
-        $query->whereHas('actions', fn($query) => $query->where('name', $name));
+        $query->whereHas('actions', fn ($query) => $query->where('name', $name));
     }
 
     public function scopeDoesntHaveAction($query, string $name): void
     {
-        $query->whereDoesntHave('actions', fn($query) => $query->where('name', $name));
+        $query->whereDoesntHave('actions', fn ($query) => $query->where('name', $name));
     }
 
     public function detachActions(): void

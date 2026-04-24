@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use Foundry\Models\Notification;
 use Foundry\Concerns\Helpers;
+use Foundry\Models\Notification;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\File;
 
@@ -42,7 +42,7 @@ class NotificationSeeder extends Seeder
                 continue;
             }
 
-            $files = File::glob($folderPath . '/*.blade.php');
+            $files = File::glob($folderPath.'/*.blade.php');
 
             foreach ($files as $file) {
                 $notification = $this->parseBladeTemplate($file, $folder);

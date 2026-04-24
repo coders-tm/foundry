@@ -2,8 +2,8 @@
 
 namespace Foundry\Models;
 
-use Foundry\Services\FileManagerService;
 use Foundry\Concerns\Core;
+use Foundry\Services\FileManagerService;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
@@ -89,7 +89,7 @@ class File extends Model
     public function save($options = [])
     {
         if ($this->file) {
-            $this->path = $this->file->storeAs('files', $this->hash . '.' . $this->extension, $this->disk);
+            $this->path = $this->file->storeAs('files', $this->hash.'.'.$this->extension, $this->disk);
             if ($this->disk == 's3') {
                 $this->url = Storage::disk($this->disk)->url($this->path);
             }
@@ -137,7 +137,7 @@ class File extends Model
                 }
 
                 if ($this->trashed()) {
-                    return $this->withVersion(Storage::disk($this->disk)->url('.trashed/' . $this->path));
+                    return $this->withVersion(Storage::disk($this->disk)->url('.trashed/'.$this->path));
                 }
 
                 return $this->withVersion($value ?: Storage::disk($this->disk)->url($this->path));
@@ -148,42 +148,42 @@ class File extends Model
     protected function name(): Attribute
     {
         return Attribute::make(
-            get: fn() => $this->original_file_name,
+            get: fn () => $this->original_file_name,
         );
     }
 
     protected function isImage(): Attribute
     {
         return Attribute::make(
-            get: fn() => Str::contains($this->mime_type, 'image') && ! $this->is_embed,
+            get: fn () => Str::contains($this->mime_type, 'image') && ! $this->is_embed,
         );
     }
 
     protected function isPdf(): Attribute
     {
         return Attribute::make(
-            get: fn() => Str::contains($this->mime_type, 'pdf'),
+            get: fn () => Str::contains($this->mime_type, 'pdf'),
         );
     }
 
     protected function icon(): Attribute
     {
         return Attribute::make(
-            get: fn() => $this->fileType($this->original_file_name),
+            get: fn () => $this->fileType($this->original_file_name),
         );
     }
 
     protected function sharedUrl(): Attribute
     {
         return Attribute::make(
-            get: fn() => $this->share_token ? route('files.share', $this->share_token) : null,
+            get: fn () => $this->share_token ? route('files.share', $this->share_token) : null,
         );
     }
 
     protected function isPublic(): Attribute
     {
         return Attribute::make(
-            get: fn() => $this->disk === 'public',
+            get: fn () => $this->disk === 'public',
         );
     }
 
@@ -198,10 +198,10 @@ class File extends Model
                 }
 
                 return collect($data)
-                    ->map(fn($conversion, $size) => array_merge($conversion, ['url' => $this->buildConversionUrl($size, $conversion)]))
+                    ->map(fn ($conversion, $size) => array_merge($conversion, ['url' => $this->buildConversionUrl($size, $conversion)]))
                     ->all();
             },
-            set: fn($value) => is_array($value) ? json_encode($value) : $value,
+            set: fn ($value) => is_array($value) ? json_encode($value) : $value,
         );
     }
 
@@ -231,7 +231,7 @@ class File extends Model
         }
 
         if ($this->trashed()) {
-            return $this->withVersion(Storage::disk($this->disk)->url('.trashed/' . $path));
+            return $this->withVersion(Storage::disk($this->disk)->url('.trashed/'.$path));
         }
 
         return $this->withVersion($conversion['url'] ?? Storage::disk($this->disk)->url($path));
@@ -249,7 +249,7 @@ class File extends Model
         $timestamp = $this->updated_at?->timestamp ?? $this->created_at?->timestamp ?? time();
         $separator = str_contains($url, '?') ? '&' : '?';
 
-        return $url . $separator . 'v=' . $timestamp;
+        return $url.$separator.'v='.$timestamp;
     }
 
     protected function fileType($file_name)

@@ -3,7 +3,6 @@
 namespace Foundry\Database\Factories;
 
 use Foundry\Models\Order;
-use Foundry\Models\Order\DiscountLine;
 use Foundry\Models\Subscription;
 use Foundry\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -72,7 +71,6 @@ class OrderFactory extends Factory
                 'description' => 'Early Bird Discount',
             ];
 
-
             // Apply tax if provided or use default
             $taxData = ! empty($taxLines) ? $taxLines : [
                 [
@@ -85,7 +83,7 @@ class OrderFactory extends Factory
             $order->update([
                 'line_items' => $items,
                 'tax_lines' => $taxData,
-                'discount' => $discountData
+                'discount' => $discountData,
             ]);
         });
     }

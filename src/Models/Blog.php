@@ -2,10 +2,10 @@
 
 namespace Foundry\Models;
 
-use Foundry\Models\Blog\Comment;
-use Foundry\Models\Blog\Tag;
 use Foundry\Concerns\Core;
 use Foundry\Concerns\Fileable;
+use Foundry\Models\Blog\Comment;
+use Foundry\Models\Blog\Tag;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;

@@ -2,13 +2,13 @@
 
 namespace Foundry\Models;
 
-use Foundry\Database\Factories\AdminFactory;
-use Foundry\Exceptions\ImportFailedException;
-use Foundry\Exceptions\ImportSkippedException;
 use Foundry\Concerns\Addressable;
 use Foundry\Concerns\Core;
 use Foundry\Concerns\Fileable;
 use Foundry\Concerns\HasPermissionGroup;
+use Foundry\Database\Factories\AdminFactory;
+use Foundry\Exceptions\ImportFailedException;
+use Foundry\Exceptions\ImportSkippedException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Relations\MorphOne;

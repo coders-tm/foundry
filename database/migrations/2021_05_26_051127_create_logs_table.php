@@ -1,7 +1,7 @@
 <?php
 
-use Foundry\Models\Log;
 use Foundry\Concerns\Helpers;
+use Foundry\Models\Log;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;

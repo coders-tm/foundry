@@ -2,13 +2,13 @@
 
 namespace Foundry\Models\SupportTicket;
 
+use Foundry\Concerns\Fileable;
+use Foundry\Concerns\SerializeDate;
 use Foundry\Database\Factories\ReplyFactory;
 use Foundry\Enum\TicketStatus;
 use Foundry\Events\SupportTicketReplyCreated;
 use Foundry\Foundry;
 use Foundry\Models\Notification;
-use Foundry\Concerns\Fileable;
-use Foundry\Concerns\SerializeDate;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

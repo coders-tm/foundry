@@ -205,7 +205,7 @@ trait Helpers
 
         foreach ($item['sub_items'] as $action) {
             Permission::updateOrCreate([
-                'scope' => "{$module->key}:" . Str::slug($action),
+                'scope' => "{$module->key}:".Str::slug($action),
             ], [
                 'module_key' => $module->key,
                 'action' => $action,

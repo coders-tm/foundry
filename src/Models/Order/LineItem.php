@@ -2,8 +2,8 @@
 
 namespace Foundry\Models\Order;
 
-use Foundry\Contracts\Currencyable;
 use Foundry\Concerns\Core;
+use Foundry\Contracts\Currencyable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -65,21 +65,21 @@ class LineItem extends Model implements Currencyable
     protected function total(): Attribute
     {
         return Attribute::make(
-            get: fn() => round($this->discounted_price * $this->quantity, 2),
+            get: fn () => round($this->discounted_price * $this->quantity, 2),
         );
     }
 
     protected function subTotal(): Attribute
     {
         return Attribute::make(
-            get: fn() => round($this->price * $this->quantity, 2),
+            get: fn () => round($this->price * $this->quantity, 2),
         );
     }
 
     protected function discountAmount(): Attribute
     {
         return Attribute::make(
-            get: fn() => round(($this->price - $this->discounted_price) * $this->quantity, 2),
+            get: fn () => round(($this->price - $this->discounted_price) * $this->quantity, 2),
         );
     }
 

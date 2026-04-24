@@ -2,8 +2,8 @@
 
 namespace Foundry\Tests\Feature;
 
-use Foundry\Models\Admin;
 use Coderstm\PageBuilder\Facades\Theme;
+use Foundry\Models\Admin;
 use Foundry\Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
@@ -39,11 +39,11 @@ class ThemeSecurityTest extends TestCase
     {
         $themePath = Theme::basePath('', $this->testTheme);
         File::makeDirectory($themePath, 0755, true, true);
-        File::makeDirectory($themePath . '/views', 0755, true, true);
+        File::makeDirectory($themePath.'/views', 0755, true, true);
 
         $config = ['name' => 'Test Theme', 'version' => '1.0.0'];
-        File::put($themePath . '/config.json', json_encode($config));
-        File::put($themePath . '/views/test.blade.php', '<h1>Test</h1>');
+        File::put($themePath.'/config.json', json_encode($config));
+        File::put($themePath.'/views/test.blade.php', '<h1>Test</h1>');
     }
 
     #[Test]

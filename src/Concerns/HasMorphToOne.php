@@ -39,7 +39,7 @@ trait HasMorphToOne
         // instances as well as the relationship instances we need for this.
         $instance = $this->newRelatedInstance($related);
 
-        $foreignPivotKey = $foreignPivotKey ?: $name . '_id';
+        $foreignPivotKey = $foreignPivotKey ?: $name.'_id';
 
         $relatedPivotKey = $relatedPivotKey ?: $instance->getForeignKey();
 
@@ -127,7 +127,7 @@ trait HasMorphToOne
         // For the inverse of the polymorphic many-to-many relations, we will change
         // the way we determine the foreign and other keys, as it is the opposite
         // of the morph-to-many method since we're figuring out these inverses.
-        $relatedPivotKey = $relatedPivotKey ?: $name . '_id';
+        $relatedPivotKey = $relatedPivotKey ?: $name.'_id';
 
         return $this->morphToOne(
             $related,

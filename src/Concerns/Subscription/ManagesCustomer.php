@@ -25,7 +25,7 @@ trait ManagesCustomer
         try {
             return $this->subscription()?->canUseFeature($featureSlug);
         } catch (\Throwable $e) {
-            logger()->error('Error checking feature usage: ' . $e->getMessage());
+            logger()->error('Error checking feature usage: '.$e->getMessage());
 
             return false;
         }
@@ -36,7 +36,7 @@ trait ManagesCustomer
         try {
             return $this->subscription()?->recordFeatureUsage($featureSlug, $uses, $incremental);
         } catch (\Throwable $e) {
-            logger()->error('Error recording feature usage: ' . $e->getMessage());
+            logger()->error('Error recording feature usage: '.$e->getMessage());
 
             return false;
         }
@@ -47,7 +47,7 @@ trait ManagesCustomer
         try {
             return $this->subscription()?->reduceFeatureUsage($featureSlug, $uses);
         } catch (\Throwable $e) {
-            logger()->error('Error reducing feature usage: ' . $e->getMessage());
+            logger()->error('Error reducing feature usage: '.$e->getMessage());
 
             return false;
         }
@@ -58,7 +58,7 @@ trait ManagesCustomer
         try {
             return $this->subscription()?->getFeatureRemainings($featureSlug) ?? 0;
         } catch (\Throwable $e) {
-            logger()->error('Error getting feature remainings: ' . $e->getMessage());
+            logger()->error('Error getting feature remainings: '.$e->getMessage());
 
             return 0;
         }
@@ -69,7 +69,7 @@ trait ManagesCustomer
         try {
             return $this->subscription()?->getFeatureValue($featureSlug) ?? $default;
         } catch (\Throwable $e) {
-            logger()->error('Error getting feature value: ' . $e->getMessage());
+            logger()->error('Error getting feature value: '.$e->getMessage());
 
             return $default;
         }

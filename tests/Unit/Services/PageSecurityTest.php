@@ -480,7 +480,7 @@ BLADE;
         $pagesPath = config('pagebuilder.pages');
 
         foreach ($this->savedSlugs as $slug) {
-            $file = $pagesPath . '/' . $slug . '.json';
+            $file = $pagesPath.'/'.$slug.'.json';
             if (File::exists($file)) {
                 File::delete($file);
             }

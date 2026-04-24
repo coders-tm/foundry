@@ -16,7 +16,7 @@ class UpdateOrCreate
     /**
      * Handle the action to save or update an order.
      *
-     * @return \Foundry\Models\Order
+     * @return Order
      */
     public function __invoke($resource, $options = [], ?Order $order = null)
     {
@@ -26,7 +26,7 @@ class UpdateOrCreate
     /**
      * Execute the action to save or update an order.
      *
-     * @return \Foundry\Models\Order
+     * @return Order
      */
     public function execute($resource, $options = [], ?Order $order = null)
     {

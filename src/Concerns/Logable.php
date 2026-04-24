@@ -67,7 +67,7 @@ trait Logable
                         'current' => static::getLogValue($key, $current),
                     ];
 
-                    $method = 'on' . Str::studly(str_replace('.', '_', $key)) . 'Updated';
+                    $method = 'on'.Str::studly(str_replace('.', '_', $key)).'Updated';
 
                     if (method_exists(static::class, $method)) {
                         static::{$method}($model, $options[$key]);

@@ -45,7 +45,7 @@ class Setting extends Model
                 ],
                 'name' => ['mail.from.name'],
                 'currency' => 'stripe.currency',
-                'timezone' => fn($value) => date_default_timezone_set($value),
+                'timezone' => fn ($value) => date_default_timezone_set($value),
             ],
         ]);
     }

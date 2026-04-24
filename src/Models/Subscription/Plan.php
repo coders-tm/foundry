@@ -4,14 +4,14 @@ namespace Foundry\Models\Subscription;
 
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
+use Foundry\Concerns\Core;
+use Foundry\Concerns\SerializeDate;
 use Foundry\Contracts\Currencyable;
 use Foundry\Database\Factories\PlanFactory;
 use Foundry\Enum\PlanInterval;
 use Foundry\Facades\Currency;
 use Foundry\Foundry;
 use Foundry\Services\Period;
-use Foundry\Concerns\Core;
-use Foundry\Concerns\SerializeDate;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -126,35 +126,35 @@ class Plan extends Model implements Currencyable
     protected function featureLines(): Attribute
     {
         return Attribute::make(
-            get: fn() => ! empty($this->description) ? explode("\n", $this->description) : [],
+            get: fn () => ! empty($this->description) ? explode("\n", $this->description) : [],
         );
     }
 
     protected function priceFormatted(): Attribute
     {
         return Attribute::make(
-            get: fn() => $this->formatPrice(),
+            get: fn () => $this->formatPrice(),
         );
     }
 
     protected function intervalLabel(): Attribute
     {
         return Attribute::make(
-            get: fn() => $this->formatInterval(),
+            get: fn () => $this->formatInterval(),
         );
     }
 
     protected function effectivePrice(): Attribute
     {
         return Attribute::make(
-            get: fn() => $this->getEffectivePrice(),
+            get: fn () => $this->getEffectivePrice(),
         );
     }
 
     protected function hasTrialPeriod(): Attribute
     {
         return Attribute::make(
-            get: fn() => $this->hasTrial(),
+            get: fn () => $this->hasTrial(),
         );
     }
 
@@ -306,7 +306,7 @@ class Plan extends Model implements Currencyable
     protected function setupFee(): Attribute
     {
         return Attribute::make(
-            get: fn($value) => $value ?? config('foundry.subscription.setup_fee', 0.00),
+            get: fn ($value) => $value ?? config('foundry.subscription.setup_fee', 0.00),
         );
     }
 

@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use Foundry\Models\Tax;
 use Foundry\Concerns\Helpers;
+use Foundry\Models\Tax;
 use Illuminate\Database\Seeder;
 use League\ISO3166\ISO3166;
 

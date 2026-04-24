@@ -2,12 +2,12 @@
 
 namespace Workbench\App\Http\Controllers;
 
+use Foundry\Concerns\Helpers;
 use Foundry\Events\SubscriptionCancel;
 use Foundry\Events\SubscriptionResume;
 use Foundry\Foundry;
 use Foundry\Models\Subscription;
 use Foundry\Notifications\SubscriptionCancelNotification;
-use Foundry\Concerns\Helpers;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
@@ -163,7 +163,7 @@ class SubscriptionController extends Controller
             ], 200);
         } catch (\Throwable $e) {
             throw ValidationException::withMessages([
-                'subscription' => 'Failed to cancel subscription: ' . $e->getMessage(),
+                'subscription' => 'Failed to cancel subscription: '.$e->getMessage(),
             ]);
         }
     }
@@ -193,7 +193,7 @@ class SubscriptionController extends Controller
             ], 200);
         } catch (\Throwable $e) {
             throw ValidationException::withMessages([
-                'subscription' => 'Failed to resume subscription: ' . $e->getMessage(),
+                'subscription' => 'Failed to resume subscription: '.$e->getMessage(),
             ]);
         }
     }
@@ -225,7 +225,7 @@ class SubscriptionController extends Controller
             ], 200);
         } catch (\Throwable $e) {
             throw ValidationException::withMessages([
-                'payment' => 'Failed to process payment: ' . $e->getMessage(),
+                'payment' => 'Failed to process payment: '.$e->getMessage(),
             ]);
         }
     }

@@ -2,8 +2,6 @@
 
 namespace Foundry\Services;
 
-use Foundry\Exceptions\NpmNotFoundException;
-use Foundry\Exceptions\NpmNotInstalledException;
 use Foundry\Models\Module;
 use Foundry\Models\PaymentMethod;
 use Foundry\Models\Permission;

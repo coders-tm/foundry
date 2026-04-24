@@ -2,13 +2,13 @@
 
 namespace Foundry\Models;
 
+use Foundry\Concerns\Core;
+use Foundry\Concerns\Fileable;
 use Foundry\Database\Factories\SupportTicketFactory;
 use Foundry\Enum\TicketStatus;
 use Foundry\Events\SupportTicketCreated;
 use Foundry\Foundry;
 use Foundry\Models\SupportTicket\Reply;
-use Foundry\Concerns\Core;
-use Foundry\Concerns\Fileable;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;

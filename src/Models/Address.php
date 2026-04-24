@@ -2,8 +2,8 @@
 
 namespace Foundry\Models;
 
-use Foundry\Database\Factories\AddressFactory;
 use Foundry\Concerns\Core;
+use Foundry\Database\Factories\AddressFactory;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Model;
 

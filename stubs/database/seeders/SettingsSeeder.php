@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use Foundry\Models\Setting;
 use Foundry\Concerns\Helpers;
+use Foundry\Models\Setting;
 use Illuminate\Database\Seeder;
 
 class SettingsSeeder extends Seeder

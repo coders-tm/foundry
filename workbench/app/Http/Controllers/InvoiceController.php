@@ -2,10 +2,10 @@
 
 namespace Workbench\App\Http\Controllers;
 
+use Foundry\Concerns\Helpers;
 use Foundry\Foundry;
 use Foundry\Models\Order;
 use Foundry\Models\User;
-use Foundry\Concerns\Helpers;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\ResourceCollection;
 

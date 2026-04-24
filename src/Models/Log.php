@@ -2,11 +2,11 @@
 
 namespace Foundry\Models;
 
+use Foundry\Concerns\Fileable;
+use Foundry\Concerns\SerializeDate;
 use Foundry\Events\LogCreated;
 use Foundry\Foundry;
 use Foundry\Services\Logable;
-use Foundry\Concerns\Fileable;
-use Foundry\Concerns\SerializeDate;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
