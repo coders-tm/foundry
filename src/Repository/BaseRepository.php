@@ -14,6 +14,11 @@ use Illuminate\Support\Facades\Validator;
 abstract class BaseRepository extends Model
 {
     /**
+     * Cached calculated attributes for the current repository instance.
+     */
+    protected array $cache = [];
+
+    /**
      * Indicates if the model should be timestamped.
      */
     public $timestamps = false;
@@ -71,6 +76,17 @@ abstract class BaseRepository extends Model
     protected Collection $taxes;
 
     /**
+     * Attributes that affect calculated totals.
+     */
+    protected array $calculationDependencies = [
+        'billing_address',
+        'collect_tax',
+        'discount',
+        'line_items',
+        'tax_lines',
+    ];
+
+    /**
      * Create a new repository instance
      */
     public function __construct(array $attributes = [])
@@ -108,6 +124,38 @@ abstract class BaseRepository extends Model
                 $this->$key = $attributes[$key];
             }
         }
+    }
+
+    /**
+     * Set a model attribute and invalidate calculated values when dependencies change.
+     */
+    public function setAttribute($key, $value)
+    {
+        if (in_array($key, $this->calculationDependencies, true)) {
+            $this->clearCalculatedCache();
+        }
+
+        return parent::setAttribute($key, $value);
+    }
+
+    /**
+     * Get a calculated attribute from the instance cache.
+     */
+    protected function getCalculated(string $key, \Closure $callback)
+    {
+        if (! array_key_exists($key, $this->cache)) {
+            $this->cache[$key] = $callback();
+        }
+
+        return $this->cache[$key];
+    }
+
+    /**
+     * Clear cached calculated attributes.
+     */
+    protected function clearCalculatedCache(): void
+    {
+        $this->cache = [];
     }
 
     /**
@@ -212,7 +260,10 @@ abstract class BaseRepository extends Model
     protected function discount(): Attribute
     {
         return Attribute::make(
-            get: fn ($value) => $this->setDiscount($value),
+            get: fn ($value) => $this->getCalculated(
+                'discount',
+                fn () => $this->setDiscount($value)
+            ),
             set: fn ($value) => $this->setDiscount($value),
         );
     }
@@ -222,6 +273,10 @@ abstract class BaseRepository extends Model
      */
     protected function setLineItems($value)
     {
+        if ($value instanceof Collection && $value->every(fn ($item) => $item instanceof LineItem)) {
+            return $value;
+        }
+
         return collect($value ?: [])->map(function ($item) {
             // If already a LineItem object, return it
             if ($item instanceof LineItem) {
@@ -240,7 +295,10 @@ abstract class BaseRepository extends Model
     protected function lineItems(): Attribute
     {
         return Attribute::make(
-            get: fn ($value) => $this->setLineItems($value),
+            get: fn ($value) => $this->getCalculated(
+                'line_items',
+                fn () => $this->setLineItems($value)
+            ),
             set: fn ($value) => $this->setLineItems($value),
         );
     }
@@ -250,6 +308,10 @@ abstract class BaseRepository extends Model
      */
     protected function setTaxLines($value)
     {
+        if ($value instanceof Collection && $value->every(fn ($item) => $item instanceof TaxLine)) {
+            return $this->taxes = $value;
+        }
+
         $taxes = collect($value ?: [])->map(function ($item) {
             if ($item instanceof TaxLine) {
                 return $item;
@@ -272,11 +334,11 @@ abstract class BaseRepository extends Model
         return Attribute::make(
             get: function ($value) {
                 // For tax_lines, we need the calculated amounts, so use the existing logic
-                return $this->taxes->map(function ($item) {
+                return $this->getCalculated('tax_lines', fn () => $this->taxes->map(function ($item) {
                     return $item->fill([
                         'amount' => $this->getTaxTotal($item),
                     ]);
-                });
+                }));
             },
             set: fn ($value) => $this->setTaxLines($value)
         );
@@ -286,7 +348,7 @@ abstract class BaseRepository extends Model
     {
         return Attribute::make(
             get: function () {
-                return $this->line_items->sum('quantity');
+                return $this->getCalculated('total_line_items', fn () => $this->line_items->sum('quantity'));
             }
         );
     }
@@ -295,7 +357,7 @@ abstract class BaseRepository extends Model
     {
         return Attribute::make(
             get: function () {
-                return $this->line_items->sum('quantity');
+                return $this->getCalculated('line_items_quantity', fn () => $this->line_items->sum('quantity'));
             }
         );
     }
@@ -303,7 +365,10 @@ abstract class BaseRepository extends Model
     protected function taxableLineItems(): Attribute
     {
         return Attribute::make(
-            get: fn () => $this->line_items->where('taxable', true)->sum('quantity')
+            get: fn () => $this->getCalculated(
+                'taxable_line_items',
+                fn () => $this->line_items->where('taxable', true)->sum('quantity')
+            )
         );
     }
 
@@ -311,11 +376,13 @@ abstract class BaseRepository extends Model
     {
         return Attribute::make(
             get: function () {
-                if (is_null($this->line_items)) {
-                    return 0;
-                }
+                return $this->getCalculated('sub_total', function () {
+                    if (is_null($this->line_items)) {
+                        return 0;
+                    }
 
-                return round($this->line_items->sum('total'), 2);
+                    return round($this->line_items->sum('total'), 2);
+                });
             }
         );
     }
@@ -324,11 +391,13 @@ abstract class BaseRepository extends Model
     {
         return Attribute::make(
             get: function () {
-                if (is_null($this->line_items)) {
-                    return 0;
-                }
+                return $this->getCalculated('taxable_sub_total', function () {
+                    if (is_null($this->line_items)) {
+                        return 0;
+                    }
 
-                return $this->line_items->where('taxable', true)->sum('total');
+                    return $this->line_items->where('taxable', true)->sum('total');
+                });
             }
         );
     }
@@ -337,16 +406,18 @@ abstract class BaseRepository extends Model
     {
         return Attribute::make(
             get: function () {
-                $discount = $this->discount;
-                if ($discount && $discount instanceof DiscountLine) {
-                    if ($discount->isFixedAmount()) {
-                        return round($discount->value, 2);
-                    } else {
-                        return round($this->sub_total * $discount->value / 100, 2);
+                return $this->getCalculated('discount_total', function () {
+                    $discount = $this->discount;
+                    if ($discount && $discount instanceof DiscountLine) {
+                        if ($discount->isFixedAmount()) {
+                            return round($discount->value, 2);
+                        } else {
+                            return round($this->sub_total * $discount->value / 100, 2);
+                        }
                     }
-                }
 
-                return 0;
+                    return 0;
+                });
             }
         );
     }
@@ -355,11 +426,13 @@ abstract class BaseRepository extends Model
     {
         return Attribute::make(
             get: function () {
-                if (! $this->total_line_items) {
-                    return 0;
-                }
+                return $this->getCalculated('discount_per_item', function () {
+                    if (! $this->total_line_items) {
+                        return 0;
+                    }
 
-                return $this->discount_total / $this->total_line_items;
+                    return $this->discount_total / $this->total_line_items;
+                });
             }
         );
     }
@@ -368,11 +441,13 @@ abstract class BaseRepository extends Model
     {
         return Attribute::make(
             get: function () {
-                if ($this->hasDiscount()) {
-                    return $this->discount_per_item * $this->taxable_line_items;
-                }
+                return $this->getCalculated('taxable_discount', function () {
+                    if ($this->hasDiscount()) {
+                        return $this->discount_per_item * $this->taxable_line_items;
+                    }
 
-                return 0;
+                    return 0;
+                });
             }
         );
     }
@@ -380,7 +455,10 @@ abstract class BaseRepository extends Model
     protected function hasCompoundTax(): Attribute
     {
         return Attribute::make(
-            get: fn () => $this->taxes->where('type', 'compounded')->count() > 0
+            get: fn () => $this->getCalculated(
+                'has_compound_tax',
+                fn () => $this->taxes->where('type', 'compounded')->count() > 0
+            )
         );
     }
 
@@ -388,21 +466,23 @@ abstract class BaseRepository extends Model
     {
         return Attribute::make(
             get: function () {
-                // If tax lines already have calculated amounts, use them directly
-                $taxLinesWithAmounts = collect($this->attributes['tax_lines'] ?? [])->filter(function ($tax) {
-                    return isset($tax['amount']) && $tax['amount'] > 0;
+                return $this->getCalculated('tax_total', function () {
+                    // If tax lines already have calculated amounts, use them directly
+                    $taxLinesWithAmounts = collect($this->attributes['tax_lines'] ?? [])->filter(function ($tax) {
+                        return isset($tax['amount']) && $tax['amount'] > 0;
+                    });
+
+                    if ($taxLinesWithAmounts->isNotEmpty()) {
+                        return round($taxLinesWithAmounts->sum('amount'), 2);
+                    }
+
+                    // Otherwise, use the existing calculation logic
+                    if (! $this->collect_tax) {
+                        return 0;
+                    }
+
+                    return round(collect($this->tax_lines)->sum('amount'), 2);
                 });
-
-                if ($taxLinesWithAmounts->isNotEmpty()) {
-                    return round($taxLinesWithAmounts->sum('amount'), 2);
-                }
-
-                // Otherwise, use the existing calculation logic
-                if (! $this->collect_tax) {
-                    return 0;
-                }
-
-                return round(collect($this->tax_lines)->sum('amount'), 2);
             }
         );
     }
@@ -410,7 +490,10 @@ abstract class BaseRepository extends Model
     protected function totalTaxable(): Attribute
     {
         return Attribute::make(
-            get: fn () => round($this->taxable_sub_total - $this->taxable_discount, 2)
+            get: fn () => $this->getCalculated(
+                'total_taxable',
+                fn () => round($this->taxable_sub_total - $this->taxable_discount, 2)
+            )
         );
     }
 
@@ -418,9 +501,12 @@ abstract class BaseRepository extends Model
     {
         return Attribute::make(
             get: function () {
-                return $this->taxes->whereNotIn('type', ['compounded'])->map(function ($tax) {
-                    return round(($this->total_taxable * $tax->rate) / 100, 2);
-                })->sum();
+                return $this->getCalculated(
+                    'default_tax_total',
+                    fn () => $this->taxes->whereNotIn('type', ['compounded'])->map(function ($tax) {
+                        return round(($this->total_taxable * $tax->rate) / 100, 2);
+                    })->sum()
+                );
             }
         );
     }
@@ -439,7 +525,7 @@ abstract class BaseRepository extends Model
     protected function shippingTotal(): Attribute
     {
         return Attribute::make(
-            get: fn () => 0
+            get: fn () => $this->getCalculated('shipping_total', fn () => 0)
         );
     }
 
@@ -447,7 +533,10 @@ abstract class BaseRepository extends Model
     {
         return Attribute::make(
             get: function () {
-                return round(($this->sub_total + $this->tax_total + $this->shipping_total - $this->discount_total) ?? 0, 2);
+                return $this->getCalculated(
+                    'grand_total',
+                    fn () => round(($this->sub_total + $this->tax_total + $this->shipping_total - $this->discount_total) ?? 0, 2)
+                );
             }
         );
     }

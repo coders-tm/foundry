@@ -412,7 +412,7 @@ class Order extends Model implements Currencyable
     ) {
         $this->handlePaymentStatusChange($payment, $transaction, $paymentStatus);
 
-        $this->update([
+        parent::update([
             'payment_status' => $orderPaymentStatus,
             'status' => $orderStatus,
         ]);

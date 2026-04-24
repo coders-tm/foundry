@@ -48,7 +48,7 @@ class UpdateOrCreate
             }
 
             // update order with line items, taxes, discounts, and contact information
-            $this->update($order, $resource, $options);
+            $this->save($order, $resource, $options);
 
             if (! $order->has_due) {
                 $order->markAsPaid();
@@ -61,7 +61,7 @@ class UpdateOrCreate
     /**
      * Sync order relations (items, taxes, discounts, contact).
      */
-    public function update(Order $order, $resource, array $options = []): void
+    public function save(Order $order, $resource, array $options = []): void
     {
         if (is_array($resource)) {
             $resource = new Resource($resource);
@@ -69,17 +69,23 @@ class UpdateOrCreate
 
         // Check if we should preserve existing tax calculations
         $preserveCalculations = $options['preserve_calculations'] ?? false;
+        $shouldRecalculate = ! $preserveCalculations && (
+            ! $order->exists ||
+            $resource->hasAny(['line_items', 'tax_lines', 'discount', 'discount_removed', 'collect_tax', 'billing_address'])
+        );
 
-        // Recalculate totals based on line items and taxes
-        $repository = new OrderRepository($resource->input());
-
-        $order->fill([
-            'sub_total' => $preserveCalculations ? $resource->sub_total : $repository->sub_total,
-            'tax_total' => $preserveCalculations ? $resource->tax_total : $repository->tax_total,
-            'discount_total' => $preserveCalculations ? $resource->discount_total : $repository->discount_total,
-            'grand_total' => $preserveCalculations ? $resource->grand_total : $repository->grand_total,
-            'line_items_quantity' => $repository->line_items_quantity,
-        ])->save();
+        if ($shouldRecalculate) {
+            $repository = new OrderRepository($resource->input());
+            $order->fill([
+                'sub_total' => $repository->sub_total,
+                'tax_total' => $repository->tax_total,
+                'discount_total' => $repository->discount_total,
+                'grand_total' => $repository->grand_total,
+                'line_items_quantity' => $repository->line_items_quantity,
+            ])->save();
+        } else {
+            $order->save();
+        }
 
         if ($resource->filled('tax_lines')) {
             $tax_lines = collect($resource->tax_lines);

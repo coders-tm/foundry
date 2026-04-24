@@ -43,10 +43,10 @@ trait OrderStatus
      */
     public function markAsOpen()
     {
-        $this->update([
+        $this->fill([
             'status' => static::STATUS_PENDING_PAYMENT,
             'payment_status' => static::STATUS_PAYMENT_PENDING,
-        ]);
+        ])->save();
 
         return $this;
     }
@@ -56,9 +56,9 @@ trait OrderStatus
      */
     public function markAsPending()
     {
-        $this->update([
+        $this->fill([
             'status' => static::STATUS_PROCESSING,
-        ]);
+        ])->save();
 
         return $this;
     }
@@ -68,9 +68,9 @@ trait OrderStatus
      */
     public function markAsCompleted()
     {
-        $this->update([
+        $this->fill([
             'status' => static::STATUS_COMPLETED,
-        ]);
+        ])->save();
 
         return $this;
     }
@@ -80,10 +80,10 @@ trait OrderStatus
      */
     public function markAsCancelled($reason = null)
     {
-        $this->update([
+        $this->fill([
             'status' => static::STATUS_CANCELLED,
             'cancelled_at' => now(),
-        ]);
+        ])->save();
 
         $reasonMessage = $this->getCancellationReason($reason);
 
@@ -113,9 +113,9 @@ trait OrderStatus
      */
     public function markAsPartiallyPaid()
     {
-        $this->update([
+        $this->fill([
             'payment_status' => static::STATUS_PARTIALLY_PAID,
-        ]);
+        ])->save();
 
         return $this;
     }
@@ -125,7 +125,7 @@ trait OrderStatus
      */
     public function markAsRefunded()
     {
-        $this->update([
+        $this->fill([
             'payment_status' => static::STATUS_REFUNDED,
             'status' => static::STATUS_REFUNDED,
         ]);
@@ -145,7 +145,7 @@ trait OrderStatus
         } else {
             // Remove refund status if no refunds or not fully refunded
             if ($this->payment_status === static::STATUS_REFUNDED) {
-                $this->update(['payment_status' => static::STATUS_PAID]);
+                $this->fill(['payment_status' => static::STATUS_PAID])->save();
             }
         }
 

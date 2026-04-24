@@ -4,6 +4,7 @@ namespace Foundry\Tests\Feature\Order;
 
 use Foundry\Foundry;
 use Foundry\Models\Order;
+use Foundry\Repository\OrderRepository;
 use Foundry\Tests\TestCase;
 
 class OrderActionTest extends TestCase
@@ -58,6 +59,47 @@ class OrderActionTest extends TestCase
 
         $this->assertEquals(200, $order->grand_total);
         $this->assertEquals('Updated note', $order->note);
+    }
+
+    public function test_can_mark_order_as_paid_without_retriggering_smart_update()
+    {
+        $user = (Foundry::$userModel)::factory()->create();
+        $order = Order::factory()->create([
+            'customer_id' => $user->id,
+            'grand_total' => 100,
+            'paid_total' => 0,
+        ]);
+
+        $paidOrder = $order->markAsPaid();
+
+        $this->assertEquals(Order::STATUS_PAID, $paidOrder->payment_status);
+        $this->assertEquals(Order::STATUS_PROCESSING, $paidOrder->status);
+    }
+
+    public function test_repository_calculated_cache_is_cleared_when_line_items_change()
+    {
+        $repository = new OrderRepository([
+            'collect_tax' => false,
+            'line_items' => [
+                [
+                    'title' => 'Product 1',
+                    'quantity' => 1,
+                    'price' => 20,
+                ],
+            ],
+        ]);
+
+        $this->assertEquals(20, $repository->grand_total);
+
+        $repository->line_items = [
+            [
+                'title' => 'Product 2',
+                'quantity' => 3,
+                'price' => 10,
+            ],
+        ];
+
+        $this->assertEquals(30, $repository->grand_total);
     }
 
     public function test_db_transaction_on_failure()
