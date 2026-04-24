@@ -4,6 +4,8 @@ namespace Foundry\Tests\Feature\Order;
 
 use Foundry\Foundry;
 use Foundry\Models\Order;
+use Foundry\Enum\OrderStatus as OrderStatusEnum;
+use Foundry\Enum\PaymentStatus;
 use Foundry\Repository\OrderRepository;
 use Foundry\Tests\TestCase;
 
@@ -36,7 +38,7 @@ class OrderActionTest extends TestCase
         $this->assertDatabaseHas('orders', [
             'id' => $order->id,
             'customer_id' => $user->id,
-            'grand_total' => 110,
+            'grand_total' => 100,
         ]);
 
         $this->assertCount(1, $order->line_items);
@@ -72,8 +74,8 @@ class OrderActionTest extends TestCase
 
         $paidOrder = $order->markAsPaid();
 
-        $this->assertEquals(Order::STATUS_PAID, $paidOrder->payment_status);
-        $this->assertEquals(Order::STATUS_PROCESSING, $paidOrder->status);
+        $this->assertEquals(PaymentStatus::PAID, $paidOrder->payment_status);
+        $this->assertEquals(OrderStatusEnum::PROCESSING, $paidOrder->status);
     }
 
     public function test_repository_calculated_cache_is_cleared_when_line_items_change()

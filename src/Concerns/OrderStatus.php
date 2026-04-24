@@ -2,53 +2,51 @@
 
 namespace Foundry\Concerns;
 
+use Foundry\Enum\OrderStatus as OrderStatusEnum;
+use Foundry\Enum\PaymentStatus;
+
 trait OrderStatus
 {
-    const STATUS_OPEN = 'open';
+    const STATUS_OPEN = OrderStatusEnum::OPEN->value;
 
-    const STATUS_DRAFT = 'draft';
+    const STATUS_DRAFT = OrderStatusEnum::DRAFT->value;
 
-    const STATUS_PENDING = 'pending';
+    const STATUS_PENDING = OrderStatusEnum::PENDING->value;
 
-    const STATUS_COMPLETED = 'completed';
+    const STATUS_COMPLETED = OrderStatusEnum::COMPLETED->value;
 
-    const STATUS_CANCELLED = 'cancelled';
+    const STATUS_CANCELLED = OrderStatusEnum::CANCELLED->value;
 
-    const STATUS_DECLINED = 'declined';
+    const STATUS_DECLINED = OrderStatusEnum::DECLINED->value;
 
-    const STATUS_DISPUTED = 'disputed';
+    const STATUS_DISPUTED = OrderStatusEnum::DISPUTED->value;
 
-    const STATUS_ARCHIVED = 'archived';
+    const STATUS_ARCHIVED = OrderStatusEnum::ARCHIVED->value;
 
-    const STATUS_PENDING_PAYMENT = 'pending_payment';
+    const STATUS_PENDING_PAYMENT = OrderStatusEnum::PENDING_PAYMENT->value;
 
-    const STATUS_PROCESSING = 'processing';
+    const STATUS_PROCESSING = OrderStatusEnum::PROCESSING->value;
 
-    const STATUS_PAYMENT_PENDING = 'payment_pending';
+    const STATUS_PAYMENT_PENDING = PaymentStatus::PAYMENT_PENDING->value;
 
-    const STATUS_PAYMENT_FAILED = 'payment_failed';
+    const STATUS_PAYMENT_FAILED = PaymentStatus::PAYMENT_FAILED->value;
 
-    const STATUS_PAYMENT_SUCCESS = 'payment_success';
+    const STATUS_PAYMENT_SUCCESS = PaymentStatus::SUCCESS->value;
 
-    const STATUS_PARTIALLY_PAID = 'partially_paid';
+    const STATUS_PARTIALLY_PAID = PaymentStatus::PARTIALLY_PAID->value;
 
-    const STATUS_PAID = 'paid';
+    const STATUS_PAID = PaymentStatus::PAID->value;
 
-    const STATUS_REFUNDED = 'refunded';
+    const STATUS_REFUNDED = PaymentStatus::REFUNDED->value;
 
-    const STATUS_MANUAL_VERIFICATION_REQUIRED = 'manual_verification_required';
+    const STATUS_MANUAL_VERIFICATION_REQUIRED = OrderStatusEnum::MANUAL_VERIFICATION_REQUIRED->value;
 
     /**
      * Mark order as open
      */
     public function markAsOpen()
     {
-        $this->fill([
-            'status' => static::STATUS_PENDING_PAYMENT,
-            'payment_status' => static::STATUS_PAYMENT_PENDING,
-        ])->save();
-
-        return $this;
+        return $this->updateStatus(OrderStatusEnum::PENDING_PAYMENT, PaymentStatus::PAYMENT_PENDING);
     }
 
     /**
@@ -56,11 +54,7 @@ trait OrderStatus
      */
     public function markAsPending()
     {
-        $this->fill([
-            'status' => static::STATUS_PROCESSING,
-        ])->save();
-
-        return $this;
+        return $this->updateStatus(OrderStatusEnum::PROCESSING);
     }
 
     /**
@@ -68,11 +62,7 @@ trait OrderStatus
      */
     public function markAsCompleted()
     {
-        $this->fill([
-            'status' => static::STATUS_COMPLETED,
-        ])->save();
-
-        return $this;
+        return $this->updateStatus(OrderStatusEnum::COMPLETED);
     }
 
     /**
@@ -80,10 +70,9 @@ trait OrderStatus
      */
     public function markAsCancelled($reason = null)
     {
-        $this->fill([
-            'status' => static::STATUS_CANCELLED,
+        $this->updateStatus(OrderStatusEnum::CANCELLED, null, [
             'cancelled_at' => now(),
-        ])->save();
+        ]);
 
         $reasonMessage = $this->getCancellationReason($reason);
 
@@ -104,7 +93,6 @@ trait OrderStatus
             return 'No reason provided';
         }
 
-        // Fallback to the provided reason (format it nicely)
         return ucfirst(str_replace('_', ' ', strtolower($reason)));
     }
 
@@ -113,11 +101,7 @@ trait OrderStatus
      */
     public function markAsPartiallyPaid()
     {
-        $this->fill([
-            'payment_status' => static::STATUS_PARTIALLY_PAID,
-        ])->save();
-
-        return $this;
+        return $this->updateStatus(null, PaymentStatus::PARTIALLY_PAID);
     }
 
     /**
@@ -125,10 +109,28 @@ trait OrderStatus
      */
     public function markAsRefunded()
     {
-        $this->fill([
-            'payment_status' => static::STATUS_REFUNDED,
-            'status' => static::STATUS_REFUNDED,
-        ])->save();
+        return $this->updateStatus(OrderStatusEnum::REFUNDED, PaymentStatus::REFUNDED);
+    }
+
+    /**
+     * Centralized status update handler to enforce SOLID/DRY.
+     * Uses the model's update() method which may be overridden for business logic.
+     */
+    protected function updateStatus(?OrderStatusEnum $status = null, ?PaymentStatus $paymentStatus = null, array $additional = [])
+    {
+        $attributes = $additional;
+
+        if ($status) {
+            $attributes['status'] = $status;
+        }
+
+        if ($paymentStatus) {
+            $attributes['payment_status'] = $paymentStatus;
+        }
+
+        if (! empty($attributes)) {
+            $this->update($attributes);
+        }
 
         return $this;
     }
@@ -144,8 +146,8 @@ trait OrderStatus
             $this->markAsRefunded();
         } else {
             // Remove refund status if no refunds or not fully refunded
-            if ($this->payment_status === static::STATUS_REFUNDED) {
-                $this->fill(['payment_status' => static::STATUS_PAID])->save();
+            if ($this->payment_status === PaymentStatus::REFUNDED) {
+                $this->updateStatus(null, PaymentStatus::PAID);
             }
         }
 

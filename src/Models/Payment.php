@@ -3,6 +3,7 @@
 namespace Foundry\Models;
 
 use Foundry\Concerns\Core;
+use Foundry\Enum\PaymentStatus;
 use Foundry\Database\Factories\PaymentFactory;
 use Foundry\Foundry;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -44,6 +45,7 @@ class Payment extends Model
         'refund_amount' => 'decimal:2',
         'processed_at' => 'datetime',
         'metadata' => 'array',
+        'status' => PaymentStatus::class,
     ];
 
     protected $with = [
@@ -112,7 +114,7 @@ class Payment extends Model
      */
     public function scopeSuccessful($query)
     {
-        return $query->where('status', self::STATUS_COMPLETED);
+        return $query->where('status', PaymentStatus::COMPLETED);
     }
 
     /**
@@ -120,7 +122,7 @@ class Payment extends Model
      */
     public function scopePending($query)
     {
-        return $query->where('status', self::STATUS_PENDING);
+        return $query->where('status', PaymentStatus::PENDING);
     }
 
     /**
@@ -128,7 +130,7 @@ class Payment extends Model
      */
     public function scopeFailed($query)
     {
-        return $query->where('status', self::STATUS_FAILED);
+        return $query->where('status', PaymentStatus::FAILED);
     }
 
     /**
@@ -136,7 +138,7 @@ class Payment extends Model
      */
     public function isSuccessful(): bool
     {
-        return $this->status === self::STATUS_COMPLETED;
+        return $this->status === PaymentStatus::COMPLETED;
     }
 
     /**
@@ -144,7 +146,7 @@ class Payment extends Model
      */
     public function isPending(): bool
     {
-        return $this->status === self::STATUS_PENDING;
+        return $this->status === PaymentStatus::PENDING;
     }
 
     /**
@@ -152,7 +154,7 @@ class Payment extends Model
      */
     public function isFailed(): bool
     {
-        return in_array($this->status, [self::STATUS_FAILED, self::STATUS_CANCELLED]);
+        return in_array($this->status, [PaymentStatus::FAILED, PaymentStatus::CANCELLED]);
     }
 
     /**
@@ -160,7 +162,7 @@ class Payment extends Model
      */
     public function isRefunded(): bool
     {
-        return in_array($this->status, [self::STATUS_REFUNDED, self::STATUS_PARTIALLY_REFUNDED]);
+        return in_array($this->status, [PaymentStatus::REFUNDED, PaymentStatus::PARTIALLY_REFUNDED]);
     }
 
     /**
@@ -169,7 +171,7 @@ class Payment extends Model
     public function getRefundableAmountAttribute(): float
     {
         // Only completed payments can be refunded (no partial refunds anymore)
-        if ($this->status !== self::STATUS_COMPLETED) {
+        if ($this->status !== PaymentStatus::COMPLETED) {
             return 0;
         }
 
@@ -182,7 +184,7 @@ class Payment extends Model
     public function markAsCompleted(): bool
     {
         return $this->update([
-            'status' => self::STATUS_COMPLETED,
+            'status' => PaymentStatus::COMPLETED,
             'processed_at' => now(),
         ]);
     }
@@ -193,7 +195,7 @@ class Payment extends Model
     public function markAsFailed($reason = null): bool
     {
         return $this->update([
-            'status' => self::STATUS_FAILED,
+            'status' => PaymentStatus::FAILED,
             'failure_reason' => $reason,
         ]);
     }
@@ -205,7 +207,7 @@ class Payment extends Model
     {
         // Enforce full refund only
         $refundAmount = $this->amount;
-        $status = self::STATUS_REFUNDED;
+        $status = PaymentStatus::REFUNDED;
 
         $updated = $this->update([
             'status' => $status,

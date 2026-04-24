@@ -16,6 +16,8 @@ use Foundry\Models\Order\Customer;
 use Foundry\Models\Order\DiscountLine;
 use Foundry\Models\Order\LineItem;
 use Foundry\Models\Order\TaxLine;
+use Foundry\Enum\OrderStatus as OrderStatusEnum;
+use Foundry\Enum\PaymentStatus;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -74,6 +76,8 @@ class Order extends Model implements Currencyable
         'paid_total' => 'decimal:2',
         'refund_total' => 'decimal:2',
         'line_items_quantity' => 'integer',
+        'status' => OrderStatusEnum::class,
+        'payment_status' => PaymentStatus::class,
     ];
 
     protected $hidden = [
@@ -211,36 +215,36 @@ class Order extends Model implements Currencyable
     protected function isCompleted(): Attribute
     {
         return Attribute::make(
-            get: fn () => $this->status === self::STATUS_COMPLETED,
+            get: fn () => $this->status === OrderStatusEnum::COMPLETED,
         );
     }
 
     protected function isCancelled(): Attribute
     {
         return Attribute::make(
-            get: fn () => $this->status === self::STATUS_CANCELLED,
+            get: fn () => $this->status === OrderStatusEnum::CANCELLED,
         );
     }
 
     protected function isPaid(): Attribute
     {
         return Attribute::make(
-            get: fn () => $this->payment_status === self::STATUS_PAID,
+            get: fn () => $this->payment_status === PaymentStatus::PAID,
         );
     }
 
     protected function canEdit(): Attribute
     {
         return Attribute::make(
-            get: fn () => ! in_array($this->status, [self::STATUS_CANCELLED, self::STATUS_COMPLETED]),
+            get: fn () => ! in_array($this->status, [OrderStatusEnum::CANCELLED, OrderStatusEnum::COMPLETED]),
         );
     }
 
     protected function canRefund(): Attribute
     {
         return Attribute::make(
-            get: fn () => in_array($this->payment_status, [self::STATUS_PAID]) &&
-                ! in_array($this->payment_status, [self::STATUS_REFUNDED]),
+            get: fn () => in_array($this->payment_status, [PaymentStatus::PAID]) &&
+                ! in_array($this->payment_status, [PaymentStatus::REFUNDED]),
         );
     }
 
@@ -333,9 +337,9 @@ class Order extends Model implements Currencyable
         $order = $this->updatePaymentStatus(
             $payment,
             $transaction,
-            Payment::STATUS_COMPLETED,
-            self::STATUS_PAID,
-            self::STATUS_PROCESSING
+            PaymentStatus::COMPLETED,
+            PaymentStatus::PAID,
+            OrderStatusEnum::PROCESSING
         );
 
         // Notify linked model (e.g., Subscription) of successful payment
@@ -364,9 +368,9 @@ class Order extends Model implements Currencyable
         $order = $this->updatePaymentStatus(
             $payment,
             $transaction,
-            Payment::STATUS_PENDING,
-            self::STATUS_PAYMENT_PENDING,
-            self::STATUS_PENDING_PAYMENT
+            PaymentStatus::PENDING,
+            PaymentStatus::PAYMENT_PENDING,
+            OrderStatusEnum::PENDING_PAYMENT
         );
 
         // Notify linked model (e.g., Subscription) of pending payment
@@ -386,9 +390,9 @@ class Order extends Model implements Currencyable
         $order = $this->updatePaymentStatus(
             $payment,
             $transaction,
-            Payment::STATUS_FAILED,
-            self::STATUS_PAYMENT_FAILED,
-            self::STATUS_PENDING_PAYMENT
+            PaymentStatus::FAILED,
+            PaymentStatus::PAYMENT_FAILED,
+            OrderStatusEnum::PENDING_PAYMENT
         );
 
         // Notify linked model (e.g., Subscription) of failed payment
@@ -406,9 +410,9 @@ class Order extends Model implements Currencyable
     private function updatePaymentStatus(
         $payment,
         array $transaction,
-        string $paymentStatus,
-        string $orderPaymentStatus,
-        string $orderStatus
+        PaymentStatus $paymentStatus,
+        PaymentStatus $orderPaymentStatus,
+        OrderStatusEnum $orderStatus
     ) {
         $this->handlePaymentStatusChange($payment, $transaction, $paymentStatus);
 
@@ -423,7 +427,7 @@ class Order extends Model implements Currencyable
     /**
      * Handle payment creation logic for different payment statuses
      */
-    private function handlePaymentStatusChange($payment, array $transaction, string $paymentStatus)
+    private function handlePaymentStatusChange($payment, array $transaction, PaymentStatus $paymentStatus)
     {
         if ($payment instanceof PaymentInterface) {
             $this->createPayment($payment, $transaction);
@@ -435,7 +439,7 @@ class Order extends Model implements Currencyable
                 $transactionAmount = $transaction['amount'] ?? $this->grand_total;
 
                 // Guard against under-payment: reject if paid amount does not match grand_total
-                if ($paymentStatus === Payment::STATUS_COMPLETED && (float) $transactionAmount < (float) $this->grand_total) {
+                if ($paymentStatus === PaymentStatus::COMPLETED && (float) $transactionAmount < (float) $this->grand_total) {
                     throw new \InvalidArgumentException(
                         "Payment amount mismatch: received {$transactionAmount}, expected {$this->grand_total} for order #{$this->number}."
                     );
@@ -566,7 +570,7 @@ class Order extends Model implements Currencyable
 
     public function scopePaid($query)
     {
-        return $query->where('payment_status', self::STATUS_PAID);
+        return $query->where('payment_status', PaymentStatus::PAID);
     }
 
     public function scopeByStatus($query, $status)
@@ -576,7 +580,7 @@ class Order extends Model implements Currencyable
 
     public function scopePending($query)
     {
-        return $query->where('status', self::STATUS_PENDING_PAYMENT);
+        return $query->where('status', OrderStatusEnum::PENDING_PAYMENT);
     }
 
     public function scopeByPaymentStatus($query, $paymentStatus)
@@ -586,13 +590,13 @@ class Order extends Model implements Currencyable
 
     public function isPendingPayment(): bool
     {
-        return $this->payment_status === self::STATUS_PAYMENT_PENDING;
+        return $this->payment_status === PaymentStatus::PAYMENT_PENDING;
     }
 
     public function cancel($reason = null): bool
     {
         return $this->update([
-            'status' => self::STATUS_CANCELLED,
+            'status' => OrderStatusEnum::CANCELLED,
             'cancelled_at' => now(),
             'cancel_reason' => $reason,
         ]);
@@ -719,8 +723,8 @@ class Order extends Model implements Currencyable
             'name' => "Order #{$this->number}",
             'date' => optional($this->created_at)->format('d-M-Y'),
             'created_at' => optional($this->created_at)->format('d-m-Y h:i a'),
-            'payment_status' => ucfirst($this->payment_status),
-            'status' => ucfirst($this->status),
+            'payment_status' => ucfirst($this->payment_status->value),
+            'status' => ucfirst($this->status->value),
 
             // Formatted monetary amounts for display
             'sub_total' => $this->formatAmount($this->sub_total ?? 0),

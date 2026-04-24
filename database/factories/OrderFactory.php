@@ -5,6 +5,8 @@ namespace Foundry\Database\Factories;
 use Foundry\Models\Order;
 use Foundry\Models\Subscription;
 use Foundry\Models\User;
+use Foundry\Enum\OrderStatus as OrderStatusEnum;
+use Foundry\Enum\PaymentStatus;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class OrderFactory extends Factory
@@ -24,6 +26,8 @@ class OrderFactory extends Factory
     public function definition()
     {
         return [
+            'status' => OrderStatusEnum::DRAFT,
+            'payment_status' => PaymentStatus::PAYMENT_PENDING,
             'collect_tax' => rand(0, 1),
             'paid_total' => 0.00,
             'refund_total' => 0.00,
