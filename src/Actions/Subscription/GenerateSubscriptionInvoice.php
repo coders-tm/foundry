@@ -44,10 +44,10 @@ class GenerateSubscriptionInvoice
 
         // If the latest invoice is still pending payment, update it instead of creating a new one
         if (($latestInvoice = $subscription->latestInvoice) && $latestInvoice->isPendingPayment()) {
-            $data['id'] = $latestInvoice->id;
+            $order = $latestInvoice->update($data);
+        } else {
+            $order = Foundry::$orderModel::create($data);
         }
-
-        $order = Foundry::$orderModel::create($data);
 
         if ($order->is_paid) {
             $subscription->status = SubscriptionStatus::ACTIVE;
