@@ -4,6 +4,7 @@ namespace Foundry\Providers;
 
 use Foundry\Actions\Fortify\RedirectIfTwoFactorAuthenticatable;
 use Foundry\Facades\Guard;
+use Foundry\Http\Responses\LogoutResponse;
 use Foundry\Http\Responses\PasswordResetResponse;
 use Foundry\Http\Responses\TwoFactorLoginResponse;
 use Foundry\Services\GuardManager;
@@ -19,6 +20,7 @@ use Laravel\Fortify\Actions\AttemptToAuthenticate;
 use Laravel\Fortify\Actions\CanonicalizeUsername;
 use Laravel\Fortify\Actions\EnsureLoginIsNotThrottled;
 use Laravel\Fortify\Actions\PrepareAuthenticatedSession;
+use Laravel\Fortify\Contracts\LogoutResponse as LogoutResponseContract;
 use Laravel\Fortify\Contracts\PasswordResetResponse as PasswordResetResponseContract;
 use Laravel\Fortify\Contracts\TwoFactorLoginResponse as TwoFactorLoginResponseContract;
 use Laravel\Fortify\Features;
@@ -36,6 +38,7 @@ class FortifyServiceProvider extends ServiceProvider
 
         $this->app->singleton(PasswordResetResponseContract::class, PasswordResetResponse::class);
         $this->app->singleton(TwoFactorLoginResponseContract::class, TwoFactorLoginResponse::class);
+        $this->app->singleton(LogoutResponseContract::class, LogoutResponse::class);
     }
 
     public function boot(): void

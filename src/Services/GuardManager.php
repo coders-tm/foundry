@@ -76,7 +76,13 @@ class GuardManager
             return $this->resolveContextName($request);
         }
 
-        return $this->resolved ??= $this->resolveContextName($this->getRequest());
+        // If no request is set, we resolve dynamically without caching
+        // to prevent early resolution (e.g. during boot) from sticking.
+        if (! $this->request) {
+            return $this->resolveContextName($this->getRequest());
+        }
+
+        return $this->resolved ??= $this->resolveContextName($this->request);
     }
 
     /**
@@ -104,18 +110,27 @@ class GuardManager
             return (string) ($this->customResolver)($request);
         }
 
+        $adminPrefix = (string) config('foundry.admin_prefix', 'admin');
+
+        // Check for admin prefix first as it takes precedence over catch-all user routes
+        if ($request->is($adminPrefix, "{$adminPrefix}/*")) {
+            return 'admin';
+        }
+
         $guards = config('foundry.guards', []);
 
         foreach ($guards as $name => $config) {
+            // Skip admin since we checked it above
+            if ($name === 'admin') {
+                continue;
+            }
+
             if ($request->is(...($config['paths'] ?? []))) {
                 return $name;
             }
         }
 
-        // Fallback to legacy detection if config is missing
-        $adminPrefix = (string) config('foundry.admin_prefix', 'admin');
-
-        return $request->is("{$adminPrefix}", "{$adminPrefix}/*") ? 'admin' : 'user';
+        return 'user';
     }
 
     /**
