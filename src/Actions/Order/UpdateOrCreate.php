@@ -70,8 +70,8 @@ class UpdateOrCreate
         // Check if we should preserve existing tax calculations
         $preserveCalculations = $options['preserve_calculations'] ?? false;
         $shouldRecalculate = ! $preserveCalculations && (
-            ! $order->exists ||
-            $resource->hasAny(['line_items', 'tax_lines', 'discount', 'discount_removed', 'collect_tax', 'billing_address'])
+            $resource->hasAny(['line_items', 'tax_lines', 'discount', 'discount_removed']) ||
+            ($order->exists && $order->line_items()->exists() && $resource->hasAny(['collect_tax', 'billing_address']))
         );
 
         if ($shouldRecalculate) {
