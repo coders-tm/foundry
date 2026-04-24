@@ -1,0 +1,83 @@
+<?php
+
+namespace App\Providers;
+
+use App\Actions\Fortify\CreateNewUser;
+use App\Actions\Fortify\ResetUserPassword;
+use App\Actions\Fortify\UpdateUserPassword;
+use App\Actions\Fortify\UpdateUserProfileInformation;
+use App\Http\Responses\RegisterResponse;
+use Foundry\Facades\Guard;
+use Foundry\Models\Subscription\Plan;
+use Foundry\Providers\FortifyServiceProvider as ServiceProvider;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Laravel\Fortify\Contracts\RegisterResponse as RegisterResponseContract;
+use Laravel\Fortify\Features;
+use Laravel\Fortify\Fortify;
+
+class FortifyServiceProvider extends ServiceProvider
+{
+    public function register(): void
+    {
+        parent::register();
+    }
+
+    public function boot(): void
+    {
+        parent::boot();
+
+        $this->app->singleton(RegisterResponseContract::class, RegisterResponse::class);
+
+        Fortify::createUsersUsing(CreateNewUser::class);
+        Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
+        Fortify::updateUserProfileInformationUsing(UpdateUserProfileInformation::class);
+        Fortify::updateUserPasswordsUsing(UpdateUserPassword::class);
+
+        Fortify::loginView(function (Request $request) {
+            return Inertia::render('auth/Login', [
+                'canResetPassword' => Features::enabled(Features::resetPasswords()),
+                'canRegister' => Guard::is('user') && Features::enabled(Features::registration()),
+                'status' => $request->session()->get('status'),
+            ]);
+        });
+
+        Fortify::twoFactorChallengeView(function (Request $request) {
+            return Inertia::render('auth/TwoFactorChallenge');
+        });
+
+        Fortify::registerView(function (Request $request) {
+            $plans = Plan::query()
+                ->where('is_active', true)
+                ->orderBy('price')
+                ->get(['id', 'label', 'description', 'price', 'interval', 'interval_count', 'price_formatted', 'interval_label', 'feature_lines']);
+
+            return Inertia::render('auth/Register', [
+                'plans' => $plans,
+            ]);
+        });
+
+        Fortify::requestPasswordResetLinkView(function (Request $request) {
+            return Inertia::render('auth/ForgotPassword', [
+                'status' => $request->session()->get('status'),
+            ]);
+        });
+
+        Fortify::resetPasswordView(function (Request $request) {
+            return Inertia::render('auth/ResetPassword', [
+                'email' => $request->email,
+                'token' => $request->route('token'),
+            ]);
+        });
+
+        Fortify::verifyEmailView(function (Request $request) {
+            return Inertia::render('auth/VerifyEmail', [
+                'status' => $request->session()->get('status'),
+            ]);
+        });
+
+        Fortify::confirmPasswordView(function (Request $request) {
+            return Inertia::render('auth/ConfirmPassword');
+        });
+    }
+}

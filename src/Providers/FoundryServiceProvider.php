@@ -293,7 +293,7 @@ class FoundryServiceProvider extends ServiceProvider
             ], 'foundry-migrations');
 
             $this->publishes([
-                $this->packagePath('src/Providers/FortifyServiceProvider.php') => app_path('Providers/FortifyServiceProvider.php'),
+                $this->packageStubPath('Providers/FortifyServiceProvider.stub') => app_path('Providers/FortifyServiceProvider.php'),
             ], 'foundry-fortify-provider');
 
             $this->publishes([
