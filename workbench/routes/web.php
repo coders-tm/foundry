@@ -47,7 +47,7 @@ Route::post('/login', function (Request $request) {
     }
 
     return back();
-})->middleware(['web', 'guest:user']);
+})->middleware(['web', 'guest:user'])->name('login.store');
 
 Route::get('/admin/login', function () {
     return view('admin.login');
@@ -59,7 +59,7 @@ Route::post('/admin/login', function (Request $request) {
     }
 
     return back();
-})->middleware(['web', 'guest:admin']);
+})->middleware(['web', 'guest:admin'])->name('admin.login.store');
 
 Route::group([], __DIR__.'/foundry/web.php');
 

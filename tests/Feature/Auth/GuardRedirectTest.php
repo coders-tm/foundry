@@ -1,9 +1,10 @@
 <?php
 
-namespace Foundry\Tests\Feature;
+namespace Foundry\Tests\Feature\Auth;
 
 use App\Models\User;
 use Foundry\Models\Admin;
+use Foundry\Tests\Feature\FeatureTestCase;
 use Illuminate\Support\Facades\Route;
 
 class GuardRedirectTest extends FeatureTestCase
