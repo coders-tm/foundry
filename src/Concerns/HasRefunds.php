@@ -244,6 +244,8 @@ trait HasRefunds
             ]);
 
             // Sync order status
+            // Refresh to get updated refund_total from observer
+            $this->refresh();
             $this->syncCurrentStatus();
 
             return $refund;

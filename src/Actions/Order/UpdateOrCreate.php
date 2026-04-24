@@ -50,7 +50,7 @@ class UpdateOrCreate
             // update order with line items, taxes, discounts, and contact information
             $this->save($order, $resource, $options);
 
-            if (! $order->has_due) {
+            if (! $order->has_due && ! $order->is_cancelled) {
                 $order->markAsPaid();
             }
 
