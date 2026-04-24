@@ -697,10 +697,12 @@ class SubscriptionLifecycleTest extends TestCase
     public function test_artisan_command_renews_trialing_subscriptions_that_have_expired()
     {
         Carbon::setTestNow(null);
-        (Foundry::$planModel)::factory()->create(['grace_period_days' => 0]);
-        $subscription = (Foundry::$subscriptionModel)::withoutEvents(function () {
+        $plan = (Foundry::$planModel)::factory()->create(['grace_period_days' => 0, 'price' => 1000]);
+        $subscription = (Foundry::$subscriptionModel)::withoutEvents(function () use ($plan) {
             return (Foundry::$subscriptionModel)::factory()->create([
+                'plan_id' => $plan->id,
                 'status' => SubscriptionStatus::TRIALING,
+                'trial_ends_at' => now()->subDay(),
                 'expires_at' => now()->subDay(),
             ]);
         });
