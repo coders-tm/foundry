@@ -128,7 +128,7 @@ return [
         'admin' => [
             'paths' => [
                 env('APP_ADMIN_PREFIX', 'admin'),
-                env('APP_ADMIN_PREFIX', 'admin') . '/*',
+                env('APP_ADMIN_PREFIX', 'admin').'/*',
             ],
             'guard' => 'admin',
             'password_broker' => 'admin',

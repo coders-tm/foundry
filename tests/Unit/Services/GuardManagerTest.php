@@ -26,7 +26,7 @@ class GuardManagerTest extends BaseTestCase
 
     public function test_set_request_clears_resolved_state()
     {
-       Request::create('/admin');
+        Request::create('/admin');
         $this->assertEquals('admin', Guard::current());
 
         Request::create('/dashboard');
@@ -35,7 +35,7 @@ class GuardManagerTest extends BaseTestCase
 
     public function test_it_supports_custom_resolvers()
     {
-        Guard::resolveUsing(fn() => 'custom');
+        Guard::resolveUsing(fn () => 'custom');
 
         $this->assertEquals('custom', Guard::current());
         $this->assertTrue(Guard::is('custom'));

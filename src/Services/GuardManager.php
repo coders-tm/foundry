@@ -218,7 +218,7 @@ class GuardManager
         // Check the new structured config first
         $value = config("foundry.guards.{$context}.{$key}");
 
-        if (!is_null($value)) {
+        if (! is_null($value)) {
             return (string) $value;
         }
 
