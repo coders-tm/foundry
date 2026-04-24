@@ -60,30 +60,81 @@ class FortifyServiceProvider extends ServiceProvider
 
     protected function configureViews(): void
     {
-        Fortify::loginView(fn (Request $request) => Inertia::render('auth/Login', [
-            'canResetPassword' => Features::enabled(Features::resetPasswords()),
-            'canRegister' => Features::enabled(Features::registration()),
-            'status' => $request->session()->get('status'),
-        ]));
+        Fortify::loginView(function (Request $request) {
+            if (class_exists(Inertia::class) && $request->header('X-Inertia')) {
+                return Inertia::render('auth/Login', [
+                    'canResetPassword' => Features::enabled(Features::resetPasswords()),
+                    'canRegister' => Features::enabled(Features::registration()),
+                    'status' => $request->session()->get('status'),
+                ]);
+            }
 
-        Fortify::twoFactorChallengeView(fn () => Inertia::render('auth/TwoFactorChallenge'));
+            return view(app(GuardManager::class)->isAdmin($request) ? 'admin.login' : 'auth.login', [
+                'status' => $request->session()->get('status'),
+            ]);
+        });
 
-        Fortify::registerView(fn () => Inertia::render('auth/Register'));
+        Fortify::twoFactorChallengeView(function (Request $request) {
+            if (class_exists(Inertia::class) && $request->header('X-Inertia')) {
+                return Inertia::render('auth/TwoFactorChallenge');
+            }
 
-        Fortify::requestPasswordResetLinkView(fn (Request $request) => Inertia::render('auth/ForgotPassword', [
-            'status' => $request->session()->get('status'),
-        ]));
+            return view('auth.two-factor-challenge');
+        });
 
-        Fortify::resetPasswordView(fn (Request $request) => Inertia::render('auth/ResetPassword', [
-            'email' => $request->email,
-            'token' => $request->route('token'),
-        ]));
+        Fortify::registerView(function (Request $request) {
+            if (class_exists(Inertia::class) && $request->header('X-Inertia')) {
+                return Inertia::render('auth/Register');
+            }
 
-        Fortify::verifyEmailView(fn (Request $request) => Inertia::render('auth/VerifyEmail', [
-            'status' => $request->session()->get('status'),
-        ]));
+            return view('auth.register');
+        });
 
-        Fortify::confirmPasswordView(fn () => Inertia::render('auth/ConfirmPassword'));
+        Fortify::requestPasswordResetLinkView(function (Request $request) {
+            if (class_exists(Inertia::class) && $request->header('X-Inertia')) {
+                return Inertia::render('auth/ForgotPassword', [
+                    'status' => $request->session()->get('status'),
+                ]);
+            }
+
+            return view('auth.forgot-password', [
+                'status' => $request->session()->get('status'),
+            ]);
+        });
+
+        Fortify::resetPasswordView(function (Request $request) {
+            if (class_exists(Inertia::class) && $request->header('X-Inertia')) {
+                return Inertia::render('auth/ResetPassword', [
+                    'email' => $request->email,
+                    'token' => $request->route('token'),
+                ]);
+            }
+
+            return view('auth.reset-password', [
+                'email' => $request->email,
+                'token' => $request->route('token'),
+            ]);
+        });
+
+        Fortify::verifyEmailView(function (Request $request) {
+            if (class_exists(Inertia::class) && $request->header('X-Inertia')) {
+                return Inertia::render('auth/VerifyEmail', [
+                    'status' => $request->session()->get('status'),
+                ]);
+            }
+
+            return view('auth.verify-email', [
+                'status' => $request->session()->get('status'),
+            ]);
+        });
+
+        Fortify::confirmPasswordView(function (Request $request) {
+            if (class_exists(Inertia::class) && $request->header('X-Inertia')) {
+                return Inertia::render('auth/ConfirmPassword');
+            }
+
+            return view('auth.confirm-password');
+        });
     }
 
     protected function configurePasswordResetUrl(): void

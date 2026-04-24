@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Workbench\App\Http\Controllers\Admin\ReportExportsController;
 use Workbench\App\Http\Controllers\Admin\ReportsController;
@@ -61,4 +63,48 @@ Route::group([
     });
 });
 
+Route::get('/login', function () {
+    return view('auth.login');
+})->middleware(['web', 'guest:user'])->name('login');
+
+Route::post('/login', function (Request $request) {
+    if (Auth::guard('user')->attempt($request->only('email', 'password'))) {
+        return redirect()->intended('/dashboard');
+    }
+
+    return back();
+})->middleware(['web', 'guest:user']);
+
+Route::get('/admin/login', function () {
+    return view('admin.login');
+})->middleware(['web', 'guest:admin'])->name('admin.login');
+
+Route::post('/admin/login', function (Request $request) {
+    if (Auth::guard('admin')->attempt($request->only('email', 'password'))) {
+        return redirect()->intended('/admin');
+    }
+
+    return back();
+})->middleware(['web', 'guest:admin']);
+
 Route::group([], __DIR__.'/foundry/web.php');
+
+Route::get('/dashboard', function () {
+    return view('dashboard');
+})->middleware(['web', 'auth:user'])->name('dashboard');
+
+Route::get('/admin', function () {
+    return view('admin.dashboard');
+})->middleware(['web', 'auth:admin'])->name('admin.dashboard');
+
+Route::post('/logout', function () {
+    Auth::guard('user')->logout();
+
+    return redirect()->route('login');
+})->middleware(['web'])->name('logout');
+
+Route::post('/admin/logout', function () {
+    Auth::guard('admin')->logout();
+
+    return redirect()->route('admin.login');
+})->middleware(['web'])->name('admin.logout');

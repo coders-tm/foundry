@@ -18,6 +18,8 @@ use Foundry\Services\GuardManager;
 use Foundry\Services\MaskSensitiveConfig;
 use Foundry\Services\ResponseOptimizer;
 use Foundry\Services\StateLoader;
+use Illuminate\Auth\Middleware\Authenticate;
+use Illuminate\Auth\Middleware\RedirectIfAuthenticated;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
@@ -183,6 +185,14 @@ class FoundryServiceProvider extends ServiceProvider
 
             return $notification->toMail($user);
         });
+
+        Authenticate::redirectUsing(function ($request) {
+            return route(app(GuardManager::class)->loginRoute($request));
+        });
+
+        RedirectIfAuthenticated::redirectUsing(function ($request) {
+            return app(GuardManager::class)->home($request);
+        });
     }
 
     /**
@@ -313,10 +323,10 @@ class FoundryServiceProvider extends ServiceProvider
      */
     protected function registerRouteMiddleware()
     {
-        Route::aliasMiddleware('guard', Middleware\GuardMiddleware::class);
         Route::aliasMiddleware('configure.guard', Middleware\ConfigureGuard::class);
         Route::aliasMiddleware('preserve.json.whitespace', Middleware\PreserveJsonWhitespace::class);
         Route::aliasMiddleware('resolve.currency', Middleware\ResolveCurrency::class);
+
         Route::aliasMiddleware('resolve.ip', Middleware\ResolveIpAddress::class);
     }
 

@@ -9,6 +9,7 @@ providers:
   - Foundry\Providers\FoundryPermissionsServiceProvider
   - Foundry\Providers\FoundryEventServiceProvider
   - Foundry\Providers\ShortcodeServiceProvider
+  - Foundry\Providers\FortifyServiceProvider
   - Coderstm\PageBuilder\Providers\PageBuilderServiceProvider
   - Workbench\App\Providers\WorkbenchServiceProvider
 

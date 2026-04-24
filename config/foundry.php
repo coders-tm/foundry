@@ -114,6 +114,40 @@ return [
         'setup_fee' => (float) env('SUBSCRIPTION_SETUP_FEE', 0.00), // One-time admission fee
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Multi-Guard Context Configuration
+    |--------------------------------------------------------------------------
+    |
+    | This defines the context-aware paths and settings for different guards.
+    | The system uses these patterns to resolve the active guard context.
+    |
+    */
+
+    'guards' => [
+        'admin' => [
+            'paths' => [
+                env('APP_ADMIN_PREFIX', 'admin'),
+                env('APP_ADMIN_PREFIX', 'admin') . '/*',
+            ],
+            'guard' => 'admin',
+            'password_broker' => 'admin',
+            'home' => '/admin',
+            'login_route' => 'admin.login',
+            'two_factor_route' => 'admin.two-factor.login',
+            'password_reset_route' => 'admin.password.reset',
+        ],
+        'user' => [
+            'paths' => ['*'],
+            'guard' => 'user',
+            'password_broker' => 'user',
+            'home' => '/dashboard',
+            'login_route' => 'login',
+            'two_factor_route' => 'two-factor.login',
+            'password_reset_route' => 'password.reset',
+        ],
+    ],
+
     'wallet' => [
         // Enable wallet functionality
         'enabled' => (bool) env('WALLET_ENABLED', true),
