@@ -2,7 +2,7 @@
 
 namespace Foundry\Models;
 
-use Foundry\Traits\Core;
+use Foundry\Concerns\Core;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -45,7 +45,7 @@ class Setting extends Model
                 ],
                 'name' => ['mail.from.name'],
                 'currency' => 'stripe.currency',
-                'timezone' => fn ($value) => date_default_timezone_set($value),
+                'timezone' => fn($value) => date_default_timezone_set($value),
             ],
         ]);
     }

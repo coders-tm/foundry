@@ -2,7 +2,7 @@
 
 namespace Foundry\Models;
 
-use Foundry\Traits\SerializeDate;
+use Foundry\Concerns\SerializeDate;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 
@@ -34,7 +34,7 @@ class Permission extends Model
 
     protected static function booted()
     {
-        static::saved(fn () => Cache::forget('foundry.permissions.all'));
-        static::deleted(fn () => Cache::forget('foundry.permissions.all'));
+        static::saved(fn() => Cache::forget('foundry.permissions.all'));
+        static::deleted(fn() => Cache::forget('foundry.permissions.all'));
     }
 }

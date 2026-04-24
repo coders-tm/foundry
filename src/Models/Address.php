@@ -3,7 +3,7 @@
 namespace Foundry\Models;
 
 use Foundry\Database\Factories\AddressFactory;
-use Foundry\Traits\Core;
+use Foundry\Concerns\Core;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Model;
 

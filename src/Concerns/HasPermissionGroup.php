@@ -1,6 +1,6 @@
 <?php
 
-namespace Foundry\Traits;
+namespace Foundry\Concerns;
 
 use Foundry\Models\Module;
 use Foundry\Models\Permission;

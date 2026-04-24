@@ -1,6 +1,6 @@
 <?php
 
-namespace Foundry\Traits;
+namespace Foundry\Concerns;
 
 use Foundry\Models\Module;
 use Foundry\Models\Permission;
@@ -205,7 +205,7 @@ trait Helpers
 
         foreach ($item['sub_items'] as $action) {
             Permission::updateOrCreate([
-                'scope' => "{$module->key}:".Str::slug($action),
+                'scope' => "{$module->key}:" . Str::slug($action),
             ], [
                 'module_key' => $module->key,
                 'action' => $action,

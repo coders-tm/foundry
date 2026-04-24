@@ -5,7 +5,7 @@ namespace Workbench\App\Models;
 use Carbon\Carbon;
 use Foundry\Database\Factories\ClassScheduleFactory;
 use Foundry\Foundry;
-use Foundry\Traits\Core;
+use Foundry\Concerns\Core;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -54,7 +54,7 @@ class ClassSchedule extends Model
 
         return Carbon::createFromFormat(
             'Y-m-d H:i',
-            $this->date_at->format('Y-m-d').' '.substr($this->start_at, 0, 5),
+            $this->date_at->format('Y-m-d') . ' ' . substr($this->start_at, 0, 5),
             config('app.timezone', 'UTC')
         )->format(Foundry::$dateTimeFormat);
     }
@@ -70,7 +70,7 @@ class ClassSchedule extends Model
 
         return Carbon::createFromFormat(
             'Y-m-d H:i',
-            $this->date_at->format('Y-m-d').' '.substr($this->end_at, 0, 5),
+            $this->date_at->format('Y-m-d') . ' ' . substr($this->end_at, 0, 5),
             config('app.timezone', 'UTC')
         )->format(Foundry::$dateTimeFormat);
     }

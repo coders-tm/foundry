@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use Foundry\Models\PaymentMethod;
-use Foundry\Traits\Helpers;
+use Foundry\Concerns\Helpers;
 use Illuminate\Database\Seeder;
 
 class PaymentMethodSeeder extends Seeder

@@ -1,6 +1,6 @@
 <?php
 
-namespace Foundry\Traits;
+namespace Foundry\Concerns;
 
 use Illuminate\Auth\Access\HandlesAuthorization as AccessHandlesAuthorization;
 use Illuminate\Auth\Access\Response;

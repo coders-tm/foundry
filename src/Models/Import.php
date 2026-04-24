@@ -2,7 +2,7 @@
 
 namespace Foundry\Models;
 
-use Foundry\Traits\SerializeDate;
+use Foundry\Concerns\SerializeDate;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;

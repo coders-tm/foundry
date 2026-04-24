@@ -29,7 +29,6 @@ class OrderFactory extends Factory
             'paid_total' => 0.00,
             'refund_total' => 0.00,
             'line_items_quantity' => 0,
-            'number' => $this->faker->unique()->numerify('##########'),
             'created_at' => fake()->dateTimeBetween('-3 years'),
         ];
     }
@@ -66,9 +65,6 @@ class OrderFactory extends Factory
                 ],
             ];
 
-            // Calculate subtotal from line items
-            $subTotal = collect($items)->sum(fn ($item) => $item['price'] * $item['quantity']);
-
             // Apply discount if provided or use default
             $discountData = ! empty($discount) ? $discount : [
                 'type' => 'percentage',
@@ -76,11 +72,6 @@ class OrderFactory extends Factory
                 'description' => 'Early Bird Discount',
             ];
 
-            $discountAmount = $discountData['type'] === 'percentage'
-                ? round($subTotal * ($discountData['value'] / 100), 2)
-                : round($discountData['value'], 2);
-
-            $discountedSubtotal = $subTotal - $discountAmount;
 
             // Apply tax if provided or use default
             $taxData = ! empty($taxLines) ? $taxLines : [
@@ -91,40 +82,11 @@ class OrderFactory extends Factory
                 ],
             ];
 
-            // Calculate total tax amount
-            $taxAmount = 0;
-            foreach ($taxData as $tax) {
-                $taxAmount += round($discountedSubtotal * ($tax['rate'] / 100), 2);
-            }
-
-            $grandTotal = round($discountedSubtotal + $taxAmount, 2);
-
-            // Update order totals
             $order->update([
-                'sub_total' => $subTotal,
-                'discount_total' => $discountAmount,
-                'tax_total' => $taxAmount,
-                'grand_total' => $grandTotal,
-                'line_items_quantity' => count($items),
-                'collect_tax' => true,
+                'line_items' => $items,
+                'tax_lines' => $taxData,
+                'discount' => $discountData
             ]);
-
-            // Sync line items
-            $order->syncLineItems(collect($items));
-
-            // Create discount
-            $order->discount()->save(new DiscountLine($discountData));
-
-            // Create tax lines with calculated amounts
-            $taxAmountPerLine = $taxAmount / count($taxData);
-            foreach ($taxData as $tax) {
-                $order->tax_lines()->create([
-                    'label' => $tax['label'],
-                    'rate' => $tax['rate'],
-                    'amount' => round($taxAmountPerLine, 2),
-                    'type' => $tax['type'] ?? 'normal',
-                ]);
-            }
         });
     }
 

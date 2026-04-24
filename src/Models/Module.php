@@ -2,7 +2,7 @@
 
 namespace Foundry\Models;
 
-use Foundry\Traits\SerializeDate;
+use Foundry\Concerns\SerializeDate;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;

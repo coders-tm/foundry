@@ -9,7 +9,7 @@ use Foundry\Enum\PlanInterval;
 use Foundry\Foundry;
 use Foundry\Models\ReportExport;
 use Foundry\Models\Subscription\Plan;
-use Foundry\Traits\DatabaseAgnostic;
+use Foundry\Concerns\DatabaseAgnostic;
 use Illuminate\Contracts\Database\Query\Builder as QueryBuilderContract;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
@@ -448,7 +448,7 @@ abstract class AbstractReport implements ReportInterface
         return match ($granularity) {
             'daily' => $date->format('Y-m-d'),
             'weekly' => $date->format('Y-\WW'),
-            'quarterly' => $date->format('Y-').'Q'.$date->quarter,
+            'quarterly' => $date->format('Y-') . 'Q' . $date->quarter,
             'yearly' => $date->format('Y'),
             default => $date->format('Y-m'),
         };

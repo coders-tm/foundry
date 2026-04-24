@@ -1,6 +1,6 @@
 <?php
 
-namespace Foundry\Traits;
+namespace Foundry\Concerns;
 
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
@@ -87,9 +87,9 @@ trait DatabaseAgnostic
     {
         return match ($this->getDriver()) {
             'sqlite', 'pgsql' => implode(' || ', $parts),
-            'mysql', 'mariadb' => 'CONCAT('.implode(', ', $parts).')',
+            'mysql', 'mariadb' => 'CONCAT(' . implode(', ', $parts) . ')',
             'sqlsrv' => implode(' + ', $parts),
-            default => 'CONCAT('.implode(', ', $parts).')',
+            default => 'CONCAT(' . implode(', ', $parts) . ')',
         };
     }
 
@@ -232,7 +232,7 @@ trait DatabaseAgnostic
      */
     protected function dbCoalesce(array $expressions): string
     {
-        return 'COALESCE('.implode(', ', $expressions).')';
+        return 'COALESCE(' . implode(', ', $expressions) . ')';
     }
 
     /**
@@ -391,7 +391,7 @@ trait DatabaseAgnostic
             $cases[] = "WHEN {$condition} THEN {$result}";
         }
 
-        return 'CASE '.implode(' ', $cases)." ELSE {$else} END";
+        return 'CASE ' . implode(' ', $cases) . " ELSE {$else} END";
     }
 
     /**

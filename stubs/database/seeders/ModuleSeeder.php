@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use Foundry\Traits\Helpers;
+use Foundry\Concerns\Helpers;
 use Illuminate\Database\Seeder;
 
 class ModuleSeeder extends Seeder

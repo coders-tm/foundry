@@ -2,9 +2,11 @@
 
 namespace Foundry\Actions\Order;
 
+use Foundry\Foundry;
 use Foundry\Models\Order;
 use Foundry\Models\Order\Contact;
 use Foundry\Models\Order\DiscountLine;
+use Foundry\Repository\OrderRepository;
 use Foundry\Services\Resource;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -12,30 +14,41 @@ use Illuminate\Support\Facades\DB;
 class UpdateOrCreate
 {
     /**
-     * Execute the action to save or update an order.
+     * Handle the action to save or update an order.
+     *
+     * @return \Foundry\Models\Order
      */
-    public function execute($resource, ?Order $order = null): Order
+    public function __invoke($resource, $options = [], ?Order $order = null)
+    {
+        return $this->execute($resource, $options, $order);
+    }
+
+    /**
+     * Execute the action to save or update an order.
+     *
+     * @return \Foundry\Models\Order
+     */
+    public function execute($resource, $options = [], ?Order $order = null)
     {
         if (is_array($resource)) {
             $resource = new Resource($resource);
         }
 
-        return DB::transaction(function () use ($resource, $order) {
+        return DB::transaction(function () use ($resource, $order, $options) {
             $resource->merge([
                 'customer_id' => $resource->input('customer.id') ?? $resource->customer_id,
             ]);
 
-            $order = $order && $order->exists ? $order : Order::find(has($resource)->id) ?? $order;
+            $fillableData = $resource->only((new Foundry::$orderModel)->getFillable());
 
             if ($order && $order->exists) {
-                $order->update($resource->only((new Order)->getFillable()));
+                $order->fill($fillableData);
             } else {
-                $order = new Order($resource->only((new Order)->getFillable()));
-                $order->save();
+                $order = new Foundry::$orderModel($fillableData);
             }
 
-            // Sync related data
-            $this->syncRelations($order, $resource);
+            // update order with line items, taxes, discounts, and contact information
+            $this->update($order, $resource, $options);
 
             if (! $order->has_due) {
                 $order->markAsPaid();
@@ -48,55 +61,39 @@ class UpdateOrCreate
     /**
      * Sync order relations (items, taxes, discounts, contact).
      */
-    public function syncRelations(Order $order, $resource): void
+    public function update(Order $order, $resource, array $options = []): void
     {
         if (is_array($resource)) {
             $resource = new Resource($resource);
         }
 
         // Check if we should preserve existing tax calculations
-        $preserveTaxCalculations = $resource->boolean('preserve_tax_calculations', false);
+        $preserveCalculations = $options['preserve_calculations'] ?? false;
 
-        if ($preserveTaxCalculations && $resource->filled('tax_lines') && $resource->filled('tax_total')) {
-            $order->fill([
-                'sub_total' => $resource->sub_total ?? 0,
-                'tax_total' => $resource->tax_total ?? 0,
-                'discount_total' => $resource->discount_total ?? 0,
-                'grand_total' => $resource->grand_total ?? 0,
-            ])->save();
+        // Recalculate totals based on line items and taxes
+        $repository = new OrderRepository($resource->input());
 
-            if ($resource->filled('tax_lines')) {
-                $tax_lines = collect($resource->tax_lines);
-                $order->tax_lines()->whereNotIn('id', $tax_lines->pluck('id')->filter())->delete();
-                $tax_lines->each(function ($tax) use ($order) {
-                    $order->tax_lines()->updateOrCreate([
-                        'id' => has($tax)->id,
-                    ], (array) $tax);
-                });
-            }
-        } else {
-            $order->fill([
-                'sub_total' => $resource->sub_total ?? $order->sub_total ?? 0,
-                'tax_total' => $resource->tax_total ?? $order->tax_total ?? 0,
-                'discount_total' => $resource->discount_total ?? $order->discount_total ?? 0,
-                'grand_total' => $resource->grand_total ?? $order->grand_total ?? 0,
-                'line_items_quantity' => $resource->line_items_quantity ?? $order->line_items_quantity ?? 0,
-            ])->save();
+        $order->fill([
+            'sub_total' => $preserveCalculations ? $resource->sub_total : $repository->sub_total,
+            'tax_total' => $preserveCalculations ? $resource->tax_total : $repository->tax_total,
+            'discount_total' => $preserveCalculations ? $resource->discount_total : $repository->discount_total,
+            'grand_total' => $preserveCalculations ? $resource->grand_total : $repository->grand_total,
+            'line_items_quantity' => $repository->line_items_quantity,
+        ])->save();
 
-            if ($resource->filled('tax_lines')) {
-                $tax_lines = collect($resource->tax_lines);
-                $order->tax_lines()->whereNotIn('id', $tax_lines->pluck('id')->filter())->delete();
-                $tax_lines->each(function ($tax) use ($order) {
-                    $order->tax_lines()->updateOrCreate([
-                        'id' => has($tax)->id,
-                    ], (array) $tax);
-                });
-            }
+        if ($resource->filled('tax_lines')) {
+            $tax_lines = collect($resource->tax_lines);
+            $order->tax_lines()->whereNotIn('id', $tax_lines->pluck('id')->filter())->delete();
+            $tax_lines->each(function ($tax) use ($order) {
+                $order->tax_lines()->updateOrCreate([
+                    'id' => has($tax)->id,
+                ], (array) $tax);
+            });
         }
 
         // update order line_items
         if ($resource->filled('line_items')) {
-            $order->syncLineItems(collect($resource->input('line_items')));
+            $order->syncLineItems($resource->input('line_items'));
         }
 
         // update order contact

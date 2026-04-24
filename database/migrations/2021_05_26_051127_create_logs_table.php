@@ -1,7 +1,7 @@
 <?php
 
 use Foundry\Models\Log;
-use Foundry\Traits\Helpers;
+use Foundry\Concerns\Helpers;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -35,6 +35,5 @@ return new class extends Migration
 
             $table->index(['logable_type', 'logable_id']);
         });
-
     }
 };

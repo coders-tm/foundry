@@ -8,7 +8,7 @@ The Role-Based Access Control (RBAC) system manages cross-domain permissions.
 - **Group**: Role that bundles multiple permissions.
 
 ## Traits & Models
-- **Trait**: `Foundry\Traits\HasPermission` — Use on Admin model.
+- **Trait**: `Foundry\Concerns\HasPermission` — Use on Admin model.
 - **Model**: `Foundry\Models\Admin\Module`.
 - **Model**: `Foundry\Models\Admin\Permission`.
 - **Model**: `Foundry\Models\Admin\Group`.

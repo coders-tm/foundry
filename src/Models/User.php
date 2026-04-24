@@ -10,11 +10,11 @@ use Foundry\Exceptions\ImportFailedException;
 use Foundry\Exceptions\ImportSkippedException;
 use Foundry\Foundry;
 use Foundry\Models\Subscription\Plan;
-use Foundry\Traits\Addressable;
-use Foundry\Traits\Billable;
-use Foundry\Traits\Core;
-use Foundry\Traits\Fileable;
-use Foundry\Traits\HasWallet;
+use Foundry\Concerns\Addressable;
+use Foundry\Concerns\Billable;
+use Foundry\Concerns\Core;
+use Foundry\Concerns\Fileable;
+use Foundry\Concerns\HasWallet;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -372,7 +372,7 @@ class User extends Authenticatable implements MustVerifyEmail
                 break;
 
             case 'last_update':
-                $query->orderByRaw('(SELECT MAX(created_at) FROM logs WHERE logs.logable_id = users.id AND logs.logable_type = ? AND logs.type = ?) '.($direction ?? 'asc'), [$this->getMorphClass(), 'notes']);
+                $query->orderByRaw('(SELECT MAX(created_at) FROM logs WHERE logs.logable_id = users.id AND logs.logable_type = ? AND logs.type = ?) ' . ($direction ?? 'asc'), [$this->getMorphClass(), 'notes']);
                 break;
 
             case 'created_by':
@@ -381,7 +381,7 @@ class User extends Authenticatable implements MustVerifyEmail
                         WHEN (SELECT admin_id FROM logs WHERE logs.logable_id = users.id AND logs.logable_type = ? AND logs.type = ? ORDER BY created_at DESC LIMIT 1) IS NOT NULL
                         THEN (SELECT first_name FROM admins WHERE admins.id = (SELECT admin_id FROM logs WHERE logs.logable_id = users.id AND logs.logable_type = ? AND logs.type = ? ORDER BY created_at DESC LIMIT 1))
                         ELSE JSON_EXTRACT((SELECT options FROM logs WHERE logs.logable_id = users.id AND logs.logable_type = ? AND logs.type = ? ORDER BY created_at DESC LIMIT 1), "$.ref")
-                    END '.($direction ?? 'asc'),
+                    END ' . ($direction ?? 'asc'),
                     [$this->getMorphClass(), 'created', $this->getMorphClass(), 'created', $this->getMorphClass(), 'created']
                 );
                 break;
@@ -401,7 +401,7 @@ class User extends Authenticatable implements MustVerifyEmail
                         )
                         LIMIT 1
                     ) AS subquery
-                ) '.($direction ?? 'asc'));
+                ) ' . ($direction ?? 'asc'));
                 break;
 
             case 'name':
@@ -579,7 +579,7 @@ class User extends Authenticatable implements MustVerifyEmail
                     $subscription->saveWithoutInvoice();
                 }
             } catch (\Throwable $e) {
-                throw new ImportFailedException('Failed to create or update subscription for imported user: '.$e->getMessage());
+                throw new ImportFailedException('Failed to create or update subscription for imported user: ' . $e->getMessage());
             }
         }
     }

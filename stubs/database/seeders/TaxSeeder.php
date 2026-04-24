@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use Foundry\Models\Tax;
-use Foundry\Traits\Helpers;
+use Foundry\Concerns\Helpers;
 use Illuminate\Database\Seeder;
 use League\ISO3166\ISO3166;
 

@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use Foundry\Models\Setting;
-use Foundry\Traits\Helpers;
+use Foundry\Concerns\Helpers;
 use Illuminate\Database\Seeder;
 
 class SettingsSeeder extends Seeder

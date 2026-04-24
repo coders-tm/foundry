@@ -4,7 +4,7 @@ namespace Foundry\Models\Subscription;
 
 use Foundry\Database\Factories\SubscriptionFeatureFactory;
 use Foundry\Models\Subscription;
-use Foundry\Traits\SerializeDate;
+use Foundry\Concerns\SerializeDate;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

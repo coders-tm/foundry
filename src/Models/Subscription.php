@@ -14,10 +14,10 @@ use Foundry\Foundry;
 use Foundry\Models\Order\DiscountLine;
 use Foundry\Services\Period;
 use Foundry\Services\Subscription\SubscriptionStatusManager;
-use Foundry\Traits;
-use Foundry\Traits\HasFeature;
-use Foundry\Traits\Logable;
-use Foundry\Traits\SerializeDate;
+use Foundry\Concerns;
+use Foundry\Concerns\HasFeature;
+use Foundry\Concerns\Logable;
+use Foundry\Concerns\SerializeDate;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -28,9 +28,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Subscription extends Model implements ManagesSubscriptions, SubscriptionStatus
 {
     use HasFactory, HasFeature, HasUuids, Logable, SerializeDate;
-    use Traits\Actionable;
-    use Traits\Subscription\ForwardsSubscriptionActions;
-    use Traits\Subscription\ManagesInvoices;
+    use Concerns\Actionable;
+    use Concerns\Subscription\ForwardsSubscriptionActions;
+    use Concerns\Subscription\ManagesInvoices;
 
     protected $table = 'subscriptions';
 

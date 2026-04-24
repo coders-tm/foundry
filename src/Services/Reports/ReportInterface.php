@@ -3,7 +3,7 @@
 namespace Foundry\Services\Reports;
 
 use Foundry\Models\ReportExport;
-use Foundry\Traits\DatabaseAgnostic;
+use Foundry\Concerns\DatabaseAgnostic;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Validation\ValidationException;
 use League\Csv\Writer;

@@ -5,7 +5,7 @@ namespace Foundry\Models;
 use Foundry\Database\Factories\CouponFactory;
 use Foundry\Enum\CouponDuration;
 use Foundry\Models\Subscription\Plan;
-use Foundry\Traits\Core;
+use Foundry\Concerns\Core;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -53,28 +53,28 @@ class Coupon extends Model
     protected function hasExpiresAt(): Attribute
     {
         return Attribute::make(
-            get: fn () => ! is_null($this->expires_at),
+            get: fn() => ! is_null($this->expires_at),
         );
     }
 
     protected function hasMaxRedemptions(): Attribute
     {
         return Attribute::make(
-            get: fn () => ! is_null($this->max_redemptions),
+            get: fn() => ! is_null($this->max_redemptions),
         );
     }
 
     protected function specificPlans(): Attribute
     {
         return Attribute::make(
-            get: fn () => $this->plans->count() > 0,
+            get: fn() => $this->plans->count() > 0,
         );
     }
 
     protected function currency(): Attribute
     {
         return Attribute::make(
-            set: fn () => config('stripe.currency'),
+            set: fn() => config('stripe.currency'),
         );
     }
 

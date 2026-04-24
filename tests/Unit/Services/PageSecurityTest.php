@@ -2,8 +2,8 @@
 
 namespace Foundry\Tests\Unit\Services;
 
-use Foundry\PageBuilder\Models\Page;
-use Foundry\PageBuilder\Services\PageStorage;
+use Coderstm\PageBuilder\Models\Page;
+use Coderstm\PageBuilder\Services\PageStorage;
 use Foundry\Services\MaskSensitiveConfig;
 use Foundry\Tests\TestCase;
 use Illuminate\Filesystem\Filesystem;
@@ -480,7 +480,7 @@ BLADE;
         $pagesPath = config('pagebuilder.pages');
 
         foreach ($this->savedSlugs as $slug) {
-            $file = $pagesPath.'/'.$slug.'.json';
+            $file = $pagesPath . '/' . $slug . '.json';
             if (File::exists($file)) {
                 File::delete($file);
             }

@@ -2,8 +2,8 @@
 
 namespace Foundry\Models;
 
-use Foundry\Traits\Core;
-use Foundry\Traits\HasPermission;
+use Foundry\Concerns\Core;
+use Foundry\Concerns\HasPermission;
 use Illuminate\Database\Eloquent\Model;
 
 class Group extends Model

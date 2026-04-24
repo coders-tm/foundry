@@ -13,9 +13,9 @@ use Foundry\Models\Order\Customer;
 use Foundry\Models\Order\DiscountLine;
 use Foundry\Models\Order\LineItem;
 use Foundry\Models\Order\TaxLine;
-use Foundry\Traits\Core;
-use Foundry\Traits\HasRefunds;
-use Foundry\Traits\OrderStatus;
+use Foundry\Concerns\Core;
+use Foundry\Concerns\HasRefunds;
+use Foundry\Concerns\OrderStatus;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -163,35 +163,35 @@ class Order extends Model implements Currencyable
     protected function amount(): Attribute
     {
         return Attribute::make(
-            get: fn () => $this->total(),
+            get: fn() => $this->total(),
         );
     }
 
     protected function dueAmount(): Attribute
     {
         return Attribute::make(
-            get: fn () => round($this->grand_total - $this->paid_total, 2),
+            get: fn() => round($this->grand_total - $this->paid_total, 2),
         );
     }
 
     protected function refundableAmount(): Attribute
     {
         return Attribute::make(
-            get: fn () => round($this->paid_total - $this->refund_total, 2),
+            get: fn() => round($this->paid_total - $this->refund_total, 2),
         );
     }
 
     protected function hasDue(): Attribute
     {
         return Attribute::make(
-            get: fn () => $this->due_amount > 0,
+            get: fn() => $this->due_amount > 0,
         );
     }
 
     protected function hasPayment(): Attribute
     {
         return Attribute::make(
-            get: fn () => $this->paid_total > 0,
+            get: fn() => $this->paid_total > 0,
         );
     }
 
@@ -203,7 +203,7 @@ class Order extends Model implements Currencyable
                     return '0 Items';
                 }
 
-                return "{$this->line_items_quantity} Item".($this->line_items_quantity > 1 ? 's' : '');
+                return "{$this->line_items_quantity} Item" . ($this->line_items_quantity > 1 ? 's' : '');
             },
         );
     }
@@ -211,41 +211,54 @@ class Order extends Model implements Currencyable
     protected function isCompleted(): Attribute
     {
         return Attribute::make(
-            get: fn () => $this->status === self::STATUS_COMPLETED,
+            get: fn() => $this->status === self::STATUS_COMPLETED,
         );
     }
 
     protected function isCancelled(): Attribute
     {
         return Attribute::make(
-            get: fn () => $this->status === self::STATUS_CANCELLED,
+            get: fn() => $this->status === self::STATUS_CANCELLED,
         );
     }
 
     protected function isPaid(): Attribute
     {
         return Attribute::make(
-            get: fn () => $this->payment_status === self::STATUS_PAID,
+            get: fn() => $this->payment_status === self::STATUS_PAID,
         );
     }
 
     protected function canEdit(): Attribute
     {
         return Attribute::make(
-            get: fn () => ! in_array($this->status, [self::STATUS_CANCELLED, self::STATUS_COMPLETED]),
+            get: fn() => ! in_array($this->status, [self::STATUS_CANCELLED, self::STATUS_COMPLETED]),
         );
     }
 
     protected function canRefund(): Attribute
     {
         return Attribute::make(
-            get: fn () => in_array($this->payment_status, [self::STATUS_PAID]) &&
+            get: fn() => in_array($this->payment_status, [self::STATUS_PAID]) &&
                 ! in_array($this->payment_status, [self::STATUS_REFUNDED]),
         );
     }
 
-    public function syncLineItems(Collection $line_items, $detach = true)
+    /**
+     * Sync line items with the order. If $detach is true, it will remove any line items that are not in the provided collection.
+     *
+     * @param Collection|array $line_items The line items to sync
+     * @param bool $detach Whether to detach line items that are not in the provided collection
+     * @return void
+     */
+    public function syncLineItems($line_items, $detach = true)
     {
+        if (is_array($line_items)) {
+            $line_items = collect($line_items);
+        } elseif (! $line_items instanceof Collection) {
+            throw new \InvalidArgumentException('Line items must be an array or a Collection.');
+        }
+
         if ($detach) {
             // delete removed line_items
             $this->line_items()
@@ -274,7 +287,7 @@ class Order extends Model implements Currencyable
         }
     }
 
-    public function syncLineItemsWithoutDetach(Collection $line_items)
+    public function syncLineItemsWithoutDetach($line_items)
     {
         $this->syncLineItems($line_items, false);
     }
@@ -291,9 +304,24 @@ class Order extends Model implements Currencyable
         return static::create($replicate);
     }
 
-    public static function create(array $attributes = []): static
+    /**
+     * Create an order based on provided attributes with related data handling (line items, discounts, payments).
+     *
+     * @return \Foundry\Models\Order
+     */
+    public static function create(array $attributes = [])
     {
         return app(UpdateOrCreate::class)->execute($attributes);
+    }
+
+    /**
+     * Update the order with provided attributes and handle related data updates (line items, discounts, payments).
+     *
+     * @return bool
+     */
+    public function update(array $attributes = [], array $options = [])
+    {
+        return app(UpdateOrCreate::class)->execute($attributes, $options, $this);
     }
 
     /**
@@ -430,7 +458,7 @@ class Order extends Model implements Currencyable
     protected function reference(): Attribute
     {
         return Attribute::make(
-            get: fn () => 'ORD-'.date('y').$this->number,
+            get: fn() => 'ORD-' . date('y') . $this->number,
         );
     }
 
@@ -514,7 +542,7 @@ class Order extends Model implements Currencyable
     protected static function generateNumber()
     {
         do {
-            $number = date('y').date('m').str_pad(mt_rand(1, 999999), 6, '0', STR_PAD_LEFT);
+            $number = date('y') . date('m') . str_pad(mt_rand(1, 999999), 6, '0', STR_PAD_LEFT);
         } while (self::where('number', $number)->exists());
 
         return $number;
@@ -576,7 +604,7 @@ class Order extends Model implements Currencyable
     protected function grossSales(): Attribute
     {
         return Attribute::make(
-            get: fn () => round($this->sub_total + $this->tax_total, 2),
+            get: fn() => round($this->sub_total + $this->tax_total, 2),
         );
     }
 
@@ -586,7 +614,7 @@ class Order extends Model implements Currencyable
     protected function netSales(): Attribute
     {
         return Attribute::make(
-            get: fn () => round($this->gross_sales - $this->discount_total - $this->refund_total, 2),
+            get: fn() => round($this->gross_sales - $this->discount_total - $this->refund_total, 2),
         );
     }
 
@@ -596,7 +624,7 @@ class Order extends Model implements Currencyable
     protected function discountRate(): Attribute
     {
         return Attribute::make(
-            get: fn () => $this->gross_sales > 0
+            get: fn() => $this->gross_sales > 0
                 ? round(($this->discount_total / $this->gross_sales) * 100, 2)
                 : 0.0,
         );
@@ -608,7 +636,7 @@ class Order extends Model implements Currencyable
     protected function refundRate(): Attribute
     {
         return Attribute::make(
-            get: fn () => $this->gross_sales > 0
+            get: fn() => $this->gross_sales > 0
                 ? round(($this->refund_total / $this->gross_sales) * 100, 2)
                 : 0.0,
         );
@@ -655,28 +683,6 @@ class Order extends Model implements Currencyable
     protected static function newFactory()
     {
         return OrderFactory::new();
-    }
-
-    protected static function booted()
-    {
-        parent::booted();
-
-        static::creating(function ($model) {
-            if (empty($model->status)) {
-                $model->status = self::STATUS_PENDING;
-            }
-
-            if (empty($model->number)) {
-                $model->number = static::generateNumber();
-            }
-        });
-
-        // If the DB unique constraint on `orders.number` fires (race condition),
-        // retry with a freshly generated number rather than surfacing a 500.
-        static::created(function () {
-            // No-op — hook is here as a reminder that a UNIQUE constraint on
-            // orders.number must exist in the database migration.
-        });
     }
 
     /**
@@ -752,11 +758,11 @@ class Order extends Model implements Currencyable
             'customer_name' => optional($this->customer)->name ?? 'NA',
 
             // Payment information - map once and reuse
-            'payments' => $this->payments->sortByDesc('created_at')->map(fn ($payment) => $payment->getShortCodes())->values()->toArray(),
+            'payments' => $this->payments->sortByDesc('created_at')->map(fn($payment) => $payment->getShortCodes())->values()->toArray(),
 
             // Line items for template loops
             'line_items' => $this->line_items,
-            'items' => $this->line_items->map(fn ($item) => [
+            'items' => $this->line_items->map(fn($item) => [
                 'title' => $item->title ?? 'Unknown Item',
                 'quantity' => $item->quantity,
                 'price' => $this->formatAmount($item->price ?? 0),
@@ -809,5 +815,20 @@ class Order extends Model implements Currencyable
         }
 
         return $orderData;
+    }
+
+    protected static function booted()
+    {
+        parent::booted();
+
+        static::creating(function ($model) {
+            if (empty($model->status)) {
+                $model->status = self::STATUS_PENDING;
+            }
+
+            if (empty($model->number)) {
+                $model->number = static::generateNumber();
+            }
+        });
     }
 }

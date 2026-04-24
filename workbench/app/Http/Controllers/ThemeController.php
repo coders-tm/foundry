@@ -3,7 +3,7 @@
 namespace Workbench\App\Http\Controllers;
 
 use Foundry\Models\Setting;
-use Foundry\PageBuilder\Services\Theme;
+use Coderstm\PageBuilder\Services\Theme;
 use Foundry\Services\Helpers;
 use Foundry\Services\Theme\FileMeta;
 use Illuminate\Http\Request;
@@ -24,7 +24,7 @@ class ThemeController extends Controller
         $themeFolders = File::directories($themesPath);
 
         $themes = array_map(function ($folder) {
-            $configFile = $folder.'/config.json';
+            $configFile = $folder . '/config.json';
             if (File::exists($configFile)) {
                 $config = json_decode(File::get($configFile), true);
                 $config['key'] = basename($folder); // Add theme path to the response
@@ -81,8 +81,8 @@ class ThemeController extends Controller
     public function clone($theme)
     {
         $config = Theme::config($theme);
-        $newThemeName = $config['name'].' (Copy)';
-        $newThemeKey = Str::slug($theme.'-'.now()->timestamp);
+        $newThemeName = $config['name'] . ' (Copy)';
+        $newThemeKey = Str::slug($theme . '-' . now()->timestamp);
 
         $themePath = Theme::basePath('', $theme);
         $newThemePath = Theme::basePath('', $newThemeKey);
@@ -149,8 +149,8 @@ class ThemeController extends Controller
         // Add directories to the structure
         foreach ($directories as $dir) {
             $dirName = basename($dir);
-            $relativePath = str_replace($basepath.'/', '', $dir); // Get relative path
-            $relativePath = $prefix ? $prefix.'/'.$relativePath : $relativePath;
+            $relativePath = str_replace($basepath . '/', '', $dir); // Get relative path
+            $relativePath = $prefix ? $prefix . '/' . $relativePath : $relativePath;
 
             if (! in_array($dirName, ['public'])) {
                 $singular = Helpers::singularizeDirectoryName($dirName);
@@ -220,7 +220,7 @@ class ThemeController extends Controller
             try {
                 Blade::compileString($content);
             } catch (\Throwable $e) {
-                return response()->json(['message' => __('Security or syntax error').': '.$e->getMessage()], 400);
+                return response()->json(['message' => __('Security or syntax error') . ': ' . $e->getMessage()], 400);
             }
         }
 
@@ -239,7 +239,7 @@ class ThemeController extends Controller
             'template' => 'nullable|string', // Template is optional
         ]);
 
-        $fileName = $request->input('name').$request->ext;
+        $fileName = $request->input('name') . $request->ext;
         $basepath = rtrim($request->input('basepath'), '/');
         $themePath = Theme::basePath("{$this->basePath}/$basepath", $theme);
 
@@ -256,7 +256,7 @@ class ThemeController extends Controller
 
         // If a template is provided, copy the content of the template file
         if ($request->filled('template')) {
-            $templatePath = $themePath.'/'.$request->template;
+            $templatePath = $themePath . '/' . $request->template;
 
             // Check if the template file exists
             if (! File::exists($templatePath)) {
@@ -275,7 +275,7 @@ class ThemeController extends Controller
             'message' => __('File created successfully'),
             'file' => [
                 'name' => $fileName,
-                'basepath' => str_replace(Theme::basePath($this->basePath, $theme).'/', '', $filePath),
+                'basepath' => str_replace(Theme::basePath($this->basePath, $theme) . '/', '', $filePath),
                 'icon' => 'fas fa-code',
                 'header' => 'file',
             ],
@@ -289,7 +289,7 @@ class ThemeController extends Controller
         ]);
 
         $filePath = $request->input('key');  // The relative path of the selected file
-        $fullPath = realpath(Theme::basePath($this->basePath.'/'.$filePath, $theme));
+        $fullPath = realpath(Theme::basePath($this->basePath . '/' . $filePath, $theme));
 
         // Check if the file exists
         if (! $fullPath || ! File::exists($fullPath)) {
@@ -339,7 +339,7 @@ class ThemeController extends Controller
 
         return response()->json([
             'name' => $fileName,
-            'basepath' => str_replace(Theme::basePath($this->basePath, $theme).'/', '', $filePath),
+            'basepath' => str_replace(Theme::basePath($this->basePath, $theme) . '/', '', $filePath),
             'icon' => 'fas fa-image',
             'header' => 'file',
         ], 201);

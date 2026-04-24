@@ -4,6 +4,7 @@ namespace Foundry\Http\Middleware;
 
 use Closure;
 use Foundry\Services\GuardManager;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\Response;
@@ -35,6 +36,12 @@ class ConfigureGuard
 
         Inertia::share('auth.guard', $this->guardManager->guard($request));
 
-        return $next($request);
+        $response = $next($request);
+
+        if ($response instanceof RedirectResponse && $response->getTargetUrl() === route('login') && $this->guardManager->isAdmin($request)) {
+            $response->setTargetUrl(route('admin.login'));
+        }
+
+        return $response;
     }
 }

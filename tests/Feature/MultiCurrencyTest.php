@@ -66,7 +66,7 @@ class MultiCurrencyTest extends TestCase
     #[Test]
     public function test_order_stores_base_values_only()
     {
-        $order = Order::create([
+        $order = Order::factory()->create([
             'grand_total' => 100.00,
             'sub_total' => 80.00,
             'tax_total' => 10.00,

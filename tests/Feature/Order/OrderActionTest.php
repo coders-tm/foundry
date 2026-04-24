@@ -44,22 +44,20 @@ class OrderActionTest extends TestCase
         $this->assertEquals('1234567890', $order->contact->phone_number);
     }
 
-    public function test_can_update_order_using_smart_create()
+    public function test_can_update_order_using_smart_update()
     {
         $user = (Foundry::$userModel)::factory()->create();
         $order = Order::factory()->create(['customer_id' => $user->id]);
 
         $data = [
-            'id' => $order->id,
             'grand_total' => 200,
             'note' => 'Updated note',
         ];
 
-        $updatedOrder = Order::create($data);
+        $order->update($data);
 
-        $this->assertEquals($order->id, $updatedOrder->id);
-        $this->assertEquals(200, $updatedOrder->grand_total);
-        $this->assertEquals('Updated note', $updatedOrder->note);
+        $this->assertEquals(200, $order->grand_total);
+        $this->assertEquals('Updated note', $order->note);
     }
 
     public function test_db_transaction_on_failure()

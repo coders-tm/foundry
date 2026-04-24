@@ -3,7 +3,7 @@
 namespace Foundry\Services;
 
 use ArrayAccess;
-use Foundry\Traits\WithInput;
+use Foundry\Concerns\WithInput;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Support\Arr;
 use Symfony\Component\HttpFoundation\InputBag;

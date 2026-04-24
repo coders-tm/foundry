@@ -5,7 +5,7 @@ namespace Workbench\App\Http\Controllers;
 use Foundry\Foundry;
 use Foundry\Models\Order;
 use Foundry\Models\User;
-use Foundry\Traits\Helpers;
+use Foundry\Concerns\Helpers;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\ResourceCollection;
 

@@ -1,6 +1,6 @@
 <?php
 
-namespace Foundry\Traits\Subscription;
+namespace Foundry\Concerns\Subscription;
 
 use Carbon\Carbon;
 use Foundry\Foundry;

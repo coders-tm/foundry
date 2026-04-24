@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use Foundry\Models\Subscription\Plan;
-use Foundry\Traits\Helpers;
+use Foundry\Concerns\Helpers;
 use Illuminate\Console\View\Components\TwoColumnDetail;
 use Illuminate\Database\Seeder;
 

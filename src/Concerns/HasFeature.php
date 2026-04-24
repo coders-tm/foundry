@@ -1,6 +1,6 @@
 <?php
 
-namespace Foundry\Traits;
+namespace Foundry\Concerns;
 
 use Foundry\Exceptions\Plan\FeatureNotFoundException;
 use Foundry\Models\Subscription\SubscriptionFeature;

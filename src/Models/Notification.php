@@ -4,7 +4,7 @@ namespace Foundry\Models;
 
 use Foundry\Database\Factories\NotificationFactory;
 use Foundry\Services\NotificationTemplateRenderer;
-use Foundry\Traits\CoreBase;
+use Foundry\Concerns\CoreBase;
 use Illuminate\Database\Eloquent\Model;
 
 class Notification extends Model
