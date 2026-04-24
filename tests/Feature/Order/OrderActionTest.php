@@ -38,7 +38,7 @@ class OrderActionTest extends TestCase
         $this->assertDatabaseHas('orders', [
             'id' => $order->id,
             'customer_id' => $user->id,
-            'grand_total' => 100,
+            'grand_total' => 110,
         ]);
 
         $this->assertCount(1, $order->line_items);

@@ -250,16 +250,21 @@ class SubscriptionController extends Controller
     {
         // Validate all input upfront
         $validated = $request->validate([
-            'plan' => 'required|integer',
-            'user' => 'required|integer',
+            'plan' => 'required',
+            'user' => 'required_without:user_id',
+            'user_id' => 'required_without:user',
             'starts_at' => 'nullable|date',
             'expires_at' => 'nullable|date',
             'trial_days' => 'nullable|integer|min:0',
             'promotion_code' => 'nullable|string',
             'force' => 'sometimes|boolean',
+            'generate_invoice' => 'sometimes|boolean',
             'mark_as_paid' => 'sometimes|boolean',
-            'payment_method' => 'nullable|integer',
+            'payment_method' => 'nullable',
         ]);
+
+        $validated['user'] = $validated['user'] ?? $validated['user_id'];
+
 
         // Resolve and validate user exists
         try {

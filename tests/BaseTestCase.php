@@ -28,5 +28,7 @@ class BaseTestCase extends OrchestraTestCase
         $app['config']->set('app.currency', 'USD');
 
         Foundry::useOrderModel(Order::class);
+        Foundry::useUserModel(\Workbench\App\Models\User::class);
+        Foundry::useSubscriptionUserModel(\Workbench\App\Models\User::class);
     }
 }

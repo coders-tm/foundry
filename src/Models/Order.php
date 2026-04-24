@@ -60,6 +60,7 @@ class Order extends Model implements Currencyable
         'status',
         'payment_status',
         'cancelled_at',
+        'cancel_reason',
         'metadata',
     ];
 
@@ -595,7 +596,7 @@ class Order extends Model implements Currencyable
 
     public function cancel($reason = null): bool
     {
-        return $this->update([
+        return (bool) $this->update([
             'status' => OrderStatusEnum::CANCELLED,
             'cancelled_at' => now(),
             'cancel_reason' => $reason,

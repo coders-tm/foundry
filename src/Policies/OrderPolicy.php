@@ -95,6 +95,30 @@ class OrderPolicy
         return $this->isAdmin($user) && $user->can('orders:write');
     }
 
+    /**
+     * Only admins can bulk delete orders.
+     */
+    public function deleteAny(Model $user): bool
+    {
+        return $this->isAdmin($user) && $user->can('orders:write');
+    }
+
+    /**
+     * Only admins can restore orders.
+     */
+    public function restore(Model $user, Order $order): bool
+    {
+        return $this->isAdmin($user) && $user->can('orders:write');
+    }
+
+    /**
+     * Only admins can bulk restore orders.
+     */
+    public function restoreAny(Model $user): bool
+    {
+        return $this->isAdmin($user) && $user->can('orders:write');
+    }
+
     private function isAdmin(Model $user): bool
     {
         return $user instanceof Admin && in_array($user->guard, ['admin']);

@@ -36,6 +36,7 @@ return new class extends Migration
             $table->string('payment_status')->default('pending');
             $table->dateTime('due_date')->nullable();
             $table->timestamp('cancelled_at')->nullable();
+            $table->text('cancel_reason')->nullable();
 
             $table->timestamps();
             $table->softDeletes()->index();

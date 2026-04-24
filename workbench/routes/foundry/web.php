@@ -224,8 +224,22 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         'controller' => OrderController::class,
     ], function () {
         Route::get('/', 'index')->name('index');
-        Route::get('/{order}', 'show')->name('show');
-        Route::post('/{order}/status', 'updateStatus')->name('update-status');
+        Route::post('/', 'store')->name('store');
+        Route::get('export', 'export')->name('export');
+        Route::post('bulk-destroy', 'bulkDestroy')->name('bulk-destroy');
+        Route::post('bulk-restore', 'bulkRestore')->name('bulk-restore');
+        Route::get('{id}', 'show')->name('show');
+        Route::match(['put', 'patch'], '{order}', 'update')->name('update');
+        Route::delete('{id}', 'destroy')->name('destroy');
+        Route::post('{id}/restore', 'restore')->name('restore');
+        Route::get('{order}/logs', 'logs')->name('logs');
+        Route::post('{order}/logs', 'storeLog')->name('store-log');
+        Route::post('{order}/status', 'updateStatus')->name('update-status');
+        Route::post('{order}/cancel', 'cancel')->name('cancel');
+        Route::post('{order}/mark-as-paid', 'markAsPaid')->name('mark-as-paid');
+        Route::post('{order}/send-invoice', 'sendInvoice')->name('send-invoice');
+        Route::get('{order}/download-invoice', 'downloadInvoice')->name('download-invoice');
+        Route::post('{order}/refund', 'refund')->name('refund');
     });
 
     // Users

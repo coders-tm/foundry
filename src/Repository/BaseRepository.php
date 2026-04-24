@@ -103,6 +103,8 @@ abstract class BaseRepository extends Model
         if (empty($taxLines)) {
             if (! empty($attributes['billing_address'])) {
                 $taxLines = $this->getBillingAddressTax($attributes['billing_address']);
+            } else {
+                $taxLines = $this->getDefaultTax();
             }
 
             // Ensure tax_lines is always set (even if empty)
@@ -173,13 +175,7 @@ abstract class BaseRepository extends Model
      */
     protected function getDefaultTax(): ?array
     {
-        // Check if function exists, otherwise return default
-        if (function_exists('default_tax')) {
-            return default_tax();
-        }
-
-        // Default tax for testing
-        return [];
+        return default_tax();
     }
 
     /**
@@ -563,5 +559,10 @@ abstract class BaseRepository extends Model
                 );
             }
         );
+    }
+
+    public function total()
+    {
+        return $this->grand_total;
     }
 }

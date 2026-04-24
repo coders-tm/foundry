@@ -28,6 +28,8 @@ class ProcessSubscriptionPayment
                     event(new SubscriptionRenewed($subscription));
                 }
 
+                $subscription->loadMissing('latestInvoice');
+
                 $invoice = $subscription->latestInvoice ?? (
                     app(GenerateSubscriptionInvoice::class)->execute($subscription, true, true)
                 );
