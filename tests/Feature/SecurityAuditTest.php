@@ -7,6 +7,8 @@ use Foundry\Models\Order;
 use Foundry\Models\Payment;
 use Foundry\Models\Permission;
 use Foundry\Models\User;
+use Foundry\Enum\OrderStatus as OrderStatusEnum;
+use Foundry\Enum\PaymentStatus;
 use Foundry\Rules\ReCaptchaRule;
 use Foundry\Tests\TestCase;
 use Illuminate\Support\Facades\Http;
@@ -99,7 +101,7 @@ class SecurityAuditTest extends TestCase
     {
         $order = Order::factory()->create([
             'grand_total' => 50.00,
-            'status' => Order::STATUS_PENDING,
+            'status' => OrderStatusEnum::PENDING_PAYMENT,
         ]);
 
         // Should not throw — amount equals grand_total
@@ -108,7 +110,7 @@ class SecurityAuditTest extends TestCase
             transaction: ['id' => 'txn_exact', 'amount' => 50.00]
         );
 
-        $this->assertEquals(Order::STATUS_PAID, $order->fresh()->payment_status);
+        $this->assertEquals(PaymentStatus::PAID, $order->fresh()->payment_status);
     }
 
     #[Test]
@@ -119,7 +121,7 @@ class SecurityAuditTest extends TestCase
         $attrs = [
             'transaction_id' => 'txn_idempotent_001',
             'amount' => 10.00,
-            'status' => Payment::STATUS_COMPLETED,
+            'status' => PaymentStatus::COMPLETED,
         ];
 
         Payment::createForOrder($order, $attrs);
@@ -134,7 +136,7 @@ class SecurityAuditTest extends TestCase
     {
         $order = Order::factory()->create(['grand_total' => 10.00]);
 
-        $attrs = ['amount' => 10.00, 'status' => Payment::STATUS_COMPLETED];
+        $attrs = ['amount' => 10.00, 'status' => PaymentStatus::COMPLETED];
 
         Payment::createForOrder($order, $attrs);
         Payment::createForOrder($order, $attrs);

@@ -10,6 +10,24 @@ use Illuminate\Support\Collection;
 class InvoiceRepository extends BaseRepository
 {
     /**
+     * The attributes that are mass assignable.
+     */
+    protected $fillable = [
+        'customer',
+        'line_items',
+        'billing_address',
+        'shipping_address',
+        'discount',
+        'tax_lines',
+        'collect_tax',
+        'orderable_id',
+        'orderable_type',
+        'due_date',
+        'note',
+        'source',
+    ];
+
+    /**
      * Create a new repository instance
      */
     public function __construct(array $attributes = [])

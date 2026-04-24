@@ -2,6 +2,7 @@
 
 namespace Foundry\Tests\Feature\Payment;
 
+use Foundry\Enum\PaymentStatus;
 use Foundry\Exceptions\RefundException;
 use Foundry\Models\Order;
 use Foundry\Models\Payment;
@@ -59,7 +60,7 @@ class RefundProcessorTest extends TestCase
             'customer_id' => $this->user->id,
             'grand_total' => 100.00,
             'paid_total' => 100.00,
-            'payment_status' => 'paid',
+            'payment_status' => PaymentStatus::PAID,
         ]);
     }
 
@@ -134,10 +135,6 @@ class RefundProcessorTest extends TestCase
         $this->fail('Expected RefundException was not thrown');
     }
 
-    // =========================================
-    // Processor Refund Support Tests
-    // =========================================
-
     #[Test]
     public function stripe_processor_supports_refund()
     {
@@ -186,10 +183,6 @@ class RefundProcessorTest extends TestCase
         $this->assertFalse($processor->supportsRefund());
     }
 
-    // =========================================
-    // Processor Refund Method Tests
-    // =========================================
-
     #[Test]
     public function wallet_processor_throws_on_refund()
     {
@@ -218,10 +211,6 @@ class RefundProcessorTest extends TestCase
         $processor->refund($payment, 50.00);
     }
 
-    // =========================================
-    // Payment Model Refund Tests
-    // =========================================
-
     #[Test]
     public function payment_calculates_refundable_amount()
     {
@@ -245,7 +234,7 @@ class RefundProcessorTest extends TestCase
         $payment->processRefund(40.00, 'Refund request');
         $payment->refresh();
 
-        $this->assertEquals(Payment::STATUS_REFUNDED, $payment->status);
+        $this->assertEquals(PaymentStatus::REFUNDED, $payment->status);
         $this->assertEquals(100.00, $payment->refund_amount);
         $this->assertTrue($payment->isRefunded());
     }
@@ -257,14 +246,10 @@ class RefundProcessorTest extends TestCase
 
         $this->assertFalse($payment->isRefunded());
 
-        $payment->update(['status' => Payment::STATUS_REFUNDED]);
+        $payment->update(['status' => PaymentStatus::REFUNDED]);
         $payment->refresh();
         $this->assertTrue($payment->isRefunded());
     }
-
-    // =========================================
-    // Order Refund Integration Tests
-    // =========================================
 
     #[Test]
     public function order_refund_creates_refund_record()
@@ -311,7 +296,7 @@ class RefundProcessorTest extends TestCase
     {
         return $this->order->payments()->create([
             'amount' => $amount,
-            'status' => Payment::STATUS_COMPLETED,
+            'status' => PaymentStatus::COMPLETED,
             'payment_method_id' => $method->id,
             'transaction_id' => 'txn_'.uniqid(),
             'processed_at' => now(),

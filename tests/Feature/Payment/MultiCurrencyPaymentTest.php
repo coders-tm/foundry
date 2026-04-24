@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Payment;
 
+use Foundry\Enum\PaymentStatus;
 use Foundry\Facades\Currency;
 use Foundry\Foundry;
 use Foundry\Models\ExchangeRate;
@@ -213,7 +214,7 @@ class MultiCurrencyPaymentTest extends FeatureTestCase
         // We verify the Payment record created has the correct metadata.
 
         $order = $this->order->fresh();
-        $this->assertEquals('paid', $order->payment_status);
+        $this->assertEquals(PaymentStatus::PAID, $order->payment_status);
 
         $payment = $order->payments->first();
         $this->assertNotNull($payment);

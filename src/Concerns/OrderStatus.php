@@ -140,7 +140,6 @@ trait OrderStatus
      */
     public function syncCurrentStatus()
     {
-        $this->refresh();
 
         if ($this->refund_total == $this->paid_total && $this->paid_total > 0) {
             $this->markAsRefunded();
