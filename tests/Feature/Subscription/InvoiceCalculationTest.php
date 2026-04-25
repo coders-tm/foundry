@@ -61,6 +61,8 @@ class InvoiceCalculationTest extends FeatureTestCase
             'coupon_id' => $coupon->id,
         ]);
 
+        $subscription->refresh();
+
         // 4. Action: Get upcoming invoice
         $upcomingInvoice = $subscription->upcomingInvoice();
 
@@ -102,6 +104,8 @@ class InvoiceCalculationTest extends FeatureTestCase
             'plan_id' => $plan->id,
             'coupon_id' => $coupon->id,
         ]);
+
+        $subscription->refresh();
 
         // 4. Action: Generate invoice
         $invoice = $subscription->generateInvoice();
