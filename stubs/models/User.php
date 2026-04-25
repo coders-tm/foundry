@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
-use Foundry\Models\User as Model;
+use Foundry\Models\User as BaseUser;
 
-class User extends Model
+use Illuminate\Contracts\Auth\MustVerifyEmail;
+
+class User extends BaseUser implements MustVerifyEmail
 {
     /**
      * The attributes that are mass assignable.

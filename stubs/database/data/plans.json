@@ -1,32 +1,39 @@
 [
     {
-        "label": "Free",
-        "description": "<strong>1</strong> Locations\n<strong>5</strong> Staff Accounts\n<strong>Unlimited</strong> Members\n<strong>24/7</strong> chat support\nPOS Lite",
+        "label": "Starter",
+        "description": "<strong>1</strong> User\n<strong>3</strong> Projects\n<strong>Unlimited</strong> Clients\n<strong>500MB</strong> Storage\nCommunity Support",
         "price": 0,
         "features": {
-            "locations": 2,
-            "staff": 5,
-            "support": true
+            "users": 1,
+            "projects": 3,
+            "storage": 500,
+            "support": "community"
         }
     },
     {
-        "label": "Basic",
-        "description": "<strong>5</strong> Locations\n<strong>50</strong> Staff Accounts\n<strong>Unlimited</strong> Members\n<strong>24/7</strong> chat support\nPOS Lite",
-        "price": 4.99,
+        "label": "Professional",
+        "description": "<strong>10</strong> Users\n<strong>Unlimited</strong> Projects\n<strong>Unlimited</strong> Clients\n<strong>10GB</strong> Storage\nPriority Support\nAPI Access",
+        "price": 19,
         "features": {
-            "locations": 5,
-            "staff": 50,
-            "support": true
+            "users": 10,
+            "projects": -1,
+            "storage": 10000,
+            "support": "priority",
+            "api": true
         }
     },
     {
-        "label": "Pro",
-        "description": "<strong>10</strong> Locations\n<strong>100</strong> Staff Accounts\n<strong>Unlimited</strong> Members\n<strong>24/7</strong> chat support\nPOS Lite",
-        "price": 9.99,
+        "label": "Business",
+        "description": "<strong>Unlimited</strong> Users\n<strong>Unlimited</strong> Projects\n<strong>Unlimited</strong> Clients\n<strong>100GB</strong> Storage\nDedicated Manager\nSSO & Security",
+        "price": 49,
         "features": {
-            "locations": 10,
-            "staff": 100,
-            "support": true
+            "users": -1,
+            "projects": -1,
+            "storage": 100000,
+            "support": "dedicated",
+            "api": true,
+            "sso": true
         }
     }
 ]
+

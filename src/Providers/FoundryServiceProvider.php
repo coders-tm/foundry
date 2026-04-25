@@ -297,8 +297,6 @@ class FoundryServiceProvider extends ServiceProvider
             ], 'foundry-fortify-provider');
 
             $this->publishes([
-                $this->packagePath('public') => public_path('statics'),
-
                 $this->packageStubPath('database') => $this->app->databasePath(),
 
                 $this->packagePath('resources/views/emails') => resource_path('views/emails'),

@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
-use Foundry\Models\Admin as Model;
+use Foundry\Models\Admin as BaseAdmin;
 
-class Admin extends Model
+use Illuminate\Contracts\Auth\MustVerifyEmail;
+
+class Admin extends BaseAdmin implements MustVerifyEmail
 {
     /**
      * The attributes that are mass assignable.

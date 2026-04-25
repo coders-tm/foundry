@@ -15,7 +15,6 @@ use Foundry\Exceptions\ImportFailedException;
 use Foundry\Exceptions\ImportSkippedException;
 use Foundry\Foundry;
 use Foundry\Models\Subscription\Plan;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
@@ -25,7 +24,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use League\ISO3166\ISO3166;
 
-class User extends Authenticatable implements MustVerifyEmail
+class User extends Authenticatable
 {
     use Addressable, Core, Fileable, Notifiable;
     use Billable, HasWallet;

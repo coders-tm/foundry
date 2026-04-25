@@ -186,40 +186,6 @@
     ]
   },
   {
-    "name": "Apple Pay",
-    "provider": "apple_pay",
-    "integration_via": "stripe",
-    "link": "https://developer.apple.com/apple-pay/",
-    "logo": "fab fa-apple-pay",
-    "description": "Fast, secure payments with Touch ID, Face ID, or passcode on iPhone, iPad, Apple Watch, and Mac.",
-    "credentials": [],
-    "methods": [
-      {
-        "key": "apple_pay",
-        "label": "Apple Pay",
-        "enabled": true,
-        "type": "DIGITAL_WALLET"
-      }
-    ]
-  },
-  {
-    "name": "Google Pay",
-    "provider": "google_pay",
-    "integration_via": "stripe",
-    "link": "https://developers.google.com/pay",
-    "logo": "fab fa-google-pay",
-    "description": "Simple, secure, and fast checkout with Google Pay.",
-    "credentials": [],
-    "methods": [
-      {
-        "key": "google_pay",
-        "label": "Google Pay",
-        "enabled": true,
-        "type": "DIGITAL_WALLET"
-      }
-    ]
-  },
-  {
     "name": "Klarna",
     "provider": "klarna",
     "link": "https://www.klarna.com/",

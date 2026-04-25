@@ -25,19 +25,19 @@ class GroupSeeder extends Seeder
             'description' => 'Limited access to the system',
         ]);
 
-        $group->syncPermissions(collect(Permission::all())->mapWithKeys(function ($permission, $key) {
-            return [$key => [
-                'id' => $permission['id'],
+        $group->syncPermissions(Permission::all()->map(function ($permission) {
+            return [
+                'scope' => $permission->scope,
                 'access' => true,
-            ]];
+            ];
         }));
 
-        $sales->syncPermissions(collect(Permission::where('scope', 'like', '%list%')->orWhere('scope', 'like', '%view%')->get())
-            ->mapWithKeys(function ($permission, $key) {
-                return [$key => [
-                    'id' => $permission['id'],
+        $sales->syncPermissions(Permission::where('scope', 'like', '%read%')->get()
+            ->map(function ($permission) {
+                return [
+                    'scope' => $permission->scope,
                     'access' => true,
-                ]];
+                ];
             }));
     }
 }
