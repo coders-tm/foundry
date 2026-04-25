@@ -16,3 +16,4 @@ example
 /logs
 testbench-output.log
 /tools
+tests.log
