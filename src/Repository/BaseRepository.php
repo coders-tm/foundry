@@ -103,6 +103,8 @@ abstract class BaseRepository extends Model
         // Validate attributes against defined rules
         $this->validateAttributes($attributes);
 
+        $this->taxes = $this->setTaxLines($taxLines);
+
         parent::__construct($attributes);
 
         // Trigger Attribute::make(...)->set() logic
@@ -350,7 +352,7 @@ abstract class BaseRepository extends Model
                 return $this->taxes->map(function ($item) {
                     return $item->fill([
                         'amount' => $this->getTaxTotal($item),
-                    ]);
+                    ])->toArray();
                 });
             },
             set: fn ($value) => $this->setTaxLines($value)

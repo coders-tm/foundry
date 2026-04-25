@@ -74,6 +74,7 @@ class UpdateOrCreate
             ($order->exists && $order->line_items()->exists() && $resource->hasAny(['collect_tax', 'billing_address']))
         );
 
+        $tax_lines = null;
         if ($shouldRecalculate) {
             $repository = new OrderRepository($resource->input());
             $order->fill([
@@ -83,12 +84,15 @@ class UpdateOrCreate
                 'grand_total' => $repository->grand_total,
                 'line_items_quantity' => $repository->line_items_quantity,
             ])->save();
+            $tax_lines = $repository->tax_lines;
         } else {
             $order->save();
+            if ($resource->filled('tax_lines')) {
+                $tax_lines = collect($resource->tax_lines);
+            }
         }
 
-        if ($resource->filled('tax_lines')) {
-            $tax_lines = collect($resource->tax_lines);
+        if ($tax_lines) {
             $order->tax_lines()->whereNotIn('id', $tax_lines->pluck('id')->filter())->delete();
             $tax_lines->each(function ($tax) use ($order) {
                 $order->tax_lines()->updateOrCreate([
