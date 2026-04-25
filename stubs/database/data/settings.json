@@ -150,31 +150,6 @@
         "name": "Facebook",
         "icon": "fab fa-facebook",
         "href": "https://facebook.com/username"
-      },
-      {
-        "name": "Twitter",
-        "icon": "fab fa-twitter",
-        "href": "https://twitter.com/username"
-      },
-      {
-        "name": "Instagram",
-        "icon": "fab fa-instagram",
-        "href": "https://instagram.com/username"
-      },
-      {
-        "name": "LinkedIn",
-        "icon": "fab fa-linkedin",
-        "href": "https://linkedin.com/username"
-      },
-      {
-        "name": "YouTube",
-        "icon": "fab fa-youtube",
-        "href": "https://youtube.com/username"
-      },
-      {
-        "name": "Facebook",
-        "icon": "fab fa-facebook",
-        "href": "https://facebook.com/username"
       }
     ]
   },
