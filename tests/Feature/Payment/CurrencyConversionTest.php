@@ -5,7 +5,6 @@ namespace Tests\Feature\Payment;
 use Foundry\Facades\Currency;
 use Foundry\Foundry;
 use Foundry\Models\ExchangeRate;
-use Foundry\Models\Order;
 use Foundry\Models\Payment;
 use Foundry\Models\PaymentMethod;
 use Foundry\Payment\Mappers\FlutterwavePayment;
@@ -22,6 +21,7 @@ use Illuminate\Support\Facades\Config;
 use PHPUnit\Framework\Attributes\Test;
 use Stevebauman\Location\Facades\Location;
 use Stevebauman\Location\Position;
+use Workbench\App\Models\Order;
 
 class CurrencyConversionTest extends FeatureTestCase
 {
@@ -46,7 +46,7 @@ class CurrencyConversionTest extends FeatureTestCase
         );
 
         // Create a test order in USD
-        $this->order = Order::factory()->create([
+        $this->order = Foundry::$orderModel::factory()->create([
             'grand_total' => 100.00, // Base currency
         ]);
     }

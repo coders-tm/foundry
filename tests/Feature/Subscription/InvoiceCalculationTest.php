@@ -2,21 +2,42 @@
 
 namespace Tests\Feature\Subscription;
 
-use Foundry\Models\Coupon;
+use Foundry\Foundry;
 use Foundry\Models\Subscription;
-use Foundry\Models\Subscription\Plan;
-use Foundry\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Foundry\Tests\TestCase;
+use Foundry\Models\Tax;
+use Foundry\Tests\Feature\FeatureTestCase;
 
-class InvoiceCalculationTest extends TestCase
+class InvoiceCalculationTest extends FeatureTestCase
 {
-    use RefreshDatabase;
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Seed a 10% tax rate for United States
+        Tax::create([
+            'label' => 'GST',
+            'code' => 'US',
+            'rate' => 10,
+            'state' => '*',
+            'priority' => 1,
+            'compounded' => false,
+        ]);
+
+        // Fallback for any other country if needed
+        Tax::create([
+            'label' => 'Tax',
+            'code' => '*',
+            'rate' => 10,
+            'state' => '*',
+            'priority' => 1,
+            'compounded' => false,
+        ]);
+    }
 
     public function test_upcoming_invoice_calculations()
     {
         // 1. Setup: Create a plan with price $100
-        $plan = Plan::factory()->create([
+        $plan = Foundry::$planModel::factory()->create([
             'price' => 100.00,
             'label' => 'Monthly Plan',
             'interval' => 'month',
@@ -24,7 +45,7 @@ class InvoiceCalculationTest extends TestCase
         ]);
 
         // 2. Setup: Create a coupon with 20% discount
-        $coupon = Coupon::factory()->create([
+        $coupon = Foundry::$couponModel::factory()->create([
             'name' => 'Save 20',
             'value' => 20,
             'discount_type' => 'percentage',
@@ -32,8 +53,9 @@ class InvoiceCalculationTest extends TestCase
         ]);
 
         // 3. Setup: Create a user and subscription with the coupon
-        $user = User::factory()->create();
-        $subscription = Subscription::factory()->create([
+        $user = Foundry::$userModel::factory()->withAddress(['country' => 'United States'])->create();
+
+        $subscription = Foundry::$subscriptionModel::factory()->create([
             'user_id' => $user->id,
             'plan_id' => $plan->id,
             'coupon_id' => $coupon->id,
@@ -43,7 +65,7 @@ class InvoiceCalculationTest extends TestCase
         $upcomingInvoice = $subscription->upcomingInvoice();
 
         // 5. Verification:
-        // Expected: Subtotal 100, Discount 20, Grand Total 80 (assuming 0 tax for now)
+        // Expected: Subtotal 100, Discount 20, Grand Total 80 + Tax (8) = 88
         $this->assertNotNull($upcomingInvoice);
 
         // Asserting the values that the user EXPECTS (which are currently different)
@@ -56,7 +78,7 @@ class InvoiceCalculationTest extends TestCase
     public function test_generated_invoice_calculations()
     {
         // 1. Setup: Create a plan with price $100
-        $plan = Plan::factory()->create([
+        $plan = Foundry::$planModel::factory()->create([
             'price' => 100.00,
             'label' => 'Monthly Plan',
             'interval' => 'month',
@@ -64,7 +86,7 @@ class InvoiceCalculationTest extends TestCase
         ]);
 
         // 2. Setup: Create a coupon with $15 fixed discount
-        $coupon = Coupon::factory()->create([
+        $coupon = Foundry::$couponModel::factory()->create([
             'name' => 'Save 15',
             'value' => 15,
             'discount_type' => 'fixed',
@@ -72,8 +94,10 @@ class InvoiceCalculationTest extends TestCase
         ]);
 
         // 3. Setup: Create a user and subscription
-        $user = User::factory()->create();
-        $subscription = Subscription::factory()->create([
+        $user = Foundry::$userModel::factory()->withAddress(['country' => 'United States'])->create();
+
+        /** @var Subscription $subscription */
+        $subscription = Foundry::$subscriptionModel::factory()->create([
             'user_id' => $user->id,
             'plan_id' => $plan->id,
             'coupon_id' => $coupon->id,
@@ -81,6 +105,11 @@ class InvoiceCalculationTest extends TestCase
 
         // 4. Action: Generate invoice
         $invoice = $subscription->generateInvoice();
+
+        foreach ($invoice->line_items as $item) {
+            $this->assertEquals(1, $item->quantity, 'Line item quantity should be 1');
+            $this->assertTrue($item->taxable, 'Line item should be taxable');
+        }
 
         // 5. Verification:
         $this->assertNotNull($invoice);

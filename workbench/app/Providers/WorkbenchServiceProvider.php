@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Workbench\App\Models\Admin;
+use Workbench\App\Models\Order;
 use Workbench\App\Models\Plan;
 use Workbench\App\Models\Subscription;
 use Workbench\App\Models\User;
@@ -47,6 +48,7 @@ class WorkbenchServiceProvider extends ServiceProvider
         Foundry::useAdminModel(Admin::class);
         Foundry::useSubscriptionModel(Subscription::class);
         Foundry::usePlanModel(Plan::class);
+        Foundry::useOrderModel(Order::class);
 
         // Register policies
         Gate::policy(User::class, UserPolicy::class);

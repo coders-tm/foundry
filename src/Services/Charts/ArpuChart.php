@@ -2,7 +2,7 @@
 
 namespace Foundry\Services\Charts;
 
-use Foundry\Models\Subscription;
+use Foundry\Foundry;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -23,7 +23,7 @@ class ArpuChart extends AbstractChart
             $revenue = DB::table('orders')
                 ->join('subscriptions', function ($join) {
                     $join->on('orders.orderable_id', '=', 'subscriptions.id')
-                        ->where('orders.orderable_type', (new Subscription)->getMorphClass());
+                        ->where('orders.orderable_type', (new Foundry::$subscriptionModel)->getMorphClass());
                 })
                 ->where('orders.payment_status', 'paid')
                 ->whereBetween('orders.created_at', [$monthStart, $monthEnd])

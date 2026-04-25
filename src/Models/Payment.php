@@ -3,8 +3,8 @@
 namespace Foundry\Models;
 
 use Foundry\Concerns\Core;
-use Foundry\Enum\PaymentStatus;
 use Foundry\Database\Factories\PaymentFactory;
+use Foundry\Enum\PaymentStatus;
 use Foundry\Foundry;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

@@ -265,7 +265,6 @@ class SubscriptionController extends Controller
 
         $validated['user'] = $validated['user'] ?? $validated['user_id'];
 
-
         // Resolve and validate user exists
         try {
             $user = Foundry::$userModel::findOrFail($validated['user']);

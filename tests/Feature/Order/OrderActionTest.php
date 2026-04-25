@@ -2,10 +2,10 @@
 
 namespace Foundry\Tests\Feature\Order;
 
-use Foundry\Foundry;
-use Foundry\Models\Order;
 use Foundry\Enum\OrderStatus as OrderStatusEnum;
 use Foundry\Enum\PaymentStatus;
+use Foundry\Foundry;
+use Foundry\Models\Order;
 use Foundry\Repository\OrderRepository;
 use Foundry\Tests\TestCase;
 

@@ -4,7 +4,6 @@ namespace Foundry\Services\Metrics;
 
 use Carbon\Carbon;
 use Foundry\Foundry;
-use Foundry\Models\Subscription;
 use Illuminate\Support\Facades\DB;
 
 class OrderMetrics extends MetricsCalculator
@@ -36,7 +35,7 @@ class OrderMetrics extends MetricsCalculator
 
             return Foundry::$orderModel::query()
                 ->where('payment_status', 'paid')
-                ->where('orderable_type', Subscription::class)
+                ->where('orderable_type', (new Foundry::$subscriptionModel)->getMorphClass())
                 ->whereBetween('created_at', [$range['start'], $range['end']])
                 ->sum('grand_total') ?? 0.0;
         });
@@ -54,7 +53,7 @@ class OrderMetrics extends MetricsCalculator
                 ->where('payment_status', 'paid')
                 ->where(function ($q) {
                     $q->whereNull('orderable_type')
-                        ->orWhere('orderable_type', '!=', Subscription::class);
+                        ->orWhere('orderable_type', '!=', (new Foundry::$subscriptionModel)->getMorphClass());
                 })
                 ->whereBetween('created_at', [$range['start'], $range['end']])
                 ->sum('grand_total') ?? 0.0;
@@ -70,7 +69,7 @@ class OrderMetrics extends MetricsCalculator
             return DB::table('orders')
                 ->join('subscriptions', function ($join) {
                     $join->on('orders.orderable_id', '=', 'subscriptions.id')
-                        ->where('orders.orderable_type', Subscription::class);
+                        ->where('orders.orderable_type', (new Foundry::$subscriptionModel)->getMorphClass());
                 })
                 ->where('orders.payment_status', 'paid')
                 ->where('subscriptions.status', 'active')
@@ -78,7 +77,7 @@ class OrderMetrics extends MetricsCalculator
                     $query->select(DB::raw('MAX(id)'))
                         ->from('orders')
                         ->where('payment_status', 'paid')
-                        ->where('orderable_type', Subscription::class)
+                        ->where('orderable_type', (new Foundry::$subscriptionModel)->getMorphClass())
                         ->groupBy('orderable_id');
                 })
                 ->sum(DB::raw("
@@ -110,7 +109,7 @@ class OrderMetrics extends MetricsCalculator
             $totalRevenue = DB::table('orders')
                 ->join('subscriptions', function ($join) {
                     $join->on('orders.orderable_id', '=', 'subscriptions.id')
-                        ->where('orders.orderable_type', Subscription::class);
+                        ->where('orders.orderable_type', (new Foundry::$subscriptionModel)->getMorphClass());
                 })
                 ->where('orders.payment_status', 'paid')
                 ->sum('orders.grand_total') ?? 0.0;
@@ -372,7 +371,7 @@ class OrderMetrics extends MetricsCalculator
 
             $totalItems = DB::table('line_items')
                 ->join('orders', 'line_items.itemable_id', '=', 'orders.id')
-                ->where('line_items.itemable_type', Foundry::$orderModel)
+                ->where('line_items.itemable_type', (new Foundry::$orderModel)->getMorphClass())
                 ->whereBetween('orders.created_at', [$range['start'], $range['end']])
                 ->sum('line_items.quantity') ?? 0;
 
@@ -450,7 +449,7 @@ class OrderMetrics extends MetricsCalculator
             return DB::table('discount_lines')
                 ->join('orders', function ($join) {
                     $join->on('discount_lines.discountable_id', '=', 'orders.id')
-                        ->where('discount_lines.discountable_type', Foundry::$orderModel);
+                        ->where('discount_lines.discountable_type', (new Foundry::$orderModel)->getMorphClass());
                 })
                 ->select(
                     'discount_lines.coupon_code as discount_code',
@@ -479,7 +478,7 @@ class OrderMetrics extends MetricsCalculator
             return DB::table('line_items')
                 ->join('orders', function ($join) {
                     $join->on('line_items.itemable_id', '=', 'orders.id')
-                        ->where('line_items.itemable_type', Foundry::$orderModel);
+                        ->where('line_items.itemable_type', (new Foundry::$orderModel)->getMorphClass());
                 })
                 ->join('products', 'line_items.product_id', '=', 'products.id')
                 ->select(
@@ -509,7 +508,7 @@ class OrderMetrics extends MetricsCalculator
             return DB::table('line_items')
                 ->join('orders', function ($join) {
                     $join->on('line_items.itemable_id', '=', 'orders.id')
-                        ->where('line_items.itemable_type', Foundry::$orderModel);
+                        ->where('line_items.itemable_type', (new Foundry::$orderModel)->getMorphClass());
                 })
                 ->join('products', 'line_items.product_id', '=', 'products.id')
                 ->select(
@@ -569,7 +568,7 @@ class OrderMetrics extends MetricsCalculator
                 ->join('payment_methods', 'payments.payment_method_id', '=', 'payment_methods.id')
                 ->join('orders', function ($join) {
                     $join->on('payments.paymentable_id', '=', 'orders.id')
-                        ->where('payments.paymentable_type', Foundry::$orderModel);
+                        ->where('payments.paymentable_type', (new Foundry::$orderModel)->getMorphClass());
                 })
                 ->select(
                     'payment_methods.provider',

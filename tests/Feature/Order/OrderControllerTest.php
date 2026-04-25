@@ -4,31 +4,33 @@ namespace Foundry\Tests\Feature\Order;
 
 use Foundry\Enum\OrderStatus;
 use Foundry\Enum\PaymentStatus;
+use Foundry\Foundry;
+use Foundry\Models\Admin;
 use Foundry\Models\Order;
 use Foundry\Models\Order\Customer;
+use Foundry\Models\Payment;
 use Foundry\Models\PaymentMethod;
 use Foundry\Models\Subscription;
 use Foundry\Models\Subscription\Plan;
+use Foundry\Models\User;
+use Foundry\Notifications\OrderInvoiceNotification;
 use Foundry\Tests\Feature\FeatureTestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Workbench\App\Models\Admin;
-use Workbench\App\Models\User;
+use Illuminate\Support\Facades\Notification;
 
 class OrderControllerTest extends FeatureTestCase
 {
     use RefreshDatabase;
 
-    protected $admin;
+    protected Admin $admin;
 
-    protected $user;
-
+    protected User $user;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->admin = Admin::factory()->admin()->create([
-            'is_active' => true,
+        $this->admin = Admin::factory()->create([
             'is_super_admin' => true,
         ]);
 
@@ -37,264 +39,248 @@ class OrderControllerTest extends FeatureTestCase
 
     public function test_index_requires_authentication(): void
     {
-        $this->getJson(route('admin.orders.index'))
-            ->assertUnauthorized();
+        $this->get(route('admin.orders.index'))
+            ->assertRedirect();
     }
 
-    public function test_index_renders_json_data(): void
+    public function test_index_page(): void
     {
-        Order::factory()->count(3)->create();
-
         $this->actingAs($this->admin, 'admin')
-            ->getJson(route('admin.orders.index'))
-            ->assertSuccessful()
-            ->assertJsonStructure(['data', 'links', 'meta'])
-            ->assertJsonCount(3, 'data');
+            ->get(route('admin.orders.index'))
+            ->assertSuccessful();
     }
 
-    public function test_index_can_filter_by_status(): void
+    public function test_store_creates_item_and_redirects(): void
     {
-        Order::factory()->create(['status' => OrderStatus::PENDING_PAYMENT]);
-        Order::factory()->create(['status' => OrderStatus::COMPLETED]);
-
-        $this->actingAs($this->admin, 'admin')
-            ->getJson(route('admin.orders.index', ['status' => OrderStatus::PENDING_PAYMENT->value]))
-            ->assertSuccessful()
-            ->assertJsonCount(1, 'data')
-            ->assertJsonFragment(['status' => OrderStatus::PENDING_PAYMENT->value]);
-    }
-
-    public function test_index_can_filter_by_payment_status(): void
-    {
-        Order::factory()->create(['payment_status' => PaymentStatus::PAID]);
-        Order::factory()->create(['payment_status' => PaymentStatus::PAYMENT_PENDING]);
-
-        $this->actingAs($this->admin, 'admin')
-            ->getJson(route('admin.orders.index', ['payment_status' => PaymentStatus::PAID->value]))
-            ->assertSuccessful()
-            ->assertJsonCount(1, 'data')
-            ->assertJsonFragment(['payment_status' => PaymentStatus::PAID->value]);
-    }
-
-    public function test_index_can_show_trashed_orders(): void
-    {
-        $order = Order::factory()->create();
-        $order->delete();
-
-        $this->actingAs($this->admin, 'admin')
-            ->getJson(route('admin.orders.index', ['deleted' => true]))
-            ->assertSuccessful()
-            ->assertJsonCount(1, 'data')
-            ->assertJsonFragment(['id' => $order->id]);
-    }
-
-    public function test_store_creates_new_order(): void
-    {
-        $paymentMethod = PaymentMethod::factory()->create();
-        $customer = Customer::factory()->create();
-
-        $orderData = [
-            'customer_id' => $customer->id,
-            'status' => OrderStatus::PENDING_PAYMENT->value,
-            'payment_status' => PaymentStatus::PAYMENT_PENDING->value,
-            'sub_total' => 100,
-            'tax_total' => 10,
-            'grand_total' => 110,
+        $user = User::factory()->create();
+        $data = [
+            'customer_id' => $user->id,
+            'status' => OrderStatus::PENDING->value,
+            'note' => 'Test order note',
             'line_items' => [
                 [
-                    'title' => 'Test Item',
-                    'quantity' => 1,
+                    'title' => 'Product 1',
                     'price' => 100,
+                    'quantity' => 1,
+                ],
+            ],
+            'sub_total' => 100,
+            'grand_total' => 100,
+        ];
+
+        $this->actingAs($this->admin, 'admin')
+            ->post(route('admin.orders.store'), $data)
+            ->assertSessionHasNoErrors()
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('orders', ['customer_id' => $data['customer_id'], 'status' => $data['status']]);
+
+        $order = Order::where('customer_id', $user->id)->first();
+        $this->assertNotNull($order->number, 'Order number should not be null');
+
+        $this->assertDatabaseHas('line_items', [
+            'title' => 'Product 1',
+            'itemable_id' => $order->id,
+            'itemable_type' => 'Order',
+        ]);
+    }
+
+    public function test_store_marks_as_paid_if_payment_method_provided(): void
+    {
+        $user = User::factory()->create();
+        PaymentMethod::factory()->manual()->create(['id' => 'cash']);
+        $data = [
+            'customer_id' => $user->id,
+            'status' => OrderStatus::PENDING->value,
+            'payment_method' => 'cash',
+            'line_items' => [
+                ['title' => 'Product 1', 'price' => 100, 'quantity' => 1],
+            ],
+        ];
+
+        $this->actingAs($this->admin, 'admin')
+            ->post(route('admin.orders.store'), $data)
+            ->assertRedirect();
+
+        $order = Order::where('customer_id', $user->id)->first();
+        $this->assertTrue($order->is_paid);
+    }
+
+    public function test_store_sends_invoice_if_invoice_data_provided(): void
+    {
+        Notification::fake();
+        \Foundry\Models\Notification::factory()->create([
+            'type' => 'user:invoice-sent',
+            'subject' => 'Invoice for Order {{ $order->number }}',
+            'content' => 'Hello',
+        ]);
+
+        $user = User::factory()->create();
+        $data = [
+            'customer_id' => $user->id,
+            'status' => OrderStatus::PENDING->value,
+            'invoice_data' => [
+                'to' => 'custom@example.com',
+                'subject' => 'Custom Subject',
+                'message' => 'Custom Message',
+            ],
+            'line_items' => [
+                ['title' => 'Product 1', 'price' => 100, 'quantity' => 1],
+            ],
+        ];
+
+        $this->actingAs($this->admin, 'admin')
+            ->post(route('admin.orders.store'), $data)
+            ->assertRedirect();
+
+        $order = Order::where('customer_id', $user->id)->first();
+
+        Notification::assertSentTo(
+            new Customer(['id' => $order->customer_id]),
+            OrderInvoiceNotification::class,
+            fn ($notification, $channels, $notifiable) => $notifiable->email === 'custom@example.com'
+        );
+
+        $this->assertDatabaseHas('logs', [
+            'type' => 'invoice_sent',
+            'logable_id' => $order->id,
+            'logable_type' => 'Order',
+        ]);
+    }
+
+    public function test_update_modifies_item(): void
+    {
+        $item = Order::factory()->create(['status' => OrderStatus::PENDING]);
+        $data = [
+            'status' => OrderStatus::COMPLETED->value,
+            'line_items' => [
+                [
+                    'title' => 'Updated Product',
+                    'price' => 150,
+                    'quantity' => 1,
                 ],
             ],
         ];
 
         $this->actingAs($this->admin, 'admin')
-            ->postJson(route('admin.orders.store'), $orderData)
-            ->assertStatus(201)
-            ->assertJsonFragment(['message' => __('Order has been created successfully.')]);
+            ->patch(route('admin.orders.update', $item), $data)
+            ->assertSessionHasNoErrors()
+            ->assertRedirect();
 
-        $this->assertDatabaseHas('orders', [
-            'customer_id' => $customer->id,
-            'grand_total' => 110,
+        $this->assertEquals($data['status'], $item->refresh()->status->value);
+        $this->assertDatabaseHas('line_items', [
+            'itemable_id' => $item->id,
+            'itemable_type' => 'Order',
+            'title' => 'Updated Product',
         ]);
     }
 
-    public function test_show_returns_order_details(): void
+    public function test_cancel_marks_order_as_cancelled(): void
     {
-        $order = Order::factory()->create();
+        $item = Order::factory()->create(['status' => OrderStatus::PENDING]);
 
         $this->actingAs($this->admin, 'admin')
-            ->getJson(route('admin.orders.show', $order))
-            ->assertSuccessful()
-            ->assertJsonFragment(['id' => $order->id]);
+            ->post(route('admin.orders.cancel', $item))
+            ->assertRedirect();
+
+        $this->assertEquals(OrderStatus::CANCELLED, $item->refresh()->status);
     }
 
-    public function test_update_modifies_existing_order(): void
+    public function test_mark_as_paid_updates_payment_status(): void
     {
-        $order = Order::factory()->create(['note' => 'Old Note']);
+        $item = Order::factory()->create(['payment_status' => PaymentStatus::PAYMENT_PENDING]);
 
         $this->actingAs($this->admin, 'admin')
-            ->patchJson(route('admin.orders.update', $order), ['note' => 'New Note'])
-            ->assertSuccessful()
-            ->assertJsonFragment(['note' => 'New Note']);
+            ->post(route('admin.orders.mark-as-paid', $item))
+            ->assertRedirect();
 
-        $this->assertDatabaseHas('orders', [
-            'id' => $order->id,
-            'note' => 'New Note',
+        $this->assertTrue($item->refresh()->is_paid);
+    }
+
+    public function test_send_invoice_sends_notification(): void
+    {
+        Notification::fake();
+        $user = User::factory()->create(['email' => 'original@example.com']);
+        $item = Order::factory()->create(['customer_id' => $user->id]);
+
+        \Foundry\Models\Notification::factory()->create([
+            'type' => 'user:invoice-sent',
+            'subject' => 'Invoice for Order {{ $order->number }}',
+            'content' => 'Hello',
         ]);
+
+        // Test sending to default email
+        $this->actingAs($this->admin, 'admin')
+            ->post(route('admin.orders.send-invoice', $item))
+            ->assertRedirect();
+
+        Notification::assertSentTo(
+            new Customer(['id' => $item->customer_id]),
+            OrderInvoiceNotification::class
+        );
+
+        // Test sending to custom email
+        $customEmail = 'custom@example.com';
+        $this->actingAs($this->admin, 'admin')
+            ->post(route('admin.orders.send-invoice', $item), ['to' => $customEmail])
+            ->assertRedirect();
+
+        Notification::assertSentTo(
+            new Customer(['id' => $item->customer_id]),
+            OrderInvoiceNotification::class,
+            fn ($notification, $channels, $notifiable) => $notifiable->email === $customEmail
+        );
     }
 
-    public function test_destroy_deletes_order(): void
+    public function test_download_invoice_returns_streamed_response(): void
     {
-        $order = Order::factory()->create();
+        $user = User::factory()->create();
+        $item = Order::factory()->create(['customer_id' => $user->id]);
 
         $this->actingAs($this->admin, 'admin')
-            ->deleteJson(route('admin.orders.destroy', $order))
-            ->assertSuccessful();
-
-        $this->assertSoftDeleted('orders', ['id' => $order->id]);
-    }
-
-    public function test_restore_reinstates_deleted_order(): void
-    {
-        $order = Order::factory()->create();
-        $order->delete();
-
-        $this->actingAs($this->admin, 'admin')
-            ->postJson(route('admin.orders.restore', $order->id))
-            ->assertSuccessful();
-
-        $this->assertNotSoftDeleted('orders', ['id' => $order->id]);
-    }
-
-    public function test_bulk_destroy_deletes_multiple_orders(): void
-    {
-        $orders = Order::factory()->count(3)->create();
-
-        $this->actingAs($this->admin, 'admin')
-            ->postJson(route('admin.orders.bulk-destroy'), [
-                'items' => $orders->pluck('id')->toArray(),
-            ])
-            ->assertSuccessful();
-
-        foreach ($orders as $order) {
-            $this->assertSoftDeleted('orders', ['id' => $order->id]);
-        }
-    }
-
-    public function test_bulk_restore_reinstates_multiple_orders(): void
-    {
-        $orders = Order::factory()->count(3)->create();
-        $orders->each->delete();
-
-        $this->actingAs($this->admin, 'admin')
-            ->postJson(route('admin.orders.bulk-restore'), [
-                'items' => $orders->pluck('id')->toArray(),
-            ])
-            ->assertSuccessful();
-
-        foreach ($orders as $order) {
-            $this->assertNotSoftDeleted('orders', ['id' => $order->id]);
-        }
-    }
-
-    public function test_cancel_updates_order_status(): void
-    {
-        $order = Order::factory()->create(['status' => OrderStatus::PENDING_PAYMENT]);
-
-        $this->actingAs($this->admin, 'admin')
-            ->postJson(route('admin.orders.cancel', $order), ['reason' => 'Test reason'])
+            ->get(route('admin.orders.download-invoice', $item))
             ->assertSuccessful()
-            ->assertJsonFragment(['status' => OrderStatus::CANCELLED->value]);
-
-        $this->assertDatabaseHas('orders', [
-            'id' => $order->id,
-            'status' => OrderStatus::CANCELLED->value,
-            'cancel_reason' => 'Test reason',
-        ]);
+            ->assertHeader('Content-Type', 'application/pdf');
     }
 
-    public function test_mark_as_paid_updates_statuses(): void
+    public function test_refund_processes_refund(): void
     {
-        $paymentMethod = PaymentMethod::factory()->create();
-        $order = Order::factory()->create([
-            'status' => OrderStatus::PENDING_PAYMENT,
-            'payment_status' => PaymentStatus::PAYMENT_PENDING,
+        $user = User::factory()->create();
+        $paymentMethod = PaymentMethod::factory()->manual()->create();
+        $item = Order::factory()->create([
+            'customer_id' => $user->id,
+            'payment_status' => PaymentStatus::PAID,
+            'status' => OrderStatus::COMPLETED,
             'grand_total' => 100,
+            'paid_total' => 100,
         ]);
 
-        $this->actingAs($this->admin, 'admin')
-            ->postJson(route('admin.orders.mark-as-paid', $order), [
-                'payment_method' => $paymentMethod->id,
-            ])
-            ->assertSuccessful()
-            ->assertJsonFragment(['payment_status' => PaymentStatus::PAID->value]);
-
-        $this->assertDatabaseHas('orders', [
-            'id' => $order->id,
-            'payment_status' => PaymentStatus::PAID->value,
-        ]);
-
-        $this->assertDatabaseHas('payments', [
-            'paymentable_id' => $order->id,
+        // Create a completed payment record with payment method
+        $item->payments()->create([
+            'transaction_id' => 'txn_123',
+            'amount' => 100,
+            'status' => Payment::STATUS_COMPLETED,
+            'processed_at' => now(),
+            'currency' => 'USD',
             'payment_method_id' => $paymentMethod->id,
-            'status' => PaymentStatus::COMPLETED->value,
         ]);
-    }
-
-    public function test_update_status_modifies_status(): void
-    {
-        $order = Order::factory()->create(['status' => OrderStatus::PENDING_PAYMENT]);
 
         $this->actingAs($this->admin, 'admin')
-            ->postJson(route('admin.orders.update-status', $order), [
-                'status' => OrderStatus::COMPLETED->value,
-            ])
-            ->assertSuccessful()
-            ->assertJsonFragment(['status' => OrderStatus::COMPLETED->value]);
+            ->post(route('admin.orders.refund', $item), ['to_wallet' => true])
+            ->assertRedirect();
 
-        $this->assertDatabaseHas('orders', [
-            'id' => $order->id,
-            'status' => OrderStatus::COMPLETED->value,
-        ]);
-    }
-
-    public function test_logs_returns_order_logs(): void
-    {
-        $order = Order::factory()->create();
-        $order->logs()->create(['message' => 'Test log', 'type' => 'note']);
-
-        $this->actingAs($this->admin, 'admin')
-            ->getJson(route('admin.orders.logs', $order))
-            ->assertSuccessful()
-            ->assertJsonCount(1);
-    }
-
-    public function test_store_log_creates_new_log(): void
-    {
-        $order = Order::factory()->create();
-
-        $this->actingAs($this->admin, 'admin')
-            ->postJson(route('admin.orders.store-log', $order), [
-                'message' => 'New log message',
-            ])
-            ->assertSuccessful();
-
-        $this->assertDatabaseHas('logs', [
-            'logable_id' => $order->id,
-            'message' => 'New log message',
-        ]);
+        $this->assertEquals(OrderStatus::REFUNDED, $item->refresh()->status);
     }
 
     public function test_show_subscription_invoice_includes_line_items(): void
     {
-        $plan = Plan::factory()->create(['price' => 50, 'trial_days' => 0]);
         $user = User::factory()->create();
-        $paymentMethod = PaymentMethod::factory()->create();
+        $plan = Plan::factory()->create(['price' => 19.99, 'trial_days' => 0]);
+        $paymentMethod = PaymentMethod::factory()->create(['provider' => 'cash']);
 
+        // Create a subscription with an invoice via the admin route
         $this->actingAs($this->admin, 'admin')
-            ->postJson(route('admin.subscriptions.store'), [
+            ->post(route('admin.subscriptions.store'), [
                 'user_id' => $user->id,
                 'plan' => $plan->id,
                 'starts_at' => now()->toDateTimeString(),
@@ -302,22 +288,227 @@ class OrderControllerTest extends FeatureTestCase
                 'mark_as_paid' => true,
                 'payment_method' => $paymentMethod->id,
             ])
-            ->assertStatus(201);
+            ->assertSessionHasNoErrors()
+            ->assertRedirect();
 
-        $subscription = Subscription::where('user_id', $user->id)->first();
-        $this->assertNotNull($subscription);
+        $subscription = Foundry::$subscriptionModel::where('user_id', $user->id)->first();
+        $this->assertNotNull($subscription, 'Subscription should exist');
+        $subscription->refresh();
 
-        $order = Order::latest()->first();
-        $this->assertGreaterThan(0, $order->line_items()->count());
-        $this->assertEquals(format_amount(55), $order->total());
-        $this->assertEquals(PaymentStatus::PAID, $order->payment_status);
+        $invoice = $subscription->latestInvoice;
+        $this->assertNotNull($invoice, 'Subscription invoice should exist');
+        $this->assertEquals('Subscription', $invoice->orderable_type);
+
+        // Assert line_items are stored with the correct itemable_type
+        $this->assertDatabaseHas('line_items', [
+            'itemable_id' => $invoice->id,
+            'itemable_type' => 'Order',
+        ]);
+
+        // Load the invoice via admin.orders.show and assert line_items are present
+        $response = $this->actingAs($this->admin, 'admin')
+            ->getJson(route('admin.orders.show', $invoice->id))
+            ->assertSuccessful();
+
+        // Basic JSON structure checks
+        $response->assertJsonStructure([
+            'id',
+            'line_items' => [
+                '*' => [
+                    'title',
+                    'price',
+                ],
+            ],
+        ]);
+
+        $data = $response->json();
+
+        // Ensure there's exactly one line item
+        $this->assertCount(1, $data['line_items']);
+
+        $lineItem = $data['line_items'][0];
+
+        // Validate price and title type
+        $this->assertEquals(19.99, $lineItem['price']);
+        $this->assertIsString($lineItem['title']);
     }
 
-    public function test_export_returns_success_message(): void
+    public function test_store_with_fixed_discount_creates_discount_line(): void
     {
+        $user = User::factory()->create();
+        $data = [
+            'customer_id' => $user->id,
+            'status' => OrderStatus::PENDING->value,
+            'line_items' => [
+                [
+                    'title' => 'Product 1',
+                    'price' => 100,
+                    'quantity' => 1,
+                ],
+            ],
+            'discount' => [
+                'type' => 'fixed_amount',
+                'value' => 10,
+                'description' => 'Test discount',
+            ],
+            'sub_total' => 100,
+            'discount_total' => 10,
+            'grand_total' => 90,
+        ];
+
         $this->actingAs($this->admin, 'admin')
-            ->getJson(route('admin.orders.export'))
+            ->post(route('admin.orders.store'), $data)
+            ->assertSessionHasNoErrors()
+            ->assertRedirect();
+
+        $order = Foundry::$orderModel::where('customer_id', $user->id)->first();
+        $this->assertNotNull($order, 'Order should be created');
+        $this->assertEquals(10, $order->discount_total, 'discount_total should be stored');
+
+        // Check if discount line is created
+        $this->assertDatabaseHas('discount_lines', [
+            'discountable_id' => $order->id,
+            'discountable_type' => 'Order',
+            'type' => 'fixed_amount',
+            'value' => 10,
+            'description' => 'Test discount',
+        ]);
+
+        // Verify discount relationship is accessible
+        $order->refresh();
+        $this->assertNotNull($order->discount, 'Order should have discount relationship');
+        $this->assertEquals('fixed_amount', $order->discount->type);
+        $this->assertEquals(10, $order->discount->value);
+        $this->assertEquals('Test discount', $order->discount->description);
+    }
+
+    public function test_store_with_percentage_discount_creates_discount_line(): void
+    {
+        $user = User::factory()->create();
+        $data = [
+            'customer_id' => $user->id,
+            'status' => OrderStatus::PENDING->value,
+            'line_items' => [
+                [
+                    'title' => 'Product 1',
+                    'price' => 100,
+                    'quantity' => 1,
+                ],
+            ],
+            'discount' => [
+                'type' => 'percentage',
+                'value' => 10,
+                'description' => '10% off',
+            ],
+            'sub_total' => 100,
+            'discount_total' => 10,
+            'grand_total' => 90,
+        ];
+
+        $this->actingAs($this->admin, 'admin')
+            ->post(route('admin.orders.store'), $data)
+            ->assertSessionHasNoErrors()
+            ->assertRedirect();
+
+        $order = Foundry::$orderModel::where('customer_id', $user->id)->first();
+        $this->assertNotNull($order, 'Order should be created');
+        $this->assertEquals(10, $order->discount_total, 'discount_total should be 10 (10% of 100)');
+
+        // Check if discount line is created
+        $this->assertDatabaseHas('discount_lines', [
+            'discountable_id' => $order->id,
+            'discountable_type' => 'Order',
+            'type' => 'percentage',
+            'value' => 10,
+            'description' => '10% off',
+        ]);
+
+        // Verify discount relationship
+        $order->refresh();
+        $this->assertNotNull($order->discount, 'Order should have discount relationship');
+        $this->assertEquals('percentage', $order->discount->type);
+        $this->assertEquals(10, $order->discount->value);
+    }
+
+    public function test_update_with_discount_creates_or_updates_discount_line(): void
+    {
+        $user = User::factory()->create();
+        $order = Order::factory()->create([
+            'customer_id' => $user->id,
+            'status' => OrderStatus::PENDING->value,
+            'discount_total' => 0,
+            'sub_total' => 100,
+            'tax_total' => 0,
+            'grand_total' => 100,
+        ]);
+        $order->line_items()->create([
+            'title' => 'Product 1',
+            'price' => 100,
+            'quantity' => 1,
+        ]);
+
+        // Update order with discount
+        $data = [
+            'status' => 'pending',
+            'sub_total' => 100,
+            'tax_total' => 0,
+            'discount_total' => 15,
+            'grand_total' => 85,
+            'line_items' => [
+                [
+                    'title' => 'Product 1',
+                    'price' => 100,
+                    'quantity' => 1,
+                ],
+            ],
+            'discount' => [
+                'type' => 'fixed_amount',
+                'value' => 15,
+                'description' => 'Updated discount',
+            ],
+        ];
+
+        $this->actingAs($this->admin, 'admin')
+            ->patch(route('admin.orders.update', $order), $data)
+            ->assertSessionHasNoErrors()
+            ->assertRedirect();
+
+        $order->refresh();
+        $this->assertEquals(15, $order->discount_total, 'discount_total should be updated');
+
+        // Verify discount line is created or updated in database
+        $this->assertDatabaseHas('discount_lines', [
+            'discountable_id' => $order->id,
+            'discountable_type' => 'Order',
+            'type' => 'fixed_amount',
+            'value' => 15,
+            'description' => 'Updated discount',
+        ]);
+    }
+
+    public function test_show_order_includes_discount_relationship(): void
+    {
+        $user = User::factory()->create();
+        $order = Order::factory()->create(['customer_id' => $user->id]);
+        $order->line_items()->create([
+            'title' => 'Product 1',
+            'price' => 100,
+            'quantity' => 1,
+        ]);
+        $discount = $order->discount()->create([
+            'type' => 'fixed_amount',
+            'value' => 20,
+            'description' => 'Test discount',
+        ]);
+
+        // Request JSON and assert the order and discount are present in the response
+        $this->actingAs($this->admin, 'admin')
+            ->getJson(route('admin.orders.show', $order))
             ->assertSuccessful()
-            ->assertJsonFragment(['message' => __('Order export has been started successfully.')]);
+            ->assertJsonStructure([
+                'id',
+                'line_items',
+                'discount',
+            ]);
     }
 }

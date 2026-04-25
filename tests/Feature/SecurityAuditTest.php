@@ -2,13 +2,13 @@
 
 namespace Foundry\Tests\Feature;
 
+use Foundry\Enum\OrderStatus as OrderStatusEnum;
+use Foundry\Enum\PaymentStatus;
 use Foundry\Models\Admin;
 use Foundry\Models\Order;
 use Foundry\Models\Payment;
 use Foundry\Models\Permission;
 use Foundry\Models\User;
-use Foundry\Enum\OrderStatus as OrderStatusEnum;
-use Foundry\Enum\PaymentStatus;
 use Foundry\Rules\ReCaptchaRule;
 use Foundry\Tests\TestCase;
 use Illuminate\Support\Facades\Http;

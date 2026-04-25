@@ -3,11 +3,12 @@
 namespace Foundry\Tests;
 
 use Foundry\Foundry;
-use Foundry\Models\Order;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use Orchestra\Testbench\Concerns\WithWorkbench;
 use Orchestra\Testbench\TestCase as OrchestraTestCase;
+use Workbench\App\Models\Order;
+use Workbench\App\Models\User;
 
 class BaseTestCase extends OrchestraTestCase
 {
@@ -28,7 +29,7 @@ class BaseTestCase extends OrchestraTestCase
         $app['config']->set('app.currency', 'USD');
 
         Foundry::useOrderModel(Order::class);
-        Foundry::useUserModel(\Workbench\App\Models\User::class);
-        Foundry::useSubscriptionUserModel(\Workbench\App\Models\User::class);
+        Foundry::useUserModel(User::class);
+        Foundry::useSubscriptionUserModel(User::class);
     }
 }

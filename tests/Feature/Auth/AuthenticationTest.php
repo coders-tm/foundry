@@ -16,7 +16,7 @@ class AuthenticationTest extends FeatureTestCase
 
     public function test_admins_can_authenticate_using_the_login_screen()
     {
-        /** @var \Foundry\Models\Admin $admin */
+        /** @var Admin $admin */
         $admin = Admin::factory()->create(['is_active' => true]);
 
         $response = $this->post(route('admin.login.store'), [
@@ -43,7 +43,7 @@ class AuthenticationTest extends FeatureTestCase
 
     public function test_admins_can_logout()
     {
-        /** @var \Foundry\Models\Admin $admin */
+        /** @var Admin $admin */
         $admin = Admin::factory()->create(['is_active' => true]);
 
         $response = $this->actingAs($admin, 'admin')->post(route('admin.logout'));

@@ -3,8 +3,8 @@
 namespace Foundry\Services\Metrics\Instances;
 
 use Carbon\Carbon;
+use Foundry\Foundry;
 use Foundry\Models\Order;
-use Foundry\Models\Subscription;
 use Foundry\Services\Metrics\AbstractMetric;
 use Foundry\Services\Metrics\HandlesSubscriptionMetrics;
 use Illuminate\Support\Facades\DB;
@@ -21,12 +21,12 @@ class MrrMetric extends AbstractMetric
         return DB::table('subscriptions')
             ->join('orders', function ($join) use ($end) {
                 $join->on('subscriptions.id', '=', 'orders.orderable_id')
-                    ->where('orders.orderable_type', (new Subscription)->getMorphClass())
+                    ->where('orders.orderable_type', (new Foundry::$subscriptionModel)->getMorphClass())
                     ->whereIn('orders.id', function ($query) use ($end) {
                         $query->select(DB::raw('MAX(id)'))
                             ->from('orders')
                             ->where('payment_status', Order::STATUS_PAID)
-                            ->where('orderable_type', (new Subscription)->getMorphClass())
+                            ->where('orderable_type', (new Foundry::$subscriptionModel)->getMorphClass())
                             ->where('created_at', '<=', $end)
                             ->groupBy('orderable_id');
                     });
@@ -65,12 +65,12 @@ class MrrMetric extends AbstractMetric
             ->join('plans', 'subscriptions.plan_id', '=', 'plans.id')
             ->join('orders', function ($join) use ($date) {
                 $join->on('subscriptions.id', '=', 'orders.orderable_id')
-                    ->where('orders.orderable_type', (new Subscription)->getMorphClass())
+                    ->where('orders.orderable_type', (new Foundry::$subscriptionModel)->getMorphClass())
                     ->whereIn('orders.id', function ($query) use ($date) {
                         $query->select(DB::raw('MAX(id)'))
                             ->from('orders')
                             ->where('payment_status', Order::STATUS_PAID)
-                            ->where('orderable_type', (new Subscription)->getMorphClass())
+                            ->where('orderable_type', (new Foundry::$subscriptionModel)->getMorphClass())
                             ->where('created_at', '<=', $date)
                             ->groupBy('orderable_id');
                     });
@@ -88,12 +88,12 @@ class MrrMetric extends AbstractMetric
         return DB::table('subscriptions')
             ->join('orders', function ($join) use ($date) {
                 $join->on('subscriptions.id', '=', 'orders.orderable_id')
-                    ->where('orders.orderable_type', (new Subscription)->getMorphClass())
+                    ->where('orders.orderable_type', (new Foundry::$subscriptionModel)->getMorphClass())
                     ->whereIn('orders.id', function ($query) use ($date) {
                         $query->select(DB::raw('MAX(id)'))
                             ->from('orders')
                             ->where('payment_status', Order::STATUS_PAID)
-                            ->where('orderable_type', (new Subscription)->getMorphClass())
+                            ->where('orderable_type', (new Foundry::$subscriptionModel)->getMorphClass())
                             ->where('created_at', '<=', $date)
                             ->groupBy('orderable_id');
                     });

@@ -4,8 +4,8 @@ namespace Foundry\Services\Metrics;
 
 use Carbon\Carbon;
 use Foundry\Contracts\SubscriptionStatus;
+use Foundry\Foundry;
 use Foundry\Models\Order;
-use Foundry\Models\Subscription;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 
@@ -34,7 +34,7 @@ trait HandlesSubscriptionMetrics
     {
         return DB::table('orders')
             ->select('orderable_id', DB::raw('MAX(created_at) as latest_created_at'))
-            ->where('orderable_type', (new Subscription)->getMorphClass())
+            ->where('orderable_type', (new Foundry::$subscriptionModel)->getMorphClass())
             ->where('payment_status', Order::STATUS_PAID)
             ->where('created_at', '<=', $date)
             ->groupBy('orderable_id');

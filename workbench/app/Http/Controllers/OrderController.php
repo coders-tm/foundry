@@ -3,326 +3,350 @@
 namespace Workbench\App\Http\Controllers;
 
 use Foundry\Foundry;
-use Foundry\Enum\LogType;
 use Foundry\Models\Order;
+use Foundry\Models\Order\Customer as NotifiableCustomer;
+use Foundry\Models\User;
+use Foundry\Notifications\OrderInvoiceNotification;
+use Foundry\Repository\OrderRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\ResourceCollection;
+use Illuminate\Http\Resources\Json\JsonResource;
 
-/**
- * Manages subscription orders.
- *
- * Scoped exclusively to orders associated with subscriptions — not
- * a general-purpose shop order controller. Authorization is enforced
- * via the Order policy: users see only their own orders, admins see all.
- */
 class OrderController extends Controller
 {
     /**
-     * List subscription orders for the authenticated user (or all for admin).
+     * Display a listing of the resource.
      */
-    public function index(Request $request): JsonResponse
+    public function index(Request $request)
     {
         $this->authorize('viewAny', Foundry::$orderModel);
 
-        /** @var Order $model */
-        $model = Foundry::$orderModel;
+        $query = Foundry::$orderModel::query();
 
-        $query = $model::query()
-            ->with(['line_items', 'payments', 'contact'])
-            ->latest();
-
-        // Regular users see only their own orders
-        if (! $request->user('admin')) {
-            $query->onlyOwner();
+        if ($request->has('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('number', 'like', "%{$search}%")
+                    ->orWhereHas('customer', function ($q) use ($search) {
+                        $q->where('first_name', 'like', "%{$search}%")
+                            ->orWhere('last_name', 'like', "%{$search}%");
+                    });
+            });
         }
 
-        if ($request->filled('status')) {
-            $query->whereStatus($request->status);
-        }
-
-        if ($request->filled('payment_status')) {
-            $query->byPaymentStatus($request->payment_status);
-        }
-
-        if ($request->boolean('deleted')) {
+        if ($request->has('trashed')) {
             $query->onlyTrashed();
         }
 
-        $orders = $query->paginate($request->integer('per_page', 15));
+        if ($request->has('sort')) {
+            $query->orderBy($request->input('sort'), $request->input('order', 'asc'));
+        } else {
+            $query->latest('created_at');
+        }
 
-        return (new ResourceCollection($orders))->response();
+        $orders = $query->paginate($request->input('per_page', 20))
+            ->withQueryString();
+
+        return response()->json([
+            'orders' => JsonResource::collection($orders),
+            'filters' => (object) $request->only(['search', 'trashed', 'sort', 'order']),
+            'trashable' => true,
+        ]);
     }
 
     /**
-     * Store a new subscription order.
+     * Store a newly created resource in storage.
      */
-    public function store(Request $request): JsonResponse
+    public function store(Request $request)
     {
         $this->authorize('create', Foundry::$orderModel);
 
         $order = Foundry::$orderModel::create($request->all());
 
-        return response()->json([
-            'message' => __('Order has been created successfully.'),
-            'order' => $order->load(['line_items', 'payments', 'contact']),
-        ], 201);
+        if ($request->filled('payment_method')) {
+            $order->markAsPaid($request->payment_method, [
+                'note' => 'Marked the manual payment as received',
+            ]);
+        }
+
+        if ($request->filled('invoice_data')) {
+            $this->sendInvoiceNotification($order, $request->input('invoice_data'));
+        }
+
+        $order->refresh();
+
+        return redirect()->route('admin.orders.show', $order)
+            ->with('success', __('Order has been created successfully!'));
+    }
+
+    protected function sendInvoiceNotification(Order $order, array $data)
+    {
+        $recipientEmail = $data['to'] ?? $order->customer?->email;
+
+        if (empty($recipientEmail)) {
+            return;
+        }
+
+        $customer = new NotifiableCustomer([
+            'id' => $order->customer?->id,
+            'first_name' => $order->customer?->first_name,
+            'last_name' => $order->customer?->last_name,
+            'email' => $recipientEmail,
+        ]);
+
+        $order->logs()->create([
+            'type' => 'invoice_sent',
+            'message' => 'Invoice has been sent to '.$recipientEmail,
+        ]);
+
+        $customer->notify(new OrderInvoiceNotification($order));
     }
 
     /**
-     * Show a single subscription order.
+     * Show the specified resource.
      */
-    public function show($id): JsonResponse
+    public function show($id)
     {
         $order = Foundry::$orderModel::withTrashed()->findOrFail($id);
-
         $this->authorize('view', $order);
 
-        $order->load(['line_items', 'tax_lines', 'payments', 'contact', 'orderable']);
+        $order->load([
+            'line_items',
+            'tax_lines',
+            'payments',
+            'contact',
+            'orderable',
+            'discount',
+        ]);
 
         return response()->json($order);
     }
 
     /**
-     * Update the specified order.
+     * Update the specified resource in storage.
      */
-    public function update(Request $request, Order $order): JsonResponse
-    {
-        $this->authorize('update', $order);
-
-        $order->update($request->all());
-
-        return response()->json([
-            'message' => __('Order has been updated successfully.'),
-            'order' => $order->fresh(['line_items', 'payments', 'contact']),
-        ]);
-    }
-
-    /**
-     * Remove the specified order.
-     */
-    public function destroy($id): JsonResponse
+    public function update(Request $request, $id)
     {
         $order = Foundry::$orderModel::withTrashed()->findOrFail($id);
 
-        $this->authorize('delete', $order);
-
         if ($order->trashed()) {
-            $order->forceDelete();
-        } else {
-            $order->delete();
+            return redirect()->back()->with('error', __('Deleted orders cannot be edited.'));
         }
 
-        return response()->json([
-            'message' => __('Order has been deleted successfully.'),
-        ]);
+        $this->authorize('update', $order);
+
+        if (! ($order->can_edit ?? true) && ! $request->filled('status')) {
+            return redirect()->back()->with('error', __('Canceled/Completed orders can’t be edited.'));
+        }
+
+        $order->update($request->all());
+
+        if ($request->filled('payment_method')) {
+            $order->markAsPaid($request->payment_method, [
+                'note' => 'Marked the manual payment as received',
+            ]);
+        }
+
+        return redirect()->back()
+            ->with('success', __('Order has been updated successfully!'));
     }
 
     /**
-     * Bulk delete orders.
+     * Remove the specified resource from storage (soft or force delete).
      */
-    public function bulkDestroy(Request $request): JsonResponse
+    public function destroy(Request $request, $id)
     {
-        $this->authorize('deleteAny', Foundry::$orderModel);
-
-        $request->validate(['items' => 'required|array']);
-
-        $query = Foundry::$orderModel::withTrashed()->whereIn('id', $request->items);
+        $order = Foundry::$orderModel::withTrashed()->findOrFail($id);
 
         if ($request->boolean('force')) {
-            $query->forceDelete();
-        } else {
-            $query->delete();
+            $this->authorize('forceDelete', $order);
+            $order->forceDelete();
+
+            return redirect()->back()
+                ->with('success', __('Permanently deleted.'));
         }
 
-        return response()->json([
-            'message' => __('Selected orders have been deleted successfully.'),
-        ]);
+        $this->authorize('delete', $order);
+        $order->delete();
+
+        return redirect()->back()
+            ->with('success', __('Deleted successfully.'));
     }
 
     /**
-     * Restore the specified order.
+     * Bulk delete resources (soft or force delete based on ?force param).
      */
-    public function restore($id): JsonResponse
+    public function bulkDestroy(Request $request)
     {
-        $order = Foundry::$orderModel::onlyTrashed()->findOrFail($id);
+        $this->authorize('delete', Foundry::$orderModel);
 
+        $ids = $request->input('items', []);
+        $force = $request->boolean('force');
+
+        if ($force) {
+            Foundry::$orderModel::withTrashed()->whereIn('id', $ids)->forceDelete();
+
+            return redirect()->back()
+                ->with('success', __('Selected orders permanently deleted.'));
+        }
+
+        Foundry::$orderModel::whereIn('id', $ids)->delete();
+
+        return redirect()->back()
+            ->with('success', __('Selected orders deleted successfully.'));
+    }
+
+    /**
+     * Restore the specified soft-deleted resource.
+     */
+    public function restore($id)
+    {
+        $order = Foundry::$orderModel::withTrashed()->findOrFail($id);
         $this->authorize('restore', $order);
 
         $order->restore();
 
-        return response()->json([
-            'message' => __('Order has been restored successfully.'),
-        ]);
+        return redirect()->back()
+            ->with('success', __('Restored successfully.'));
     }
 
     /**
-     * Bulk restore orders.
+     * Bulk restore soft-deleted resources.
      */
-    public function bulkRestore(Request $request): JsonResponse
+    public function bulkRestore(Request $request)
     {
-        $this->authorize('restoreAny', Foundry::$orderModel);
+        $this->authorize('restore', Foundry::$orderModel);
 
-        $request->validate(['items' => 'required|array']);
+        $ids = $request->input('items', []);
+        Foundry::$orderModel::withTrashed()->whereIn('id', $ids)->restore();
 
-        Foundry::$orderModel::onlyTrashed()->whereIn('id', $request->items)->restore();
-
-        return response()->json([
-            'message' => __('Selected orders have been restored successfully.'),
-        ]);
+        return redirect()->back()
+            ->with('success', __('Selected orders restored successfully.'));
     }
 
     /**
-     * Export orders.
+     * Cancel the specified order.
      */
-    public function export(Request $request): JsonResponse
+    public function cancel($id)
     {
-        $this->authorize('viewAny', Foundry::$orderModel);
-
-        // In workbench, we just return a message as real export requires extra setup
-        return response()->json([
-            'message' => __('Order export has been started successfully.'),
-        ]);
-    }
-
-    /**
-     * Get logs for an order.
-     */
-    public function logs(Order $order): JsonResponse
-    {
-        $this->authorize('view', $order);
-
-        return response()->json($order->logs()
-            ->with('admin')
-            ->whereNotIn('type', collect(LogType::cases())->map->value->all())
-            ->latest()
-            ->get());
-    }
-
-    /**
-     * Store a log for an order.
-     */
-    public function storeLog(Request $request, Order $order): JsonResponse
-    {
+        $order = Foundry::$orderModel::withTrashed()->findOrFail($id);
         $this->authorize('update', $order);
 
-        $request->validate(['message' => 'required|string']);
+        $order->markAsCancelled();
 
-        $log = $order->logs()->create([
-            'message' => $request->message,
-            'type' => 'note',
-        ]);
-
-        return response()->json([
-            'message' => __('Log has been added successfully.'),
-            'data' => $log->load('admin'),
-        ]);
+        return redirect()->back()
+            ->with('success', __('Order cancelled successfully.'));
     }
 
     /**
-     * Cancel a subscription order (user-initiated or admin).
+     * Refund the specified order.
      */
-    public function cancel(Request $request, Order $order): JsonResponse
+    public function refund(Request $request, $id)
     {
-        $this->authorize('cancel', $order);
+        $order = Foundry::$orderModel::withTrashed()->findOrFail($id);
+        $this->authorize('update', $order);
 
-        abort_if($order->is_cancelled, 422, __('This order has already been cancelled.'));
+        try {
+            $order->refund(
+                reason: $request->input('reason'),
+                toWallet: $request->boolean('to_wallet')
+            );
 
-        // Admin can cancel even if paid (if allowed by business logic)
-        if (! $request->user('admin')) {
-            abort_if($order->is_paid, 422, __('Paid orders cannot be self-cancelled. Please contact support.'));
+            return redirect()->back()
+                ->with('success', __('Refund processed successfully.'));
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', $e->getMessage());
         }
-
-        $order->cancel($request->input('reason'));
-
-        return response()->json([
-            'message' => __('Order has been cancelled successfully.'),
-            'order' => $order->fresh(['payments']),
-        ]);
     }
 
     /**
-     * Mark order as paid (admin only).
+     * Download invoice for the specified order.
      */
-    public function markAsPaid(Request $request, Order $order): JsonResponse
+    public function downloadInvoice($id)
     {
-        $this->authorize('manage', $order);
-
-        $request->validate([
-            'payment_method' => 'required|exists:payment_methods,id',
-        ]);
-
-        $order->markAsPaid($request->payment_method);
-
-        return response()->json([
-            'message' => __('Order has been marked as paid successfully.'),
-            'order' => $order->fresh(['payments']),
-        ]);
-    }
-
-    /**
-     * Send invoice notification (admin only).
-     */
-    public function sendInvoice(Order $order): JsonResponse
-    {
-        $this->authorize('manage', $order);
-
-        // Logic to send notification
-        // $order->customer->notify(new OrderInvoiceNotification($order));
-
-        return response()->json([
-            'message' => __('Invoice has been sent successfully.'),
-        ]);
-    }
-
-    /**
-     * Download invoice PDF.
-     */
-    public function downloadInvoice(Order $order)
-    {
+        $order = Foundry::$orderModel::withTrashed()->findOrFail($id);
         $this->authorize('view', $order);
 
         return $order->download();
     }
 
     /**
-     * Refund order (admin only).
+     * Mark the specified order as paid.
      */
-    public function refund(Request $request, Order $order): JsonResponse
+    public function markAsPaid($id)
     {
-        $this->authorize('manage', $order);
+        $order = Foundry::$orderModel::withTrashed()->findOrFail($id);
+        $this->authorize('update', $order);
 
-        $request->validate([
-            'amount' => 'required|numeric|min:0.01',
-            'reason' => 'nullable|string',
-        ]);
+        $order->markAsPaid();
 
-        // Logic for refund
-        // $order->refund($request->amount, $request->reason);
-
-        return response()->json([
-            'message' => __('Refund has been processed successfully.'),
-            'order' => $order->fresh(['payments']),
-        ]);
+        return redirect()->back()
+            ->with('success', __('Order marked as paid successfully.'));
     }
 
     /**
-     * Update order status (admin only).
+     * Mark the specified order as completed.
      */
-    public function updateStatus(Request $request, Order $order): JsonResponse
+    public function markAsCompleted($id)
     {
-        $this->authorize('manage', $order);
+        $order = Foundry::$orderModel::withTrashed()->findOrFail($id);
+        $this->authorize('update', $order);
 
-        $request->validate([
-            'status' => ['required', 'string'],
-        ]);
+        $order->update(['status' => 'completed']);
 
-        $order->forceFill(['status' => $request->status])->save();
-
-        return response()->json([
-            'message' => __('Order status updated successfully.'),
-            'order' => $order->fresh(),
-        ]);
+        return redirect()->back()
+            ->with('success', __('Order marked as completed successfully.'));
     }
 
+    /**
+     * Send invoice for the specified order.
+     */
+    public function sendInvoice(Request $request, $id)
+    {
+        $order = Foundry::$orderModel::withTrashed()->findOrFail($id);
+        $this->authorize('update', $order);
+
+        // Validate email when explicitly provided
+        $request->validate([
+            'to' => 'nullable|email',
+        ]);
+
+        $this->sendInvoiceNotification($order, $request->only(['to', 'subject', 'message']));
+
+        return redirect()->back()
+            ->with('success', __('Invoice sent successfully!'));
+    }
+
+    /**
+     * Calculate order totals based on line items
+     *
+     * @return JsonResponse
+     */
+    public function calculator(Request $request)
+    {
+        $request->merge([
+            'line_items' => $request->line_items ?? [],
+        ]);
+
+        $order = Foundry::$orderModel::firstOrNew(['id' => $request->id], []);
+
+        if ($request->input('customer.id') !== $order->customer_id) {
+            $order->customer_id = $request->input('customer.id');
+            $customer = User::find($request->input('customer.id'));
+            $request->merge([
+                'billing_address' => $customer?->address,
+                'customer' => $customer?->toArray(),
+            ]);
+        }
+
+        // Use OrderRepository to process request and calculate order totals
+        $order = OrderRepository::fromRequest($request, $order);
+
+        if ($order->customer_id) {
+            $order->loadMissing('customer.address');
+        }
+
+        return response()->json($order, 200);
+    }
 }

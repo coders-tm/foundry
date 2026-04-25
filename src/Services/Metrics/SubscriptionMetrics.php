@@ -3,7 +3,7 @@
 namespace Foundry\Services\Metrics;
 
 use Carbon\Carbon;
-use Foundry\Models\Subscription;
+use Foundry\Foundry;
 use Illuminate\Support\Facades\DB;
 
 class SubscriptionMetrics extends MetricsCalculator
@@ -20,7 +20,7 @@ class SubscriptionMetrics extends MetricsCalculator
         return $this->remember('active_count', function () {
             $range = $this->getDateRange();
 
-            return Subscription::query()
+            return Foundry::$subscriptionModel::query()
                 ->when(true, fn ($q) => $this->applyActiveSubscriptionFilter($q, $range['end']))
                 ->count();
         });
@@ -34,7 +34,7 @@ class SubscriptionMetrics extends MetricsCalculator
         return $this->remember('grace_period', function () {
             $range = $this->getDateRange();
 
-            return Subscription::query()
+            return Foundry::$subscriptionModel::query()
                 ->whereNotNull('canceled_at')
                 ->where('expires_at', '>', $range['end'])
                 ->where('canceled_at', '<=', $range['end'])
@@ -62,7 +62,7 @@ class SubscriptionMetrics extends MetricsCalculator
         return $this->remember('trial_count', function () {
             $range = $this->getDateRange();
 
-            return Subscription::query()
+            return Foundry::$subscriptionModel::query()
                 ->whereNotNull('trial_ends_at')
                 ->where('trial_ends_at', '>', $range['end'])
                 ->where('created_at', '<=', $range['end'])
@@ -102,7 +102,7 @@ class SubscriptionMetrics extends MetricsCalculator
         return $this->remember('new_this_month', function () {
             $range = $this->getDateRange();
 
-            return Subscription::query()
+            return Foundry::$subscriptionModel::query()
                 ->whereMonth('created_at', $range['end']->month)
                 ->whereYear('created_at', $range['end']->year)
                 ->count();
@@ -129,7 +129,7 @@ class SubscriptionMetrics extends MetricsCalculator
         return $this->remember('by_plan', function () {
             $range = $this->getDateRange();
 
-            return Subscription::query()
+            return Foundry::$subscriptionModel::query()
                 ->select('plans.label as plan_name', 'plans.id as plan_id', DB::raw('count(*) as count'))
                 ->join('plans', 'subscriptions.plan_id', '=', 'plans.id')
                 ->when(true, fn ($q) => $this->applyActiveSubscriptionFilter($q, $range['end']))
@@ -148,7 +148,7 @@ class SubscriptionMetrics extends MetricsCalculator
         return $this->remember('by_interval', function () {
             $range = $this->getDateRange();
 
-            return Subscription::query()
+            return Foundry::$subscriptionModel::query()
                 ->select(
                     'billing_interval',
                     'billing_interval_count',
@@ -169,7 +169,7 @@ class SubscriptionMetrics extends MetricsCalculator
     public function getByStatus(): array
     {
         return $this->remember('by_status', function () {
-            return Subscription::query()
+            return Foundry::$subscriptionModel::query()
                 ->select('status', DB::raw('count(*) as count'))
                 ->groupBy('status')
                 ->get()
@@ -185,7 +185,7 @@ class SubscriptionMetrics extends MetricsCalculator
     {
         return $this->remember('avg_lifetime', function () {
             // Use database-agnostic approach
-            $subscriptions = Subscription::query()
+            $subscriptions = Foundry::$subscriptionModel::query()
                 ->whereNotNull('canceled_at')
                 ->get(['created_at', 'canceled_at']);
 
@@ -209,7 +209,7 @@ class SubscriptionMetrics extends MetricsCalculator
         return $this->remember('retention_rate', function () {
             $range = $this->getDateRange();
 
-            $startingSubscriptions = Subscription::query()
+            $startingSubscriptions = Foundry::$subscriptionModel::query()
                 ->where('created_at', '<=', $range['start'])
                 ->count();
 
@@ -217,7 +217,7 @@ class SubscriptionMetrics extends MetricsCalculator
                 return 0.0;
             }
 
-            $retained = Subscription::query()
+            $retained = Foundry::$subscriptionModel::query()
                 ->where('created_at', '<=', $range['start'])
                 ->where(function ($q) use ($range) {
                     $q->whereNull('canceled_at')
@@ -237,7 +237,7 @@ class SubscriptionMetrics extends MetricsCalculator
         return $this->remember('frozen_count', function () {
             $range = $this->getDateRange();
 
-            return Subscription::query()
+            return Foundry::$subscriptionModel::query()
                 ->whereNotNull('frozen_at')
                 ->where('frozen_at', '<=', $range['end'])
                 ->where(function ($q) use ($range) {
@@ -254,7 +254,7 @@ class SubscriptionMetrics extends MetricsCalculator
     public function getPendingReleaseCount(): int
     {
         return $this->remember('pending_release', function () {
-            return Subscription::query()
+            return Foundry::$subscriptionModel::query()
                 ->whereNotNull('frozen_at')
                 ->whereNotNull('release_at')
                 ->where('release_at', '<=', now()->addDays(7))
@@ -271,7 +271,7 @@ class SubscriptionMetrics extends MetricsCalculator
         return $this->remember('contract_count', function () {
             $range = $this->getDateRange();
 
-            return Subscription::query()
+            return Foundry::$subscriptionModel::query()
                 ->whereNotNull('total_cycles')
                 ->where('total_cycles', '>', 0)
                 ->when(true, fn ($q) => $this->applyActiveSubscriptionFilter($q, $range['end']))
@@ -288,7 +288,7 @@ class SubscriptionMetrics extends MetricsCalculator
             $range = $this->getDateRange();
             $next30Days = $range['end']->copy()->addDays(30);
 
-            return Subscription::query()
+            return Foundry::$subscriptionModel::query()
                 ->whereNotNull('total_cycles')
                 ->where('total_cycles', '>', 0)
                 ->whereNotNull('expires_at')
@@ -307,14 +307,14 @@ class SubscriptionMetrics extends MetricsCalculator
             $next30Days = $range['end']->copy()->addDays(30);
             $latestOrders = $this->latestPaidOrderSubquery($range['end']);
 
-            $subscriptions = Subscription::query()
+            $subscriptions = Foundry::$subscriptionModel::query()
                 ->joinSub($latestOrders, 'latest_orders', function ($join) {
                     $join->on('subscriptions.id', '=', 'latest_orders.orderable_id');
                 })
                 ->join('orders', function ($join) {
                     $join->on('orders.orderable_id', '=', 'subscriptions.id')
                         ->on('orders.created_at', '=', 'latest_orders.latest_created_at')
-                        ->where('orders.orderable_type', '=', 'Subscription');
+                        ->where('orders.orderable_type', '=', (new Foundry::$subscriptionModel)->getMorphClass());
                 })
                 ->select(
                     DB::raw('DATE(subscriptions.expires_at) as renewal_date'),
@@ -346,7 +346,7 @@ class SubscriptionMetrics extends MetricsCalculator
             $range = $this->getDateRange();
 
             // Subscriptions with scheduled downgrades
-            $scheduledDowngrades = Subscription::query()
+            $scheduledDowngrades = Foundry::$subscriptionModel::query()
                 ->where('is_downgrade', true)
                 ->whereNotNull('next_plan')
                 ->count();
@@ -372,7 +372,7 @@ class SubscriptionMetrics extends MetricsCalculator
         return $this->remember('expiring_today', function () {
             $range = $this->getDateRange();
 
-            return Subscription::query()
+            return Foundry::$subscriptionModel::query()
                 ->whereDate('expires_at', $range['end']->toDateString())
                 ->count();
         });
@@ -385,13 +385,13 @@ class SubscriptionMetrics extends MetricsCalculator
     {
         return $this->remember('growth_rate', function () {
             $range = $this->getDateRange();
-            $currentMonth = Subscription::query()
+            $currentMonth = Foundry::$subscriptionModel::query()
                 ->whereMonth('created_at', $range['end']->month)
                 ->whereYear('created_at', $range['end']->year)
                 ->count();
 
             $previousMonthEnd = $range['end']->copy()->subMonth();
-            $previousMonth = Subscription::query()
+            $previousMonth = Foundry::$subscriptionModel::query()
                 ->whereMonth('created_at', $previousMonthEnd->month)
                 ->whereYear('created_at', $previousMonthEnd->year)
                 ->count();
@@ -502,7 +502,7 @@ class SubscriptionMetrics extends MetricsCalculator
 
     protected function cancelledBetween(Carbon $start, Carbon $end): int
     {
-        return Subscription::query()
+        return Foundry::$subscriptionModel::query()
             ->whereNotNull('canceled_at')
             ->whereBetween('canceled_at', [$start, $end])
             ->count();
@@ -510,14 +510,14 @@ class SubscriptionMetrics extends MetricsCalculator
 
     protected function newSubscriptionsBetween(Carbon $start, Carbon $end): int
     {
-        return Subscription::query()
+        return Foundry::$subscriptionModel::query()
             ->whereBetween('created_at', [$start, $end])
             ->count();
     }
 
     protected function churnRateBetween(Carbon $start, Carbon $end): float
     {
-        $activeStart = Subscription::query()
+        $activeStart = Foundry::$subscriptionModel::query()
             ->when(true, fn ($q) => $this->applyActiveSubscriptionFilter($q, $start))
             ->count();
 
