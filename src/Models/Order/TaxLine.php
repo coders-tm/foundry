@@ -9,16 +9,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class TaxLine extends Model implements Currencyable
 {
-    /**
-     * Get the list of currency fields to be converted.
-     *
-     * @return array Field names that contain currency amounts
-     */
-    public function getCurrencyFields(): array
-    {
-        return ['amount'];
-    }
-
     use HasFactory, HasUuids;
 
     public $timestamps = false;
@@ -47,5 +37,15 @@ class TaxLine extends Model implements Currencyable
     public function taxable()
     {
         return $this->morphTo();
+    }
+
+    /**
+     * Get the list of currency fields to be converted.
+     *
+     * @return array Field names that contain currency amounts
+     */
+    public function getCurrencyFields(): array
+    {
+        return ['amount'];
     }
 }

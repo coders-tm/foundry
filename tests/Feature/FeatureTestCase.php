@@ -40,7 +40,7 @@ abstract class FeatureTestCase extends TestCase
             'email' => "{$description}@foundry.com",
             'first_name' => 'Dipak',
             'last_name' => 'Sarkar',
-            'password' => Hash::make('password'),
+            'password' => 'password',
         ], $options));
     }
 

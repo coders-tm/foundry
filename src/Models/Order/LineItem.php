@@ -13,16 +13,6 @@ class LineItem extends Model implements Currencyable
 {
     use Core, HasFactory, HasUuids;
 
-    /**
-     * Get the list of currency fields to be converted.
-     *
-     * @return array Field names that contain currency amounts
-     */
-    public function getCurrencyFields(): array
-    {
-        return ['price', 'total', 'discounted_price'];
-    }
-
     protected $fillable = [
         'title',
         'variant_title',
@@ -51,6 +41,16 @@ class LineItem extends Model implements Currencyable
         'taxable' => 'boolean',
         'is_custom' => 'boolean',
     ];
+
+    /**
+     * Get the list of currency fields to be converted.
+     *
+     * @return array Field names that contain currency amounts
+     */
+    public function getCurrencyFields(): array
+    {
+        return ['price', 'total', 'discounted_price'];
+    }
 
     public function discount()
     {

@@ -12,21 +12,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class DiscountLine extends Model implements Currencyable
 {
-    /**
-     * Get the list of currency fields to be converted.
-     *
-     * @return array Field names that contain currency amounts
-     */
-    public function getCurrencyFields(): array
-    {
-        // Percentage discounts have no monetary value fields to convert
-        if ($this->isPercentage()) {
-            return [];
-        }
-
-        return ['value'];
-    }
-
     use HasFactory, HasUuids;
 
     public $timestamps = false;
@@ -166,5 +151,20 @@ class DiscountLine extends Model implements Currencyable
     protected static function newFactory()
     {
         return DiscountLineFactory::new();
+    }
+
+    /**
+     * Get the list of currency fields to be converted.
+     *
+     * @return array Field names that contain currency amounts
+     */
+    public function getCurrencyFields(): array
+    {
+        // Percentage discounts have no monetary value fields to convert
+        if ($this->isPercentage()) {
+            return [];
+        }
+
+        return ['value'];
     }
 }
