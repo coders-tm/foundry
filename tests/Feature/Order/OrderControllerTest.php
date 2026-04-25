@@ -8,6 +8,7 @@ use Foundry\Foundry;
 use Foundry\Models\Admin;
 use Foundry\Models\Order;
 use Foundry\Models\Order\Customer;
+use Foundry\Models\Order\TaxLine;
 use Foundry\Models\Payment;
 use Foundry\Models\PaymentMethod;
 use Foundry\Models\Subscription;
@@ -486,29 +487,170 @@ class OrderControllerTest extends FeatureTestCase
         ]);
     }
 
-    public function test_show_order_includes_discount_relationship(): void
+    public function test_show_order_includes_all_necessary_relationships(): void
     {
         $user = User::factory()->create();
-        $order = Order::factory()->create(['customer_id' => $user->id]);
-        $order->line_items()->create([
-            'title' => 'Product 1',
-            'price' => 100,
-            'quantity' => 1,
-        ]);
-        $discount = $order->discount()->create([
-            'type' => 'fixed_amount',
-            'value' => 20,
-            'description' => 'Test discount',
+        $order = Order::create([
+            'customer_id' => $user->id,
+            'status' => OrderStatus::PENDING->value,
+            'line_items' => [
+                [
+                    'title' => 'Product 1',
+                    'price' => 100,
+                    'quantity' => 1,
+                    'taxable' => true,
+                ],
+            ],
+            'discount' => [
+                'type' => 'fixed_amount',
+                'value' => 20,
+                'description' => 'Test discount',
+            ],
+            'tax_lines' => [
+                [
+                    'label' => 'Sales Tax',
+                    'rate' => 10,
+                ],
+            ],
+            'contact' => [
+                'email' => 'test@example.com',
+                'phone_number' => '1234567890',
+            ],
         ]);
 
-        // Request JSON and assert the order and discount are present in the response
+        // Request JSON and assert the order and all relationships are present in the response
         $this->actingAs($this->admin, 'admin')
             ->getJson(route('admin.orders.show', $order))
             ->assertSuccessful()
             ->assertJsonStructure([
                 'id',
                 'line_items',
+                'tax_lines',
                 'discount',
-            ]);
+                'contact'
+            ])
+            ->assertJsonPath('discount.value', '20.00')
+            ->assertJsonPath('tax_lines.0.label', 'Sales Tax')
+            ->assertJsonPath('tax_lines.0.amount', '8.00');
+    }
+
+    public function test_order_create_calculates_correctly_with_compounded_taxes_and_discount(): void
+    {
+        $user = User::factory()->create();
+
+        // Multi-product, discount, and compounded tax scenario
+        // Prod 1: 100 (taxable)
+        // Prod 2: 100 (taxable)
+        // Subtotal: 200
+        // Discount: 10% -> 20
+        // Taxable Base: 180
+        // Tax 1 (Default): 10% -> 18
+        // Tax 2 (Compounded): 5% -> 5% of (180 + 18) = 9.90
+        // Total Tax: 27.90
+        // Grand Total: 180 + 27.90 = 207.90
+
+        $order = Order::create([
+            'customer_id' => $user->id,
+            'status' => OrderStatus::PENDING->value,
+            'line_items' => [
+                ['title' => 'Product 1', 'price' => 100, 'quantity' => 1, 'taxable' => true],
+                ['title' => 'Product 2', 'price' => 100, 'quantity' => 1, 'taxable' => true],
+            ],
+            'discount' => [
+                'type' => 'percentage',
+                'value' => 10,
+            ],
+            'tax_lines' => [
+                ['label' => 'GST', 'rate' => 10, 'type' => 'normal'],
+                ['label' => 'Cess', 'rate' => 5, 'type' => 'compounded'],
+            ],
+        ]);
+
+        $this->assertEquals(200.00, (float) $order->sub_total);
+        $this->assertEquals(20.00, (float) $order->discount_total);
+        $this->assertEquals(27.90, (float) $order->tax_total);
+        $this->assertEquals(207.90, (float) $order->grand_total);
+
+        $this->assertCount(2, $order->tax_lines);
+        $this->assertEquals(18.00, (float) $order->tax_lines->where('label', 'GST')->first()->amount);
+        $this->assertEquals(9.90, (float) $order->tax_lines->where('label', 'Cess')->first()->amount);
+    }
+
+    public function test_order_update_recalculates_correctly_when_data_changes(): void
+    {
+        $user = User::factory()->create();
+        $order = Order::create([
+            'customer_id' => $user->id,
+            'line_items' => [
+                ['title' => 'Initial Item', 'price' => 100, 'quantity' => 1],
+            ],
+            'collect_tax' => false, // Ensure no default taxes are applied
+        ]);
+
+        $this->assertEquals(100.00, (float) $order->grand_total);
+
+        // Update with new item and a tax
+        $order->update([
+            'line_items' => [
+                ['title' => 'New Item', 'price' => 200, 'quantity' => 1, 'taxable' => true],
+            ],
+            'tax_lines' => [
+                ['label' => 'Updated Tax', 'rate' => 10],
+            ],
+        ]);
+
+        $order->refresh();
+        $order->load(['tax_lines', 'line_items']);
+
+        $this->assertEquals(200.00, (float) $order->sub_total);
+        $this->assertEquals(20.00, (float) $order->tax_total);
+        $this->assertEquals(220.00, (float) $order->grand_total);
+        $this->assertCount(1, $order->line_items);
+        $this->assertEquals('New Item', $order->line_items->first()->title);
+
+        $this->assertCount(1, $order->tax_lines);
+        $this->assertEquals(20.00, (float) $order->tax_lines->first()->amount);
+    }
+
+    public function test_store_endpoint_calculates_correctly(): void
+    {
+        $user = User::factory()->create();
+        $data = [
+            'customer_id' => $user->id,
+            'status' => OrderStatus::PENDING->value,
+            'line_items' => [
+                ['title' => 'Product A', 'price' => 100, 'quantity' => 2, 'taxable' => true],
+            ],
+            'tax_lines' => [
+                ['label' => 'VAT', 'rate' => 20, 'type' => 'normal'],
+            ],
+            'discount' => [
+                'type' => 'fixed_amount',
+                'value' => 50,
+            ],
+        ];
+
+        // Calculation:
+        // Subtotal: 200
+        // Discount: 50
+        // Taxable Base: 150
+        // Tax: 20% of 150 = 30
+        // Grand Total: 150 + 30 = 180
+
+        $this->actingAs($this->admin, 'admin')
+            ->post(route('admin.orders.store'), $data)
+            ->assertRedirect();
+
+        $order = (Foundry::$orderModel)::where('customer_id', $user->id)->latest()->first();
+        $order->load(['tax_lines', 'line_items']);
+        
+        $this->assertEquals(200.00, (float) $order->sub_total);
+        $this->assertEquals(50.00, (float) $order->discount_total);
+        $this->assertEquals(30.00, (float) $order->tax_total);
+        $this->assertEquals(180.00, (float) $order->grand_total);
+        
+        $this->assertCount(1, $order->tax_lines);
+        $this->assertEquals(30.00, (float) $order->tax_lines->first()->amount);
+        $this->assertEquals(30.00, (float) TaxLine::where('taxable_id', $order->id)->first()->amount);
     }
 }

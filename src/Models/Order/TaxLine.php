@@ -30,6 +30,11 @@ class TaxLine extends Model implements Currencyable
         'type',
     ];
 
+    protected $casts = [
+        'amount' => 'decimal:2',
+        'rate' => 'decimal:2',
+    ];
+
     const TYPE_NORMAL = 'normal';
 
     const TYPE_COMPOUND = 'compound';
