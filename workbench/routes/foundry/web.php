@@ -240,6 +240,7 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::post('{order}/send-invoice', 'sendInvoice')->name('send-invoice');
         Route::get('{order}/download-invoice', 'downloadInvoice')->name('download-invoice');
         Route::post('{order}/refund', 'refund')->name('refund');
+        Route::post('calculator', 'calculator')->name('calculator');
     });
 
     // Users

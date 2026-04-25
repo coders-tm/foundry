@@ -6,6 +6,7 @@ use App\Models\User;
 use Foundry\Models\Admin;
 use Foundry\Models\Setting;
 use Foundry\Models\Tax;
+use Foundry\Repository\BaseRepository;
 use Foundry\Notifications\NewAdminNotification;
 use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Support\Facades\Notification;
@@ -81,6 +82,8 @@ class HelpersTest extends FeatureTestCase
 
     public function test_country_taxes()
     {
+        $repository = new class extends BaseRepository {};
+
         Tax::create([
             'country' => 'United States',
             'label' => 'VAT',
@@ -99,12 +102,14 @@ class HelpersTest extends FeatureTestCase
             'priority' => 1,
         ]);
 
-        $this->assertNotEmpty(country_taxes('US'));
-        $this->assertNotEmpty(country_taxes('US', 'California'));
+        $this->assertNotEmpty($repository->countryTaxes('US'));
+        $this->assertNotEmpty($repository->countryTaxes('US', 'California'));
     }
 
     public function test_default_tax()
     {
+        $repository = new class extends BaseRepository {};
+
         Tax::create([
             'country' => 'United Kingdom',
             'label' => 'VAT',
@@ -123,17 +128,39 @@ class HelpersTest extends FeatureTestCase
             'priority' => 0,
         ]);
 
-        $this->assertNotEmpty(default_tax());
+        $this->assertNotEmpty($repository->useDefaultTax()->tax_lines);
     }
 
     public function test_rest_of_world_tax()
     {
-        $this->assertNotEmpty(rest_of_world_tax());
+        $repository = new class extends BaseRepository {};
+
+        Tax::create([
+            'country' => 'Rest of World',
+            'label' => 'VAT',
+            'code' => '*',
+            'state' => '*',
+            'rate' => 10,
+            'priority' => 0,
+        ]);
+
+        $this->assertNotEmpty($repository->restOfWorldTax());
     }
 
     public function test_billing_address_tax()
     {
-        $this->assertNotEmpty(billing_address_tax(['country' => 'United States']));
-        $this->assertNotEmpty(billing_address_tax(['country' => 'Canada']));
+        $repository = new class extends BaseRepository {};
+
+        Tax::create([
+            'country' => 'Rest of World',
+            'label' => 'VAT',
+            'code' => '*',
+            'state' => '*',
+            'rate' => 10,
+            'priority' => 0,
+        ]);
+
+        $this->assertNotEmpty($repository->getBillingAddressTax(['country' => 'United States']));
+        $this->assertNotEmpty($repository->getBillingAddressTax(['country' => 'Canada']));
     }
 }

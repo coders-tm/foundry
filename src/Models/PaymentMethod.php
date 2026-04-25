@@ -512,7 +512,11 @@ class PaymentMethod extends Model
                     ->keys();
 
                 foreach ($providers as $provider) {
-                    $allConfigs[$provider] = self::getProviderConfig($provider);
+                    try {
+                        $allConfigs[$provider] = self::getProviderConfig($provider);
+                    } catch (\Throwable $e) {
+                        Log::warning("Failed to synchronize payment provider config for {$provider}: {$e->getMessage()}");
+                    }
                 }
 
                 return $allConfigs;

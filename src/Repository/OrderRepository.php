@@ -17,42 +17,46 @@ class OrderRepository extends BaseRepository
      */
     public static function fromRequest(Request $request, Order $order): Order
     {
-        // Process line items and their discounts
-        $line_items = collect($request->line_items ?? [])->map(function ($product) {
-            $item = LineItem::firstOrNew([
-                'id' => $product['id'] ?? null,
-            ], $product)->fill($product);
+        // Hydrate line items from request or fallback to existing items
+        $line_items = collect($request->input('line_items', $order->line_items ? $order->line_items->all() : []))
+            ->map(function ($product) {
+                $item = LineItem::firstOrNew([
+                    'id' => $product['id'] ?? null,
+                ], $product)->fill($product);
 
-            // Manually hydrate line-item level discount relation
-            if (isset($product['discount'])) {
-                $item->setRelation('discount', DiscountLine::firstOrNew([
-                    'id' => $product['discount']['id'] ?? null,
-                ], $product['discount'])->fill($product['discount']));
-            }
+                // Manually hydrate line-item level discount relation
+                if (isset($product['discount'])) {
+                    $item->setRelation('discount', DiscountLine::firstOrNew([
+                        'id' => $product['discount']['id'] ?? null,
+                    ], $product['discount'])->fill($product['discount']));
+                }
 
-            return $item;
-        });
+                return $item;
+            });
 
         $order->created_at = $order->created_at ?? now();
 
+        // Fill basic attributes, specifically excluding relations like tax_lines and discount
         $order->fill($request->only([
             'note',
             'collect_tax',
             'attributes',
             'billing_address',
             'source',
-            'tax_lines',
         ]));
 
-        // Ensure collect_tax is set to true by default if not provided
-        if (! $request->filled('collect_tax')) {
+        // Ensure collect_tax defaults correctly if missing from request and model
+        if (! $request->has('collect_tax') && is_null($order->collect_tax)) {
             $order->collect_tax = true;
         }
 
         $order->setRelation('line_items', $line_items);
 
-        // Set order discount
-        $order->setRelation('discount', $request->filled('discount') ? new DiscountLine($request->discount) : null);
+        // Hydrate order-level discount from request or fallback to existing discount
+        $discount = $request->filled('discount')
+            ? new DiscountLine($request->discount)
+            : ($request->has('discount') ? null : $order->discount);
+        $order->setRelation('discount', $discount);
 
         // Process customer data
         if ($request->filled('customer')) {
@@ -65,19 +69,24 @@ class OrderRepository extends BaseRepository
             if ($request->filled('customer.id')) {
                 $order->customer->id = $request->input('customer.id');
             }
+        } elseif (! $request->has('customer')) {
+            // Keep existing customer if not provided in request
         } else {
             $order->setRelation('customer', null);
         }
 
-        // Set contact
-        $order->setRelation('contact', $request->filled('contact') ? new Contact($request->contact) : null);
+        // Process contact data
+        if ($request->filled('contact')) {
+            $order->setRelation('contact', new Contact($request->contact));
+        } elseif ($request->has('contact')) {
+            $order->setRelation('contact', null);
+        }
 
-        // Calculate using CartRepository
-        // Note: passing relations explicitly helps BaseRepository if it expects them
+        // Create repository instance for financial calculations
         $repository = new self(array_merge($order->attributesToArray(), [
             'line_items' => $order->line_items ? $order->line_items->all() : [],
             'discount' => $order->discount,
-            'tax_lines' => $request->input('tax_lines') ?? $order->tax_lines->all(),
+            'tax_lines' => $request->input('tax_lines'), // Let BaseRepository handle default taxes if null/missing
         ]));
 
         // Apply calculated values back to order

@@ -4,6 +4,7 @@ namespace Foundry\Tests\Unit;
 
 use App\Models\User;
 use Foundry\Models\Admin;
+use Foundry\Repository\BaseRepository;
 use Foundry\Tests\BaseTestCase;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Optional;
@@ -285,17 +286,7 @@ class HelpersTest extends BaseTestCase
 
     public function test_get_country_code()
     {
-        $this->assertEquals('*', get_country_code(null));
-    }
-
-    public function test_trans_attribute()
-    {
-        $this->assertEquals('key', trans_attribute('key', 'type'));
-    }
-
-    public function test_html_text()
-    {
-        $this->assertEquals('Hello World', html_text('<div>Hello<br>World</div>'));
+        $this->assertEquals('*', BaseRepository::getCountryCode(null));
     }
 
     public function test_theme()

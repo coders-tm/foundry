@@ -5,11 +5,14 @@ namespace Foundry\Repository;
 use Foundry\Models\Order\DiscountLine;
 use Foundry\Models\Order\LineItem;
 use Foundry\Models\Order\TaxLine;
+use Foundry\Models\Tax;
 use Foundry\Rules\ArrayOrInstanceOf;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Validator;
+use League\ISO3166\ISO3166;
+use Throwable;
 
 abstract class BaseRepository extends Model
 {
@@ -83,8 +86,8 @@ abstract class BaseRepository extends Model
         // Initialize tax collection directly in constructor
         $taxLines = $attributes['tax_lines'] ?? [];
 
-        // Set default tax lines if not provided
-        if (empty($taxLines)) {
+        // Set default tax lines if not provided or empty when tax collection is enabled
+        if ($attributes['collect_tax'] && empty($taxLines)) {
             // Use tax lines based on billing address if provided
             if (! empty($attributes['billing_address'])) {
                 $taxLines = $this->getBillingAddressTax($attributes['billing_address']);
@@ -113,23 +116,78 @@ abstract class BaseRepository extends Model
     /**
      * Get tax configuration for billing address
      */
-    protected function getBillingAddressTax($billingAddress): ?array
+    public function getBillingAddressTax(array $address = []): array
     {
-        // Check if function exists, otherwise return default
-        if (function_exists('billing_address_tax')) {
-            return billing_address_tax($billingAddress);
+        if (isset($address['country']) && ! empty($address['country'])) {
+            $stateCode = isset($address['state_code']) ? $address['state_code'] : null;
+            $taxes = $this->countryTaxes($address['country'], $stateCode);
+            if (count($taxes) > 0) {
+                return $taxes;
+            }
         }
 
-        // Default tax for testing
-        return [];
+        return $this->restOfWorldTax();
     }
 
     /**
      * Get default tax configuration
      */
-    protected function getDefaultTax(): ?array
+    public function getDefaultTax(): array
     {
-        return default_tax();
+        $taxes = $this->countryTaxes(config('app.country'));
+        if (count($taxes) > 0) {
+            return $taxes;
+        }
+
+        return $this->restOfWorldTax();
+    }
+
+    /**
+     * Get country code from country name
+     */
+    public static function getCountryCode(?string $country): string
+    {
+        if (empty($country)) {
+            return '*';
+        }
+
+        try {
+            $country = (new ISO3166)->name($country);
+
+            return $country['alpha2'];
+        } catch (Throwable $e) {
+            return '*';
+        }
+    }
+
+    /**
+     * Get taxes for a specific country and state
+     */
+    public function countryTaxes(?string $countryCode = null, ?string $state = null): array
+    {
+        $taxQuery = Tax::where('code', self::getCountryCode($countryCode))
+            ->orderBy('priority');
+
+        if ($state) {
+            $taxQuery->whereIn('state', ['*', $state]);
+        } else {
+            $taxQuery->whereIn('state', ['*']);
+        }
+
+        return $taxQuery->get()
+            ->map(function ($item) {
+                return array_merge($item->only(['label', 'rate']), [
+                    'type' => $item->compounded ? 'compounded' : 'normal',
+                ]);
+            })->toArray();
+    }
+
+    /**
+     * Get rest of world tax configuration
+     */
+    public function restOfWorldTax(): array
+    {
+        return $this->countryTaxes('*');
     }
 
     /**
