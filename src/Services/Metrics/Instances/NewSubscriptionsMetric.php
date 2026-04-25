@@ -3,7 +3,7 @@
 namespace Foundry\Services\Metrics\Instances;
 
 use Carbon\Carbon;
-use Foundry\Models\Subscription;
+use Foundry\Foundry;
 use Foundry\Services\Metrics\AbstractMetric;
 
 class NewSubscriptionsMetric extends AbstractMetric
@@ -13,7 +13,7 @@ class NewSubscriptionsMetric extends AbstractMetric
      */
     public function calculate(Carbon $start, Carbon $end): mixed
     {
-        return Subscription::query()
+        return Foundry::$subscriptionModel::query()
             ->whereBetween('created_at', [$start, $end])
             ->count();
     }

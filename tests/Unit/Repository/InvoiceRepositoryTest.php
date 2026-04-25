@@ -7,7 +7,7 @@ use Foundry\Repository\InvoiceRepository;
 use Foundry\Tests\BaseTestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
-class TaxCalculationTest extends BaseTestCase
+class InvoiceRepositoryTest extends BaseTestCase
 {
     use RefreshDatabase;
 

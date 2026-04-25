@@ -3,6 +3,7 @@
 namespace Foundry\Tests\Feature\Reports;
 
 use Carbon\Carbon;
+use Foundry\Foundry;
 use Foundry\Models\Order;
 use Foundry\Models\Subscription;
 use Foundry\Models\Subscription\Plan;
@@ -54,7 +55,7 @@ class KpiMetricsTest extends TestCase
         ]);
         Order::factory()->create([
             'orderable_id' => $sub1->id,
-            'orderable_type' => (new Subscription)->getMorphClass(),
+            'orderable_type' => (new Foundry::$subscriptionModel)->getMorphClass(),
             'payment_status' => Order::STATUS_PAID,
             'grand_total' => 90,
             'tax_total' => 10,
@@ -71,7 +72,7 @@ class KpiMetricsTest extends TestCase
         ]);
         Order::factory()->create([
             'orderable_id' => $sub2->id,
-            'orderable_type' => (new Subscription)->getMorphClass(),
+            'orderable_type' => (new Foundry::$subscriptionModel)->getMorphClass(),
             'payment_status' => Order::STATUS_PAID,
             'grand_total' => 1440,
             'tax_total' => 120,
@@ -137,7 +138,7 @@ class KpiMetricsTest extends TestCase
         ]);
         Order::factory()->create([
             'orderable_id' => $sub->id,
-            'orderable_type' => (new Subscription)->getMorphClass(),
+            'orderable_type' => (new Foundry::$subscriptionModel)->getMorphClass(),
             'payment_status' => Order::STATUS_PAID,
             'grand_total' => 100,
             'tax_total' => 0,
@@ -218,7 +219,7 @@ class KpiMetricsTest extends TestCase
         ]);
         Order::factory()->create([
             'orderable_id' => $sub->id,
-            'orderable_type' => (new Subscription)->getMorphClass(),
+            'orderable_type' => (new Foundry::$subscriptionModel)->getMorphClass(),
             'payment_status' => Order::STATUS_PAID,
             'grand_total' => 100,
             'tax_total' => 0,

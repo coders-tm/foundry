@@ -41,6 +41,7 @@ class OrderRepository extends BaseRepository
             'attributes',
             'billing_address',
             'source',
+            'tax_lines',
         ]));
 
         // Ensure collect_tax is set to true by default if not provided
@@ -74,8 +75,9 @@ class OrderRepository extends BaseRepository
         // Calculate using CartRepository
         // Note: passing relations explicitly helps BaseRepository if it expects them
         $repository = new self(array_merge($order->attributesToArray(), [
-            'line_items' => $order->line_items,
+            'line_items' => $order->line_items ? $order->line_items->all() : [],
             'discount' => $order->discount,
+            'tax_lines' => $request->input('tax_lines') ?? $order->tax_lines->all(),
         ]));
 
         // Apply calculated values back to order

@@ -18,13 +18,13 @@ class MrrMetric extends AbstractMetric
      */
     public function calculate(Carbon $start, Carbon $end): mixed
     {
-        return DB::table('subscriptions')
-            ->join('orders', function ($join) use ($end) {
-                $join->on('subscriptions.id', '=', 'orders.orderable_id')
-                    ->where('orders.orderable_type', (new Foundry::$subscriptionModel)->getMorphClass())
-                    ->whereIn('orders.id', function ($query) use ($end) {
+        return DB::table((new Foundry::$subscriptionModel)->getTable())
+            ->join((new Foundry::$orderModel)->getTable(), function ($join) use ($end) {
+                $join->on((new Foundry::$subscriptionModel)->getTable().'.id', '=', (new Foundry::$orderModel)->getTable().'.orderable_id')
+                    ->where((new Foundry::$orderModel)->getTable().'.orderable_type', (new Foundry::$subscriptionModel)->getMorphClass())
+                    ->whereIn((new Foundry::$orderModel)->getTable().'.id', function ($query) use ($end) {
                         $query->select(DB::raw('MAX(id)'))
-                            ->from('orders')
+                            ->from((new Foundry::$orderModel)->getTable())
                             ->where('payment_status', Order::STATUS_PAID)
                             ->where('orderable_type', (new Foundry::$subscriptionModel)->getMorphClass())
                             ->where('created_at', '<=', $end)
@@ -61,14 +61,14 @@ class MrrMetric extends AbstractMetric
 
     protected function calculateMrrByPlan(Carbon $date): array
     {
-        return DB::table('subscriptions')
-            ->join('plans', 'subscriptions.plan_id', '=', 'plans.id')
-            ->join('orders', function ($join) use ($date) {
-                $join->on('subscriptions.id', '=', 'orders.orderable_id')
-                    ->where('orders.orderable_type', (new Foundry::$subscriptionModel)->getMorphClass())
-                    ->whereIn('orders.id', function ($query) use ($date) {
+        return DB::table((new Foundry::$subscriptionModel)->getTable())
+            ->join('plans', (new Foundry::$subscriptionModel)->getTable().'.plan_id', '=', 'plans.id')
+            ->join((new Foundry::$orderModel)->getTable(), function ($join) use ($date) {
+                $join->on((new Foundry::$subscriptionModel)->getTable().'.id', '=', (new Foundry::$orderModel)->getTable().'.orderable_id')
+                    ->where((new Foundry::$orderModel)->getTable().'.orderable_type', (new Foundry::$subscriptionModel)->getMorphClass())
+                    ->whereIn((new Foundry::$orderModel)->getTable().'.id', function ($query) use ($date) {
                         $query->select(DB::raw('MAX(id)'))
-                            ->from('orders')
+                            ->from((new Foundry::$orderModel)->getTable())
                             ->where('payment_status', Order::STATUS_PAID)
                             ->where('orderable_type', (new Foundry::$subscriptionModel)->getMorphClass())
                             ->where('created_at', '<=', $date)
@@ -85,13 +85,13 @@ class MrrMetric extends AbstractMetric
 
     protected function calculateMrrByInterval(Carbon $date): array
     {
-        return DB::table('subscriptions')
-            ->join('orders', function ($join) use ($date) {
-                $join->on('subscriptions.id', '=', 'orders.orderable_id')
-                    ->where('orders.orderable_type', (new Foundry::$subscriptionModel)->getMorphClass())
-                    ->whereIn('orders.id', function ($query) use ($date) {
+        return DB::table((new Foundry::$subscriptionModel)->getTable())
+            ->join((new Foundry::$orderModel)->getTable(), function ($join) use ($date) {
+                $join->on((new Foundry::$subscriptionModel)->getTable().'.id', '=', (new Foundry::$orderModel)->getTable().'.orderable_id')
+                    ->where((new Foundry::$orderModel)->getTable().'.orderable_type', (new Foundry::$subscriptionModel)->getMorphClass())
+                    ->whereIn((new Foundry::$orderModel)->getTable().'.id', function ($query) use ($date) {
                         $query->select(DB::raw('MAX(id)'))
-                            ->from('orders')
+                            ->from((new Foundry::$orderModel)->getTable())
                             ->where('payment_status', Order::STATUS_PAID)
                             ->where('orderable_type', (new Foundry::$subscriptionModel)->getMorphClass())
                             ->where('created_at', '<=', $date)
@@ -99,8 +99,8 @@ class MrrMetric extends AbstractMetric
                     });
             })
             ->when(true, fn ($q) => $this->applyActiveSubscriptionFilter($q, $date, true))
-            ->select('subscriptions.billing_interval', DB::raw("SUM({$this->mrrSumExpression()}) as mrr"))
-            ->groupBy('subscriptions.billing_interval')
+            ->select((new Foundry::$subscriptionModel)->getTable().'.billing_interval', DB::raw("SUM({$this->mrrSumExpression()}) as mrr"))
+            ->groupBy((new Foundry::$subscriptionModel)->getTable().'.billing_interval')
             ->get()
             ->pluck('mrr', 'billing_interval')
             ->toArray();

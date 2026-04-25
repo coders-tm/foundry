@@ -3,6 +3,7 @@
 namespace Foundry\Tests\Feature\Reports;
 
 use Carbon\Carbon;
+use Foundry\Foundry;
 use Foundry\Models\Order;
 use Foundry\Models\Subscription;
 use Foundry\Models\Subscription\Plan;
@@ -28,7 +29,7 @@ class MrrCalculationTest extends TestCase
         // Create a paid order just in case, but it should be ignored
         Order::factory()->create([
             'orderable_id' => $sub->id,
-            'orderable_type' => (new Subscription)->getMorphClass(),
+            'orderable_type' => (new Foundry::$subscriptionModel)->getMorphClass(),
             'payment_status' => Order::STATUS_PAID,
             'grand_total' => 100,
             'tax_total' => 0,
@@ -61,7 +62,7 @@ class MrrCalculationTest extends TestCase
         // Old order
         Order::factory()->create([
             'orderable_id' => $sub->id,
-            'orderable_type' => (new Subscription)->getMorphClass(),
+            'orderable_type' => (new Foundry::$subscriptionModel)->getMorphClass(),
             'payment_status' => Order::STATUS_PAID,
             'grand_total' => 80, // Maybe an old price
             'tax_total' => 0,
@@ -74,7 +75,7 @@ class MrrCalculationTest extends TestCase
         // Tax $8 -> $88 Total.
         Order::factory()->create([
             'orderable_id' => $sub->id,
-            'orderable_type' => (new Subscription)->getMorphClass(),
+            'orderable_type' => (new Foundry::$subscriptionModel)->getMorphClass(),
             'payment_status' => Order::STATUS_PAID,
             'grand_total' => 88,
             'tax_total' => 8,
@@ -104,7 +105,7 @@ class MrrCalculationTest extends TestCase
 
         Order::factory()->create([
             'orderable_id' => $sub->id,
-            'orderable_type' => (new Subscription)->getMorphClass(),
+            'orderable_type' => (new Foundry::$subscriptionModel)->getMorphClass(),
             'payment_status' => Order::STATUS_PAID,
             'grand_total' => 1200,
             'tax_total' => 0,

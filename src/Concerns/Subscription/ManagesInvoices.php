@@ -88,13 +88,13 @@ trait ManagesInvoices
             [
                 'title' => $title,
                 'metadata' => [
+                    'title' => $title,
                     'description' => "$fromDate - $toDate",
                     'plan_id' => $plan->id,
                 ],
                 'price' => $plan->price,
-                'total' => $plan->price,
                 'quantity' => 1,
-                'options' => ['title' => $title],
+                'taxable' => true,
                 'discount' => $this->discount(),
             ],
         ];
@@ -106,7 +106,6 @@ trait ManagesInvoices
                 $lineItems[] = [
                     'title' => __('Admission Fee'),
                     'price' => $setupFee,
-                    'total' => $setupFee,
                     'quantity' => 1,
                     'metadata' => [
                         'type' => 'setup_fee',
