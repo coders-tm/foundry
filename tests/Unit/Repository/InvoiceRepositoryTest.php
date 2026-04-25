@@ -304,4 +304,78 @@ class InvoiceRepositoryTest extends BaseTestCase
         $this->assertEquals(7, $repository->tax_total);
         $this->assertEquals(77, $repository->grand_total);
     }
+
+    /**
+     * Scenario: Concurrent Taxes (Indian GST)
+     * 1 Item ($100), CGST (9%), SGST (9%).
+     * Both should be calculated on the base $100.
+     */
+    public function test_concurrent_taxes_indian_gst_scenario()
+    {
+        $repository = new InvoiceRepository([
+            'collect_tax' => true,
+            'line_items' => [
+                [
+                    'title' => 'Item',
+                    'price' => 100,
+                    'quantity' => 1,
+                    'taxable' => true,
+                ],
+            ],
+            'tax_lines' => [
+                ['label' => 'CGST', 'rate' => 9],
+                ['label' => 'SGST', 'rate' => 9],
+            ],
+        ]);
+
+        // Each tax is 9% of 100 = 9.
+        // Total Tax = 18.
+        // Grand Total = 118.
+
+        $this->assertEquals(100, $repository->sub_total);
+        $this->assertEquals(18, $repository->tax_total);
+        $this->assertEquals(118, $repository->grand_total);
+        $this->assertCount(2, $repository->tax_lines);
+        $this->assertEquals(9, $repository->tax_lines[0]['amount']);
+        $this->assertEquals(9, $repository->tax_lines[1]['amount']);
+    }
+
+    /**
+     * Scenario: Compounded Taxes with Discount
+     * 1 Item ($100), 20% discount, Normal Tax (10%), Compounded Tax (5%).
+     */
+    public function test_compounded_taxes_with_discount_scenario()
+    {
+        $repository = new InvoiceRepository([
+            'collect_tax' => true,
+            'line_items' => [
+                [
+                    'title' => 'Item',
+                    'price' => 100,
+                    'quantity' => 1,
+                    'taxable' => true,
+                    'discount' => [
+                        'type' => 'percentage',
+                        'value' => 20,
+                    ],
+                ],
+            ],
+            'tax_lines' => [
+                ['label' => 'Normal Tax', 'rate' => 10, 'type' => 'default'],
+                ['label' => 'Compound Tax', 'rate' => 5, 'type' => 'compounded'],
+            ],
+        ]);
+
+        // Price = 100. Discount = 20. Base = 80.
+        // Normal Tax (10% of 80) = 8.
+        // Compound Tax (5% of (80 + 8)) = 5% of 88 = 4.4.
+        // Total Tax = 8 + 4.4 = 12.4.
+        // Grand Total = 80 + 12.4 = 92.4.
+
+        $this->assertEquals(100, $repository->sub_total);
+        $this->assertEquals(20, $repository->discount_total);
+        $this->assertEquals(8, $repository->default_tax_total);
+        $this->assertEquals(12.4, $repository->tax_total);
+        $this->assertEquals(92.4, $repository->grand_total);
+    }
 }

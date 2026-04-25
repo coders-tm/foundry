@@ -3,6 +3,7 @@
 namespace Foundry\Tests\Unit\Repository;
 
 use Foundry\Models\Order;
+use Foundry\Models\Tax;
 use Foundry\Repository\OrderRepository;
 use Foundry\Tests\BaseTestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -168,5 +169,106 @@ class OrderRepositoryTest extends BaseTestCase
         $this->assertNotNull($order->contact);
         $this->assertEquals('Jane', $order->contact->first_name);
         $this->assertEquals('jane@example.com', $order->contact->email);
+    }
+
+    /**
+     * Scenario: Multiple Concurrent Taxes (Indian GST) resolved from DB
+     */
+    public function test_concurrent_taxes_indian_gst_from_request()
+    {
+        // Seed taxes for India
+        Tax::create([
+            'country' => 'India',
+            'code' => 'IN',
+            'state' => '*',
+            'label' => 'CGST',
+            'rate' => 9,
+            'priority' => 1,
+        ]);
+        Tax::create([
+            'country' => 'India',
+            'code' => 'IN',
+            'state' => '*',
+            'label' => 'SGST',
+            'rate' => 9,
+            'priority' => 2,
+        ]);
+
+        $order = new Order;
+        $request = Request::create('/orders', 'POST', [
+            'collect_tax' => true,
+            'line_items' => [
+                [
+                    'title' => 'Product',
+                    'price' => 100,
+                    'quantity' => 1,
+                    'taxable' => true,
+                ],
+            ],
+            'billing_address' => [
+                'country' => 'India',
+            ],
+            // Omit tax_lines, let it resolve from DB
+        ]);
+
+        $order = OrderRepository::fromRequest($request, $order);
+
+        $this->assertEquals(100, $order->sub_total);
+        $this->assertEquals(18, $order->tax_total);
+        $this->assertEquals(118, $order->grand_total);
+        $this->assertCount(2, $order->tax_lines);
+        $this->assertEquals('CGST', $order->tax_lines[0]['label']);
+        $this->assertEquals('SGST', $order->tax_lines[1]['label']);
+    }
+
+    /**
+     * Scenario: Compounded Taxes resolved from DB
+     */
+    public function test_compounding_taxes_from_request()
+    {
+        // Seed cascating taxes for a country
+        Tax::create([
+            'country' => 'Canada',
+            'code' => 'CA',
+            'state' => '*',
+            'label' => 'GST',
+            'rate' => 5,
+            'priority' => 1,
+        ]);
+        Tax::create([
+            'country' => 'Canada',
+            'code' => 'CA',
+            'state' => '*',
+            'label' => 'PST (Compounded)',
+            'rate' => 10,
+            'compounded' => true,
+            'priority' => 2,
+        ]);
+
+        $order = new Order;
+        $request = Request::create('/orders', 'POST', [
+            'collect_tax' => true,
+            'line_items' => [
+                [
+                    'title' => 'Product',
+                    'price' => 100,
+                    'quantity' => 1,
+                    'taxable' => true,
+                ],
+            ],
+            'billing_address' => [
+                'country' => 'Canada',
+            ],
+        ]);
+
+        $order = OrderRepository::fromRequest($request, $order);
+
+        // GST = 5% of 100 = 5.
+        // PST = 10% of (100 + 5) = 10.5.
+        // Total Tax = 5 + 10.5 = 15.5.
+        // Grand Total = 115.5.
+
+        $this->assertEquals(15.5, $order->tax_total);
+        $this->assertEquals(115.5, $order->grand_total);
     }
 }
