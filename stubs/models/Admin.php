@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Foundry\Models\Admin as BaseAdmin;
-
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 
 class Admin extends BaseAdmin implements MustVerifyEmail

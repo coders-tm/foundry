@@ -4,7 +4,6 @@ use Foundry\Facades\Guard;
 use Foundry\Foundry;
 use Foundry\Models\Blog;
 use Foundry\Models\Setting;
-use Foundry\Models\Tax;
 use Foundry\Services\AdminNotification;
 use Foundry\Services\ShortcodeProcessor;
 use Foundry\Support\FluentData;
@@ -12,7 +11,6 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Optional;
 use Illuminate\Support\Str;
-use League\ISO3166\ISO3166;
 use Symfony\Polyfill\Intl\Icu\Currencies;
 
 if (! function_exists('guard')) {
@@ -439,7 +437,6 @@ if (! function_exists('has')) {
         }
     }
 }
-
 
 if (! function_exists('blog')) {
     /**

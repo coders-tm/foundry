@@ -527,7 +527,7 @@ class OrderControllerTest extends FeatureTestCase
                 'line_items',
                 'tax_lines',
                 'discount',
-                'contact'
+                'contact',
             ])
             ->assertJsonPath('discount.value', '20.00')
             ->assertJsonPath('tax_lines.0.label', 'Sales Tax')
@@ -643,12 +643,12 @@ class OrderControllerTest extends FeatureTestCase
 
         $order = (Foundry::$orderModel)::where('customer_id', $user->id)->latest()->first();
         $order->load(['tax_lines', 'line_items']);
-        
+
         $this->assertEquals(200.00, (float) $order->sub_total);
         $this->assertEquals(50.00, (float) $order->discount_total);
         $this->assertEquals(30.00, (float) $order->tax_total);
         $this->assertEquals(180.00, (float) $order->grand_total);
-        
+
         $this->assertCount(1, $order->tax_lines);
         $this->assertEquals(30.00, (float) $order->tax_lines->first()->amount);
         $this->assertEquals(30.00, (float) TaxLine::where('taxable_id', $order->id)->first()->amount);

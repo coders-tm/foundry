@@ -6,8 +6,8 @@ use App\Models\User;
 use Foundry\Models\Admin;
 use Foundry\Models\Setting;
 use Foundry\Models\Tax;
-use Foundry\Repository\BaseRepository;
 use Foundry\Notifications\NewAdminNotification;
+use Foundry\Repository\BaseRepository;
 use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Support\Facades\Notification;
 

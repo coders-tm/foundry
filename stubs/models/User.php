@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Foundry\Models\User as BaseUser;
-
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 
 class User extends BaseUser implements MustVerifyEmail

@@ -3,6 +3,7 @@
 namespace Foundry\Actions\Subscription;
 
 use Foundry\Contracts\SubscriptionStatus;
+use Foundry\Events\SubscriptionPaid;
 use Foundry\Events\SubscriptionRenewed;
 use Foundry\Models\Subscription;
 
@@ -69,6 +70,8 @@ class ProcessSubscriptionPayment
             'status' => SubscriptionStatus::ACTIVE,
             'ends_at' => null,
         ])->save();
+
+        event(new SubscriptionPaid($subscription, $order));
 
         return $subscription;
     }

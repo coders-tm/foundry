@@ -6,7 +6,6 @@ use Foundry\Foundry;
 use Foundry\Http\Controllers\PaymentController;
 use Foundry\Tests\TestCase;
 use Illuminate\Routing\Router;
-use Illuminate\Support\Facades\Hash;
 use Stripe\ApiRequestor as StripeApiRequestor;
 use Stripe\HttpClient\CurlClient as StripeCurlClient;
 use Stripe\StripeClient;
