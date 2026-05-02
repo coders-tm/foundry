@@ -56,13 +56,17 @@ trait ManagesInvoices
         $dueDate = $start ? $this->dateFrom() : $this->expires_at;
         $dueDate = $dueDate && $dueDate->gt(now()) ? $dueDate : $period->getEndDate();
 
+        $user = $this->user;
+
+        $user->loadMissing('address');
+
         return new InvoiceRepository([
             'source' => 'Membership',
-            'customer_id' => $this->user?->id,
+            'customer' => $user->only(['id', 'name', 'email']),
             'orderable_id' => $this->id,
             'orderable_type' => $this->getMorphClass(),
             'due_date' => $dueDate,
-            'billing_address' => $this->user?->address?->toArray(),
+            'billing_address' => $user?->address?->toArray(),
             'collect_tax' => true,
             'line_items' => $this->generateLineItems($plan, $period),
         ]);

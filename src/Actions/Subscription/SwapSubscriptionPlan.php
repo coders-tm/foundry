@@ -36,11 +36,11 @@ class SwapSubscriptionPlan
             throw new \InvalidArgumentException("Cannot swap to the same plan ({$oldPlan->label}).");
         }
 
-        // Set new period based on the new plan
-        $subscription->setPeriod($newPlan->interval->value, $newPlan->interval_count);
-
         // Attach new plan to subscription
         $subscription->plan()->associate($newPlan);
+
+        // Set new period based on the new plan
+        $subscription->setPeriod($newPlan->interval->value, $newPlan->interval_count);
 
         $subscription->fill([
             'canceled_at' => null,

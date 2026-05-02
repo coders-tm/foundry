@@ -471,11 +471,11 @@ class Subscription extends Model implements ManagesSubscriptions, SubscriptionSt
         $this->fill([
             'starts_at' => $period->getStartDate(),
             'expires_at' => $period->getEndDate(),
-            'billing_interval' => $this->plan->interval->value,
-            'billing_interval_count' => $this->plan->interval_count,
+            'billing_interval' => $interval,
+            'billing_interval_count' => $count,
         ]);
 
-        if ($this->plan->isContract() && is_null($this->total_cycles)) {
+        if ($this->plan?->isContract() && is_null($this->total_cycles)) {
             $this->total_cycles = $this->plan->contract_cycles;
             $this->current_cycle = 0;
         }
@@ -522,12 +522,12 @@ class Subscription extends Model implements ManagesSubscriptions, SubscriptionSt
             return is_string($this->billing_interval) ? $this->billing_interval : $this->billing_interval->value;
         }
 
-        return $this->plan->interval->value;
+        return $this->plan?->interval->value ?? '';
     }
 
     public function getBillingIntervalCount(): int
     {
-        return $this->billing_interval_count ?? $this->plan->interval_count;
+        return $this->billing_interval_count ?? $this->plan?->interval_count ?? 1;
     }
 
     public function isContract(): bool

@@ -304,7 +304,7 @@ class Payment extends Model
             'raw_amount' => $this->amount ?? 0,
 
             // Status information
-            'status' => ucfirst($this->status ?? 'pending'),
+            'status' => ucfirst($this->status?->value ?? 'pending'),
             'is_successful' => $this->isSuccessful(),
             'is_pending' => $this->isPending(),
             'is_failed' => $this->isFailed(),

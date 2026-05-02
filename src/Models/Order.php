@@ -531,7 +531,7 @@ class Order extends Model implements Currencyable
 
     public function download()
     {
-        return $this->receiptPdf()->download("Invoice-{$this->id}.pdf");
+        return $this->receiptPdf()->download("Invoice-{$this->number}.pdf");
     }
 
     public function total()
@@ -718,7 +718,7 @@ class Order extends Model implements Currencyable
     {
         return [
             'app_name' => config('app.name'),
-            'logo' => config('app.logo', asset('images/logo.png')),
+            'logo' => config('app.logo', asset('statics/logo.png')),
             'id' => "#{$this->number}",
             'number' => "#{$this->number}",
             'name' => "Order #{$this->number}",
@@ -739,11 +739,12 @@ class Order extends Model implements Currencyable
 
             // Convenience flags and links
             'has_due' => (bool) $this->has_due,
-            'billing_address' => $this->billingAddress(),
+            'billing_address' => (new Address($this->billing_address ?? []))->toArray(),
             'phone_number' => optional($this->contact)->phone_number,
-            'url' => app_url("/orders/{$this->id}"),
-            'payment_url' => app_url("payment/{$this->id}", [
-                'redirect' => user_route('/billing'),
+            'url' => route('admin.orders.show', $this),
+            'payment_url' => route('payment.index', [
+                'order' => $this->id,
+                'redirect' => route('billing.index', [], false)
             ]),
 
             // Refund information
