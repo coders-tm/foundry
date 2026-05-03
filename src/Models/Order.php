@@ -371,7 +371,7 @@ class Order extends Model implements Currencyable
             $transaction,
             PaymentStatus::PENDING,
             PaymentStatus::PAYMENT_PENDING,
-            OrderStatusEnum::PENDING_PAYMENT
+            OrderStatusEnum::PENDING
         );
 
         // Notify linked model (e.g., Subscription) of pending payment
@@ -393,7 +393,7 @@ class Order extends Model implements Currencyable
             $transaction,
             PaymentStatus::FAILED,
             PaymentStatus::PAYMENT_FAILED,
-            OrderStatusEnum::PENDING_PAYMENT
+            OrderStatusEnum::PENDING
         );
 
         // Notify linked model (e.g., Subscription) of failed payment
@@ -581,7 +581,7 @@ class Order extends Model implements Currencyable
 
     public function scopePending($query)
     {
-        return $query->where('status', OrderStatusEnum::PENDING_PAYMENT);
+        return $query->where('status', OrderStatusEnum::PENDING);
     }
 
     public function scopeByPaymentStatus($query, $paymentStatus)

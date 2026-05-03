@@ -23,8 +23,6 @@ trait OrderStatus
 
     const STATUS_ARCHIVED = OrderStatusEnum::ARCHIVED->value;
 
-    const STATUS_PENDING_PAYMENT = OrderStatusEnum::PENDING_PAYMENT->value;
-
     const STATUS_PROCESSING = OrderStatusEnum::PROCESSING->value;
 
     const STATUS_PAYMENT_PENDING = PaymentStatus::PAYMENT_PENDING->value;
@@ -46,7 +44,7 @@ trait OrderStatus
      */
     public function markAsOpen()
     {
-        return $this->updateStatus(OrderStatusEnum::PENDING_PAYMENT, PaymentStatus::PAYMENT_PENDING);
+        return $this->updateStatus(OrderStatusEnum::PENDING, PaymentStatus::PAYMENT_PENDING);
     }
 
     /**

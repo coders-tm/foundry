@@ -7,7 +7,6 @@ enum OrderStatus: string
     case DRAFT = 'draft';
     case OPEN = 'open';
     case PENDING = 'pending';
-    case PENDING_PAYMENT = 'pending_payment';
     case PROCESSING = 'processing';
     case COMPLETED = 'completed';
     case CANCELLED = 'cancelled';

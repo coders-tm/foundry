@@ -94,7 +94,7 @@ abstract class MetricsCalculator
     {
         $currency = $currency ?? config('app.currency', 'USD');
 
-        return number_format($amount, 2).' '.strtoupper($currency);
+        return format_amount($amount, $currency);
     }
 
     /**
@@ -220,7 +220,7 @@ abstract class MetricsCalculator
 
             // Add description if provided
             if ($description) {
-                $comparisonData['description'] = $description;
+                $comparisonData['description'] = is_callable($description) ? $description($periods) : $description;
             }
 
             $payload['comparisons'][$key] = $comparisonData;

@@ -74,7 +74,7 @@ class User extends Authenticatable
 
     public function getNameAttribute()
     {
-        return $this->attributes['name'] ?? trim("{$this->first_name} {$this->last_name}") ?: null;
+        return trim("{$this->first_name} {$this->last_name}") ?: null;
     }
 
     /**

@@ -101,7 +101,7 @@ class SecurityAuditTest extends TestCase
     {
         $order = Order::factory()->create([
             'grand_total' => 50.00,
-            'status' => OrderStatusEnum::PENDING_PAYMENT,
+            'status' => OrderStatusEnum::PENDING,
         ]);
 
         // Should not throw — amount equals grand_total
