@@ -13,6 +13,9 @@ class InvoiceCalculationTest extends FeatureTestCase
     {
         parent::setUp();
 
+        // Remove any existing tax rates to avoid conflicts
+        Tax::truncate();
+
         // Seed a 10% tax rate for United States
         Tax::create([
             'label' => 'GST',
@@ -114,6 +117,7 @@ class InvoiceCalculationTest extends FeatureTestCase
             $this->assertEquals(1, $item->quantity, 'Line item quantity should be 1');
             $this->assertTrue($item->taxable, 'Line item should be taxable');
         }
+
 
         // 5. Verification:
         $this->assertNotNull($invoice);

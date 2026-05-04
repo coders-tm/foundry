@@ -82,3 +82,12 @@ Route::post('/admin/logout', function () {
 
     return redirect()->route('admin.login');
 })->middleware(['web'])->name('admin.logout');
+
+Route::get('/billing', function () {
+    return 'Billing page for testing purpose';
+})->middleware(['web', 'auth:user'])->name('billing.index');
+
+Route::get('/payment/{order}', function ($order) {
+    return 'Payment page for testing purpose: ' . $order;
+})->middleware(['web'])->name('payment.index');
+
