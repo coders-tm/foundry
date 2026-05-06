@@ -188,4 +188,25 @@ class SettingTest extends BaseTestCase
         $this->assertIsArray($adminPerms);
         $this->assertEquals(['create', 'read', 'update', 'delete'], $adminPerms);
     }
+
+    #[Test]
+    public function it_only_fires_event_when_value_actually_changes()
+    {
+        \Illuminate\Support\Facades\Event::fake();
+
+        // Initial set - should fire event
+        Settings::set('config.name', 'Initial Name');
+        \Illuminate\Support\Facades\Event::assertDispatched(\Foundry\Events\SettingChanged::class);
+
+        // Reset fake to clear recorded events
+        \Illuminate\Support\Facades\Event::fake();
+
+        // Set to same value - should NOT fire event
+        Settings::set('config.name', 'Initial Name');
+        \Illuminate\Support\Facades\Event::assertNotDispatched(\Foundry\Events\SettingChanged::class);
+
+        // Set to different value - should fire event
+        Settings::set('config.name', 'Different Name');
+        \Illuminate\Support\Facades\Event::assertDispatched(\Foundry\Events\SettingChanged::class);
+    }
 }

@@ -34,8 +34,9 @@ description: High-level map of this Laravel package, key entry points, and where
   - Seeders: [`database/seeders/`](md:database/seeders)
   - Seed/test app schema for workbench: [`workbench/database/`](md:workbench/database)
 
-- **Config, Views, Translations**
+- **Config, Views, Translations & Settings**
   - Package config: [`config/foundry.php`](md:config/foundry.php)
+  - File-based settings: [`resources/settings.json`](md:resources/settings.json) (configurable path)
   - Views (blade + html): [`resources/views/`](md:resources/views)
   - Translations: [`resources/lang/`](md:resources/lang)
 

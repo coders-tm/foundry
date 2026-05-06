@@ -30,6 +30,7 @@ globs: *.php
 
 ## Package-Specific Notes
 
-- The package exposes artisan commands in [`src/Commands`](md:src/Commands) for subscription and theme workflows.
-- Translations are in [`resources/lang`](md:resources/lang); keep keys consistent across locales.
-- Blade views in [`resources/views`](md:resources/views) should remain presentation-only; keep heavy logic out.
+- **Settings**: Managed via `Settings` facade and stored in JSON (default `resources/settings.json`). Use `settings('key')` helper for access and `Settings::set('key', 'value')` for updates. Settings are merged into Laravel config at runtime.
+- **Commands**: The package exposes artisan commands in [`src/Commands`](md:src/Commands) for subscription and theme workflows.
+- **Translations**: Located in [`resources/lang`](md:resources/lang); keep keys consistent across locales.
+- **Views**: Blade views in [`resources/views`](md:resources/views) should remain presentation-only; keep heavy logic out.

@@ -97,12 +97,20 @@ class SettingsService
             $changes = [];
             if (is_array($key)) {
                 foreach ($key as $k => $v) {
-                    Arr::set($settings, $k, $v);
-                    $changes[$k] = $v;
+                    if (Arr::get($settings, $k) !== $v) {
+                        Arr::set($settings, $k, $v);
+                        $changes[$k] = $v;
+                    }
                 }
             } else {
-                Arr::set($settings, $key, $value);
-                $changes[$key] = $value;
+                if (Arr::get($settings, $key) !== $value) {
+                    Arr::set($settings, $key, $value);
+                    $changes[$key] = $value;
+                }
+            }
+
+            if (empty($changes)) {
+                return;
             }
 
             // Ensure the directory exists

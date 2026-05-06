@@ -2,130 +2,107 @@
 
 ## Overview
 
-The Settings domain manages application-wide and per-tenant configuration through a dynamic settings store, eliminating the need for hardcoded config values in files.
+The Settings domain manages application-wide configuration via a flat JSON-based store (`resources/settings.json`). This system replaces legacy database-backed settings with a high-performance, file-driven approach that integrates directly with Laravel's native configuration system.
 
-## Core Models & Services
+## Core Components
 
-- **`Setting`** (`src/Models/Setting.php`) — Key-value store for application settings with optional per-user or per-tenant scoping.
-- **`ConfigLoader`** (`src/Services/ConfigLoader.php`) — Service for reading, writing, and merging settings with Laravel's native config system.
+- **`Settings` Facade** (`Foundry\Facades\Settings`) — The primary interface for interacting with settings.
+- **`SettingsService`** (`Foundry\Services\SettingsService`) — Handles the JSON I/O, recursive flattening, and config merging logic.
+- **`settings()` Helper** — A global helper that proxies to the `Settings` facade for both reading and writing.
+- **`SettingChanged` Event** — Fired whenever a setting is updated, allowing for cache clearing or process restarts (e.g., queue workers).
 
 ## Key Workflows
 
 ### Reading Settings
 
-1. **Direct model query** (low-level):
+Settings are accessed via dot notation. The system automatically pulls from the `settings` config namespace which is populated from the JSON file.
+
+1. **Via helper** (Recommended):
    ```php
-   $value = Setting::value('site_name'); // Returns value or null
-   $value = Setting::value('site_name', 'Default Site'); // With fallback
+   $value = settings('config.name');
+   $value = settings('mail.default', 'smtp'); // With default
    ```
 
-2. **Via ConfigLoader** (recommended):
+2. **Via Facade**:
    ```php
-   $value = ConfigLoader::get('site.name');
-   ```
-
-3. **Via helper** (if defined):
-   ```php
-   $value = setting('site_name');
+   use Foundry\Facades\Settings;
+   
+   $name = Settings::get('config.name');
    ```
 
 ### Writing Settings
 
-1. **Create or update**:
+Updates are persisted immediately to the JSON storage and reflected in the runtime config.
+
+1. **Single update**:
    ```php
-   Setting::setValue('site_name', 'My Platform');
-   // Or
-   ConfigLoader::set('site.name', 'My Platform');
+   settings(['config.name' => 'My New App']);
+   // or
+   Settings::set('config.name', 'My New App');
    ```
 
-2. **Batch update**:
+2. **Nested array update** (Non-destructive):
    ```php
-   Setting::setMany([
-       'site_name' => 'My Platform',
-       'site_logo_url' => 'https://...',
-       'timezone' => 'UTC',
+   // This will only update the 'host' and 'port', preserving other 'mailers' config
+   Settings::set('mail.mailers.smtp', [
+       'host' => '127.0.0.1',
+       'port' => '1025',
    ]);
    ```
 
-### Dynamic Config Merging
+## Configuration Merging
 
-`ConfigLoader` merges settings with Laravel config (stored in `config/*.php` files):
-- Settings **override** config file values (dynamic > static).
-- Fallback to config defaults if setting not found.
-- Useful for admin panel to modify app behavior without redeployment.
+The system automatically synchronizes JSON settings with Laravel's internal configuration based on the `settings_override` map defined in `config/foundry.json`.
 
-## Database Schema
+### Non-Destructive Merging
+When settings are loaded, they are recursively flattened. This means setting `mail.mailers.smtp` will update only those specific keys in `config('mail.mailers')`, leaving other keys (like `ses` or `postmark`) untouched.
 
-- `Setting` table with columns:
-  - `key` (unique, e.g., `site_name`)
-  - `value` (stored as JSON or text)
-  - `group` (optional, e.g., `site`, `payment`, `email` for organization)
-  - `scoped_type` (optional, for per-user/per-tenant, e.g., `User::class`)
-  - `scoped_id` (optional, e.g., user ID or tenant ID)
+### Mapping Rules
+Mappings can be:
+- **Direct Alias**: `'currency' => 'stripe.currency'`
+- **Multiple Keys**: `'email' => ['foundry.admin_email', 'mail.from.address']`
+- **Callable**: Custom logic executed when the setting is changed.
 
-## Typical Settings Categories
+## Storage & Configuration
 
-- **Site**: `site_name`, `site_logo_url`, `site_description`, `timezone`
-- **Email**: `mail_from_address`, `mail_from_name`, `mail_driver`
-- **Payment**: `stripe_public_key`, `stripe_secret_key`, `paypal_client_id` (though sensitive keys should use `.env`)
-- **Features**: `enable_blog`, `enable_support_tickets`, `enable_wallet`
-- **Branding**: `primary_color`, `secondary_color`, `font_family`
+- **Storage Location**: By default, settings are stored in `resources/settings.json`.
+- **Configurable Path**: The path can be customized via `FOUNDRY_SETTINGS_PATH` in the `.env` file or the `settings_path` key in `config/foundry.php`.
+- **Cache**: Updates fire the `SettingChanged` event, which can be used to clear application caches.
 
 ## Best Practices
 
-- **Sensitive data**: Never store passwords, API secrets in `Setting`; use `.env` and `config/*.php` for secrets.
-- **Caching**: Cache settings in Redis or file to avoid DB queries on every request (use `ConfigLoader::cache()`).
-- **Validation**: Validate setting values before writing (e.g., email format, valid color hex).
-- **Scoping**: Use `scoped_type` and `scoped_id` for per-user or per-tenant settings (multi-tenancy).
-- **Groups**: Organize related settings under a `group` (e.g., all payment settings under `payment` group).
-- **Audit logging**: Log who changed which setting and when for compliance/audit trails.
+- **Avoid Secrets**: Do not store passwords or sensitive API keys in the JSON file; use `.env` for secrets.
+- **Dot Notation**: Always use dot notation for clarity and consistency.
+- **Recursive Updates**: Prefer passing arrays for grouped updates to minimize disk I/O.
+- **Testing**: In testing environments, the system defaults to a temporary `tests/settings.json` to ensure test isolation.
 
 ## Common Tasks
 
-### Read Site Name Setting
-
+### Updating Mail Configuration
 ```php
-$siteName = Setting::value('site_name', 'Default App');
-// or
-$siteName = ConfigLoader::get('site.name', 'Default App');
-```
-
-### Update Site Settings via Admin Panel
-
-```php
-Setting::setMany([
-    'site_name' => request('site_name'),
-    'site_logo_url' => $logoUrl,
-    'timezone' => request('timezone'),
-    'primary_color' => request('primary_color'),
+Settings::set('mail', [
+    'default' => 'smtp',
+    'mailers' => [
+        'smtp' => [
+            'host' => 'mailhog',
+            'port' => 1025
+        ]
+    ]
 ]);
-
-// Clear cache to pick up new values
-ConfigLoader::clearCache();
 ```
 
-### Per-Tenant Settings (Multi-Tenancy)
-
-```php
-// Set tenant-specific setting
-Setting::create([
-    'key' => 'invoice_prefix',
-    'value' => 'INV-2024-',
-    'scoped_type' => Tenant::class,
-    'scoped_id' => $tenant->id,
-]);
-
-// Retrieve
-$value = Setting::whereKey('invoice_prefix')
-    ->whereScopedType(Tenant::class)
-    ->whereScopedId($tenant->id)
-    ->value('value');
+### Accessing App Settings in Views
+```blade
+<h1>{{ settings('config.name') }}</h1>
 ```
 
-### Check Feature Flags
-
+### Reacting to Setting Changes
+Listen for `Foundry\Events\SettingChanged`:
 ```php
-if (ConfigLoader::get('features.enable_support_tickets', false)) {
-    // Show support ticket link
+public function handle(SettingChanged $event)
+{
+    if ($event->key === 'config.timezone') {
+        // Handle timezone change logic
+    }
 }
 ```

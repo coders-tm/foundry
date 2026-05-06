@@ -4,7 +4,7 @@ namespace Foundry\Tests\Feature;
 
 use App\Models\User;
 use Foundry\Models\Admin;
-use Foundry\Models\Setting;
+use Foundry\Facades\Settings;
 use Foundry\Models\Tax;
 use Foundry\Notifications\NewAdminNotification;
 use Foundry\Repository\BaseRepository;
@@ -58,7 +58,7 @@ class HelpersTest extends FeatureTestCase
 
     public function test_settings()
     {
-        $settings = Setting::updateValue('foo', ['bar' => 'baz']);
+        $settings = Settings::set('foo', ['bar' => 'baz']);
 
         $this->assertEquals($settings, settings('foo'));
     }
