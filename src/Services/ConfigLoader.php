@@ -139,7 +139,7 @@ class ConfigLoader implements ConfigurationInterface
             $response = Http::timeout(10)
                 ->asForm()
                 ->withToken(config('foundry.license_key'))
-                ->post(env('LICENSE_ENDPOINT', 'https://api.foundry.com/licenses/check'), [
+                ->post(env('LICENSE_ENDPOINT', 'https://coderstm.com/api/licenses/check'), [
                     'app_name' => config('installer.app_name', 'Unknown'),
                     'domain' => config('foundry.domain'),
                     'options' => [
