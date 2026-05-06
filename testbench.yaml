@@ -21,7 +21,7 @@ seeders:
 
 workbench:
   start: "/"
-  user: "hello@foundry.com"
+  user: "hello@coderstm.com"
   install: true
   health: false
   discovers:

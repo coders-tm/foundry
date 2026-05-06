@@ -24,7 +24,7 @@ class KpiMetricsTest extends TestCase
         // One user is already seeded by TestCase (DatabaseSeeder)
 
         // Current month signups: 1 user, 1 sub
-        $user1 = User::where('email', 'hello@foundry.com')->first();
+        $user1 = User::where('email', 'hello@coderstm.com')->first();
         $user1->forceFill(['created_at' => now()->subDays(5)])->save();
         Subscription::factory()->create(['user_id' => $user1->id, 'created_at' => now()->subDays(5)]);
 

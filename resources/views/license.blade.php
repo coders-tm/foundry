@@ -91,7 +91,7 @@
                 <small id="passwordHelpError" class="form-text text-danger">{{ $message }}</small>
             @enderror
             <small id="licenseHelp" class="form-text text-muted">To obtain or renew your license, please <a
-                    href="https://foundry.com/licenses" target="_blank">visit our website</a></small>
+                    href="https://coderstm.com/licenses" target="_blank">visit our website</a></small>
         </div>
         <button class="btn btn-primary btn-block" type="submit">Update</button>
     </form>

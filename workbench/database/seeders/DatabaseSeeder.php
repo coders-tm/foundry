@@ -23,7 +23,7 @@ class DatabaseSeeder extends Seeder
 
         // create a normal user
         User::updateOrCreate([
-            'email' => 'hello@foundry.com',
+            'email' => 'hello@coderstm.com',
         ], User::factory()->make()->only([
             'first_name',
             'last_name',
@@ -37,7 +37,7 @@ class DatabaseSeeder extends Seeder
 
         // Create a admin user
         Admin::updateOrCreate([
-            'email' => 'hello@foundry.com',
+            'email' => 'hello@coderstm.com',
         ], Admin::factory()->admin()->make()->only([
             'first_name',
             'last_name',

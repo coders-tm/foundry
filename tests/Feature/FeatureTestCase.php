@@ -36,7 +36,7 @@ abstract class FeatureTestCase extends TestCase
     protected function createCustomer($description = 'dipak', array $options = []): User
     {
         return User::create(array_merge([
-            'email' => "{$description}@foundry.com",
+            'email' => "{$description}@coderstm.com",
             'first_name' => 'Dipak',
             'last_name' => 'Sarkar',
             'password' => 'password',

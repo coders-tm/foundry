@@ -54,7 +54,7 @@ This Code of Conduct also applies outside project spaces when an individual's st
 
 ### Reporting a Violation
 
-If you witness or experience a Code of Conduct violation, please report it by emailing **conduct@foundry.com** with:
+If you witness or experience a Code of Conduct violation, please report it by emailing **conduct@coderstm.com** with:
 
 - Description of the incident
 - Any relevant context or background
@@ -89,7 +89,7 @@ We aim to be fair, proportionate, and restorative where possible.
 
 If you believe an enforcement action was incorrect or unfair, you may appeal by:
 
-1. Emailing the appeal to **conduct@foundry.com**
+1. Emailing the appeal to **conduct@coderstm.com**
 2. Providing your reason for the appeal
 3. Providing any additional context or evidence
 
@@ -107,7 +107,7 @@ This Code of Conduct is adapted from the [Contributor Covenant](https://www.cont
 
 If you have questions about this Code of Conduct, please contact:
 
-- **Email**: conduct@foundry.com
+- **Email**: conduct@coderstm.com
 - **GitHub Issues**: Tag with `code-of-conduct` label
 
 ---

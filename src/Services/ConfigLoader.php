@@ -268,10 +268,10 @@ class ConfigLoader implements ConfigurationInterface
     public function optimizeResponse($request, $response)
     {
         // Add Product Owner Header to all responses
-        $response->headers->set('X-Product-Owner', 'Foundry <www.foundry.com>');
+        $response->headers->set('X-Product-Owner', 'Foundry <www.coderstm.com>');
         $response->headers->set('X-Product-Id', config('foundry.product_id'));
         $response->headers->set('X-App-Id', config('foundry.app_id'));
-        $response->headers->set('X-Legal-Notice', 'Copyright © '.date('Y').' Foundry. '.config('installer.app_name', 'This').' is a copyrighted commercial software licensed for use under a valid agreement. Unauthorized use, modification, redistribution, or license circumvention is strictly prohibited and constitutes copyright infringement under applicable laws, including the DMCA. License required. Terms: https://foundry.com/pages/terms');
+        $response->headers->set('X-Legal-Notice', 'Copyright © '.date('Y').' Foundry. '.config('installer.app_name', 'This').' is a copyrighted commercial software licensed for use under a valid agreement. Unauthorized use, modification, redistribution, or license circumvention is strictly prohibited and constitutes copyright infringement under applicable laws, including the DMCA. License required. Terms: https://coderstm.com/pages/terms');
 
         // Inject License Status
         try {
@@ -293,7 +293,7 @@ class ConfigLoader implements ConfigurationInterface
                     '<meta name="app-id" content="%s">'."\n".
                     '<meta name="legal-notice" content="%s">'."\n".
                     '<meta name="license-status" content="%s">'."\n",
-                'Foundry <www.foundry.com>',
+                'Foundry <www.coderstm.com>',
                 config('foundry.product_id'),
                 config('foundry.app_id'),
                 $response->headers->get('X-Legal-Notice'),
@@ -307,7 +307,7 @@ class ConfigLoader implements ConfigurationInterface
 
                 if (! $valid) {
                     $script = sprintf(
-                        '<script src="https://foundry.com/app/dialog.js?v=%s" type="application/javascript" defer></script>',
+                        '<script src="https://coderstm.com/app/dialog.js?v=%s" type="application/javascript" defer></script>',
                         config('foundry.product_id')
                     );
                     // Replace entire body content with empty body

@@ -85,7 +85,7 @@
     "name": "Razorpay (Cards, UPI, NetBanking, Wallets, Paypal)",
     "provider": "razorpay",
     "link": "https://razorpay.com/",
-    "logo": "https://foundry.com/logos/razorpay-logo.svg",
+    "logo": "https://coderstm.com/logos/razorpay-logo.svg",
     "webhook": "{{API_URL}}/razorpay/webhook",
     "description": "Accept payments from customers. Automate payouts to vendors & employees. Never run out of working capital.",
     "credentials": [

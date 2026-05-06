@@ -6,7 +6,7 @@
 
 ### How to Report
 
-If you discover a security vulnerability in `coderstm/foundry`, please email us at **security@foundry.com** with the following information:
+If you discover a security vulnerability in `coderstm/foundry`, please email us at **security@coderstm.com** with the following information:
 
 - **Description** of the vulnerability
 - **Steps to reproduce** the issue (if applicable)
@@ -273,6 +273,6 @@ Thank you to the following researchers for helping keep Laravel Core secure:
 
 For security-related inquiries:
 
-- **Email**: security@foundry.com
+- **Email**: security@coderstm.com
 - **GitHub**: [Report via Security Advisory](https://github.com/coders-tm/foundry/security/advisories)
-- **Website**: [https://foundry.com](https://foundry.com)
+- **Website**: [https://coderstm.com](https://coderstm.com)
