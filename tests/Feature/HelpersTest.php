@@ -58,9 +58,8 @@ class HelpersTest extends FeatureTestCase
 
     public function test_settings()
     {
-        $settings = Settings::set('foo', ['bar' => 'baz']);
-
-        $this->assertEquals($settings, settings('foo'));
+        Settings::set('foo', ['bar' => 'baz']);
+        $this->assertEquals(['bar' => 'baz'], settings('foo'));
     }
 
     public function test_admin_notify()

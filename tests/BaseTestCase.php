@@ -28,6 +28,9 @@ class BaseTestCase extends OrchestraTestCase
         // Ensure default currency is set for payment tests
         $app['config']->set('app.currency', 'USD');
 
+        // Isolate settings for all tests
+        $app['config']->set('foundry.settings_path', base_path('tests/settings.json'));
+
         Foundry::useOrderModel(Order::class);
         Foundry::useUserModel(User::class);
         Foundry::useSubscriptionUserModel(User::class);
