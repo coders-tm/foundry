@@ -15,6 +15,7 @@ class HelpersTest extends BaseTestCase
     {
         parent::setUp();
 
+        $this->resetConfig();
         $this->mockRequest();
     }
 
@@ -26,9 +27,10 @@ class HelpersTest extends BaseTestCase
 
     protected function resetConfig()
     {
-        Config::set('app.url', env('APP_URL'));
-        Config::set('foundry.admin_url', env('FOUNDRY_ADMIN_URL'));
-        Config::set('foundry.admin_prefix', env('FOUNDRY_ADMIN_PREFIX'));
+        Config::set('app.name', 'AppName');
+        Config::set('app.url', env('APP_URL', 'http://localhost'));
+        Config::set('foundry.admin_url', env('FOUNDRY_ADMIN_URL', 'http://localhost/admin'));
+        Config::set('foundry.admin_prefix', env('FOUNDRY_ADMIN_PREFIX', 'admin'));
         Config::set('recaptcha.site_key', env('RECAPTCHA_SITE_KEY'));
     }
 

@@ -199,27 +199,15 @@ if (! function_exists('settings')) {
     function settings($key = null, $default = null)
     {
         if (is_null($key)) {
-            return Setting::getSettings();
+            return \Foundry\Facades\Settings::all();
         }
 
         if (is_array($key)) {
-            foreach ($key as $k => $value) {
-                $segments = explode('.', $k);
-                $settingKey = array_shift($segments);
-
-                if (empty($segments)) {
-                    Setting::updateValue($settingKey, $value);
-                } else {
-                    $options = Setting::findByKey($settingKey); // Already returns array
-                    array_set($options, implode('.', $segments), $value);
-                    Setting::updateValue($settingKey, $options);
-                }
-            }
-
+            \Foundry\Facades\Settings::set($key);
             return true;
         }
 
-        return Setting::get($key, $default);
+        return \Foundry\Facades\Settings::get($key, $default);
     }
 }
 

@@ -17,6 +17,7 @@ return [
     'admin_prefix' => env('APP_ADMIN_PREFIX', 'admin'),
     'tunnel_domain' => env('TUNNEL_WEB_DOMAIN', null),
     'admin_email' => env('APP_ADMIN_EMAIL', null),
+    'settings_path' => env('FOUNDRY_SETTINGS_PATH', resource_path('settings.json')),
 
     /*
     |--------------------------------------------------------------------------

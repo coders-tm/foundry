@@ -20,7 +20,6 @@ class DatabaseSeeder extends Seeder
         $this->call([
             FeatureSeeder::class,
             ModuleSeeder::class,
-            SettingsSeeder::class,
             GroupSeeder::class,
             NotificationSeeder::class,
             PaymentMethodSeeder::class,

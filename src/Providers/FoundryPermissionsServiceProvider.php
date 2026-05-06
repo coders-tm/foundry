@@ -63,7 +63,6 @@ class FoundryPermissionsServiceProvider extends ServiceProvider
         Gate::policy(Models\Blog::class, Policies\BlogPolicy::class);
         Gate::policy(Models\Group::class, Policies\GroupPolicy::class);
         Gate::policy(Models\Notification::class, Policies\SettingPolicy::class);
-        Gate::policy(Models\Setting::class, Policies\SettingPolicy::class);
         Gate::policy(Models\ReportExport::class, Policies\ReportExportPolicy::class);
         Gate::policy(Models\PaymentMethod::class, Policies\SettingPolicy::class);
         Gate::policy(Models\Tax::class, Policies\SettingPolicy::class);

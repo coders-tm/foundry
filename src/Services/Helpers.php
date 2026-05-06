@@ -5,7 +5,6 @@ namespace Foundry\Services;
 use Foundry\Models\Module;
 use Foundry\Models\PaymentMethod;
 use Foundry\Models\Permission;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Jenssegers\Agent\Agent;
@@ -32,88 +31,6 @@ class Helpers
         }
     }
 
-    /**
-     * Load configuration settings from database and override Laravel config values
-     *
-     * @deprecated This method is deprecated and will be removed in a future version. Use Foundry\Model\Setting::syncConfigFromDatabase() instead.
-     */
-    public static function loadConfigFromDatabase(): void
-    {
-        try {
-            // Get the configuration mapping from settings to Laravel config
-            $overrideMap = config('foundry.settings_override', [
-                'config' => [
-                    'alias' => 'app',
-                    'email' => [
-                        'foundry.admin_email',
-                        'mail.from.address',
-                    ],
-                    'name' => ['mail.from.name'],
-                    'currency' => 'stripe.currency',
-                    'timezone' => fn ($value) => date_default_timezone_set($value),
-                ],
-            ]);
-
-            // Load all settings at once to reduce database calls
-            $allSettings = settings();
-
-            // Process each setting group (app, mail, etc)
-            foreach ($allSettings as $settingKey => $settingValues) {
-                // Skip if not a collection/array
-                if (! is_iterable($settingValues)) {
-                    continue;
-                }
-
-                // Get mapping rules for this setting key
-                $mappingRules = $overrideMap[$settingKey] ?? [];
-                $configAlias = $mappingRules['alias'] ?? $settingKey;
-
-                // Apply each setting value to the appropriate config
-                foreach ($settingValues as $property => $value) {
-                    // Always set the value in its original location
-                    Config::set("$configAlias.$property", $value);
-
-                    // Skip if no special mapping exists
-                    if (! isset($mappingRules[$property])) {
-                        continue;
-                    }
-
-                    $mapping = $mappingRules[$property];
-
-                    // Handle different mapping types
-                    if (is_array($mapping)) {
-                        // Map to multiple config keys
-                        foreach ($mapping as $configKey) {
-                            Config::set($configKey, $value);
-                        }
-                    } elseif (is_callable($mapping)) {
-                        // Execute custom logic
-                        $mapping($value);
-                    } else {
-                        // Direct mapping to a different config key
-                        Config::set($mapping, $value);
-                    }
-                }
-            }
-        } catch (\Throwable $e) {
-            // Log the error instead of just re-throwing
-            Log::error("Failed to load config from database: {$e->getMessage()}");
-        }
-    }
-
-    /**
-     * Load payment methods configuration from database
-     *
-     * @deprecated This method is deprecated and will be removed in a future version. Use Foundry\Models\PaymentMethod::loadPaymentMethodsConfig() instead.
-     */
-    public static function loadPaymentMethodsConfig(): void
-    {
-        try {
-            PaymentMethod::syncConfig();
-        } catch (\Throwable $e) {
-            throw $e;
-        }
-    }
 
     /**
      * Check if the provided string is a valid CSS color.

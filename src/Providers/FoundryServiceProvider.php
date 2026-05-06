@@ -61,6 +61,10 @@ class FoundryServiceProvider extends ServiceProvider
             StateLoader::class
         );
 
+        $this->app->singleton('settings', function ($app) {
+            return new \Foundry\Services\SettingsService;
+        });
+
         $this->app->alias(
             ConfigurationInterface::class,
             'core.config'
@@ -117,7 +121,7 @@ class FoundryServiceProvider extends ServiceProvider
 
         $this->registerMorphMap();
 
-        $this->loadConfigFromDatabase();
+        $this->loadSettings();
 
         Paginator::useBootstrapFive();
 
@@ -227,15 +231,15 @@ class FoundryServiceProvider extends ServiceProvider
     }
 
     /**
-     * Load config from databse.
+     * Load config from settings.
      *
      * @return void
      */
-    protected function loadConfigFromDatabase()
+    protected function loadSettings()
     {
         try {
-            // Load app config
-            Models\Setting::syncConfig();
+            // Load settings
+            \Foundry\Facades\Settings::load();
 
             // Load payment methods config
             Models\PaymentMethod::syncConfig();

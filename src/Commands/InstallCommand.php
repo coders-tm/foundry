@@ -254,7 +254,6 @@ class InstallCommand extends Command
             'GroupSeeder' => 'Groups',
             'ModuleSeeder' => 'Modules',
             'NotificationSeeder' => 'Notification templates',
-            'SettingsSeeder' => 'Application settings',
             'PaymentMethodSeeder' => 'Payment methods',
             'FeatureSeeder' => 'Plan features',
             'PlanSeeder' => 'Default plans',
