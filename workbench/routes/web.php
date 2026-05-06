@@ -88,6 +88,5 @@ Route::get('/billing', function () {
 })->middleware(['web', 'auth:user'])->name('billing.index');
 
 Route::get('/payment/{order}', function ($order) {
-    return 'Payment page for testing purpose: ' . $order;
+    return 'Payment page for testing purpose: '.$order;
 })->middleware(['web'])->name('payment.index');
-

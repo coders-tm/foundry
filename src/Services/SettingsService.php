@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Created At: 2026-05-06
  * Author: Antigravity
@@ -29,12 +30,12 @@ class SettingsService
     /**
      * Set the path to the settings file (useful for tests).
      *
-     * @param  string  $path
      * @return $this
      */
     public function setPath(string $path): self
     {
         $this->path = $path;
+
         return $this;
     }
 
@@ -44,8 +45,9 @@ class SettingsService
     public function load(): void
     {
         try {
-            if (!file_exists($this->path)) {
+            if (! file_exists($this->path)) {
                 Config::set('settings', []);
+
                 return;
             }
 
@@ -53,8 +55,9 @@ class SettingsService
             $settings = json_decode($content, true);
 
             if (json_last_error() !== JSON_ERROR_NONE) {
-                Log::error("Failed to parse settings.json: " . json_last_error_msg());
+                Log::error('Failed to parse settings.json: '.json_last_error_msg());
                 Config::set('settings', []);
+
                 return;
             }
 
@@ -69,7 +72,6 @@ class SettingsService
     /**
      * Get a setting value using dot notation.
      *
-     * @param  string  $key
      * @param  mixed  $default
      * @return mixed
      */
@@ -83,7 +85,6 @@ class SettingsService
      *
      * @param  string|array  $key
      * @param  mixed  $value
-     * @return void
      */
     public function set($key, $value = null): void
     {
@@ -115,7 +116,7 @@ class SettingsService
 
             // Ensure the directory exists
             $directory = dirname($this->path);
-            if (!is_dir($directory)) {
+            if (! is_dir($directory)) {
                 mkdir($directory, 0755, true);
             }
 
@@ -136,8 +137,6 @@ class SettingsService
 
     /**
      * Sync settings with Laravel config based on the override map.
-     *
-     * @return void
      */
     public function syncConfig(): void
     {
@@ -193,10 +192,6 @@ class SettingsService
 
     /**
      * Flatten a multi-dimensional associative array with dots.
-     *
-     * @param  array  $array
-     * @param  string  $prepend
-     * @return array
      */
     protected function flatten(array $array, string $prepend = ''): array
     {
@@ -234,8 +229,6 @@ class SettingsService
 
     /**
      * Get all settings.
-     *
-     * @return array
      */
     public function all(): array
     {

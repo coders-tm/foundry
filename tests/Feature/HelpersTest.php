@@ -3,8 +3,8 @@
 namespace Foundry\Tests\Feature;
 
 use App\Models\User;
-use Foundry\Models\Admin;
 use Foundry\Facades\Settings;
+use Foundry\Models\Admin;
 use Foundry\Models\Tax;
 use Foundry\Notifications\NewAdminNotification;
 use Foundry\Repository\BaseRepository;

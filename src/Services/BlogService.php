@@ -19,7 +19,6 @@ class BlogService
     /**
      * Set the current blog.
      *
-     * @param  Blog  $blog
      * @return $this
      */
     public function setCurrent(Blog $blog)

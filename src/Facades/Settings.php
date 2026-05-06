@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Created At: 2026-05-06
  * Author: Antigravity
@@ -6,6 +7,7 @@
 
 namespace Foundry\Facades;
 
+use Foundry\Services\SettingsService;
 use Illuminate\Support\Facades\Facade;
 
 /**
@@ -15,7 +17,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static void syncConfig()
  * @method static array all()
  *
- * @see \Foundry\Services\SettingsService
+ * @see SettingsService
  */
 class Settings extends Facade
 {

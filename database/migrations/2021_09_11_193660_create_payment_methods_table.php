@@ -26,7 +26,7 @@ return new class extends Migration
             $table->string('link')->nullable();
             $table->string('logo')->nullable();
             $table->text('description')->nullable();
-            $table->{$this->jsonable()}('credentials')->nullable();
+            $table->longText('credentials')->nullable();
             $table->{$this->jsonable()}('methods')->nullable();
             $table->{$this->jsonable()}('supported_currencies')->nullable();
             $table->boolean('active')->default(false)->index();

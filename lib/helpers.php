@@ -1,6 +1,7 @@
 <?php
 
 use Foundry\Facades\Guard;
+use Foundry\Facades\Settings;
 use Foundry\Foundry;
 use Foundry\Models\Blog;
 use Foundry\Models\Setting;
@@ -199,15 +200,16 @@ if (! function_exists('settings')) {
     function settings($key = null, $default = null)
     {
         if (is_null($key)) {
-            return \Foundry\Facades\Settings::all();
+            return Settings::all();
         }
 
         if (is_array($key)) {
-            \Foundry\Facades\Settings::set($key);
+            Settings::set($key);
+
             return true;
         }
 
-        return \Foundry\Facades\Settings::get($key, $default);
+        return Settings::get($key, $default);
     }
 }
 

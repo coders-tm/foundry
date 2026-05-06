@@ -6,6 +6,7 @@ use Foundry\Commands;
 use Foundry\Contracts\ConfigurationInterface;
 use Foundry\Contracts\StateInterface;
 use Foundry\Facades\Guard;
+use Foundry\Facades\Settings;
 use Foundry\Foundry;
 use Foundry\Http\Middleware;
 use Foundry\Models;
@@ -18,6 +19,7 @@ use Foundry\Services\Currency;
 use Foundry\Services\GuardManager;
 use Foundry\Services\MaskSensitiveConfig;
 use Foundry\Services\ResponseOptimizer;
+use Foundry\Services\SettingsService;
 use Foundry\Services\StateLoader;
 use Illuminate\Auth\Middleware\Authenticate;
 use Illuminate\Auth\Middleware\RedirectIfAuthenticated;
@@ -62,7 +64,7 @@ class FoundryServiceProvider extends ServiceProvider
         );
 
         $this->app->singleton('settings', function ($app) {
-            return new \Foundry\Services\SettingsService;
+            return new SettingsService;
         });
 
         $this->app->alias(
@@ -239,7 +241,7 @@ class FoundryServiceProvider extends ServiceProvider
     {
         try {
             // Load settings
-            \Foundry\Facades\Settings::load();
+            Settings::load();
 
             // Load payment methods config
             Models\PaymentMethod::syncConfig();

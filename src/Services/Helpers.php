@@ -3,9 +3,7 @@
 namespace Foundry\Services;
 
 use Foundry\Models\Module;
-use Foundry\Models\PaymentMethod;
 use Foundry\Models\Permission;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Jenssegers\Agent\Agent;
 
@@ -30,7 +28,6 @@ class Helpers
             throw $e;
         }
     }
-
 
     /**
      * Check if the provided string is a valid CSS color.

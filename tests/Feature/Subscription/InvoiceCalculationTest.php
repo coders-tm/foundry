@@ -118,7 +118,6 @@ class InvoiceCalculationTest extends FeatureTestCase
             $this->assertTrue($item->taxable, 'Line item should be taxable');
         }
 
-
         // 5. Verification:
         $this->assertNotNull($invoice);
         $this->assertEquals(100.00, $invoice->sub_total, 'Stored sub_total should be the gross amount ($100)');

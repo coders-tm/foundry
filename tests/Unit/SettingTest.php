@@ -2,9 +2,11 @@
 
 namespace Foundry\Tests\Unit;
 
+use Foundry\Events\SettingChanged;
 use Foundry\Facades\Settings;
 use Foundry\Tests\BaseTestCase;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Event;
 use PHPUnit\Framework\Attributes\Test;
 
 class SettingTest extends BaseTestCase
@@ -125,8 +127,8 @@ class SettingTest extends BaseTestCase
                 'smtp' => [
                     'host' => '127.0.0.1',
                     'port' => '1025',
-                ]
-            ]
+                ],
+            ],
         ]);
 
         Settings::syncConfig();
@@ -192,21 +194,21 @@ class SettingTest extends BaseTestCase
     #[Test]
     public function it_only_fires_event_when_value_actually_changes()
     {
-        \Illuminate\Support\Facades\Event::fake();
+        Event::fake();
 
         // Initial set - should fire event
         Settings::set('config.name', 'Initial Name');
-        \Illuminate\Support\Facades\Event::assertDispatched(\Foundry\Events\SettingChanged::class);
+        Event::assertDispatched(SettingChanged::class);
 
         // Reset fake to clear recorded events
-        \Illuminate\Support\Facades\Event::fake();
+        Event::fake();
 
         // Set to same value - should NOT fire event
         Settings::set('config.name', 'Initial Name');
-        \Illuminate\Support\Facades\Event::assertNotDispatched(\Foundry\Events\SettingChanged::class);
+        Event::assertNotDispatched(SettingChanged::class);
 
         // Set to different value - should fire event
         Settings::set('config.name', 'Different Name');
-        \Illuminate\Support\Facades\Event::assertDispatched(\Foundry\Events\SettingChanged::class);
+        Event::assertDispatched(SettingChanged::class);
     }
 }

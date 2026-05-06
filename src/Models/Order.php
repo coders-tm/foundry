@@ -744,7 +744,7 @@ class Order extends Model implements Currencyable
             'url' => route('admin.orders.show', $this),
             'payment_url' => route('payment.index', [
                 'order' => $this->id,
-                'redirect' => route('billing.index', [], false)
+                'redirect' => route('billing.index', [], false),
             ]),
 
             // Refund information

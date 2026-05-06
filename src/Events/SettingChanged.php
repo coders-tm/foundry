@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Created At: 2026-05-06
  * Author: Antigravity
@@ -16,8 +17,6 @@ class SettingChanged
 
     /**
      * The setting key.
-     *
-     * @var string
      */
     public string $key;
 
@@ -31,7 +30,6 @@ class SettingChanged
     /**
      * Create a new event instance.
      *
-     * @param  string  $key
      * @param  mixed  $value
      * @return void
      */
