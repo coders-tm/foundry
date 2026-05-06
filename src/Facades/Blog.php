@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Facade;
 
 /**
  * @method static \Foundry\Models\Blog|null current()
+ * @method static void setCurrent(\Foundry\Models\Blog $blog)
  * @method static mixed get($key, $default = null)
  * @method static \Foundry\Models\Blog|null find($id)
  * @method static \Foundry\Models\Blog|null findBySlug($slug)

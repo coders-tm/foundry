@@ -10,13 +10,33 @@ use Illuminate\Support\Facades\Cache;
 class BlogService
 {
     /**
+     * The current blog instance.
+     *
+     * @var Blog|null
+     */
+    protected $blog;
+
+    /**
+     * Set the current blog.
+     *
+     * @param  Blog  $blog
+     * @return $this
+     */
+    public function setCurrent(Blog $blog)
+    {
+        $this->blog = $blog;
+
+        return $this;
+    }
+
+    /**
      * Get the current blog from the request.
      *
      * @return Blog|null
      */
     public function current()
     {
-        return request()->input('blog');
+        return $this->blog;
     }
 
     /**
@@ -52,9 +72,7 @@ class BlogService
      */
     public function findBySlug($slug)
     {
-        return Cache::rememberForever("blog_{$slug}", function () use ($slug) {
-            return BlogModel::findBySlug($slug);
-        });
+        return BlogModel::findBySlug($slug);
     }
 
     /**
@@ -80,14 +98,10 @@ class BlogService
      */
     public function recent($limit = 5)
     {
-        $cacheKey = "blog_recent_{$limit}";
-
-        return Cache::rememberForever($cacheKey, function () use ($limit) {
-            return BlogModel::where('is_active', true)
-                ->latest()
-                ->take($limit)
-                ->get();
-        });
+        return BlogModel::where('is_active', true)
+            ->latest()
+            ->take($limit)
+            ->get();
     }
 
     /**
@@ -105,35 +119,28 @@ class BlogService
             return collect();
         }
 
-        // Create a unique cache key using blog ID, limit, and updated_at timestamp
-        // This ensures cache is invalidated when the blog is updated
-        $cacheKey = "blog_related_{$blog->id}_{$limit}";
+        // Get tag IDs from the current blog
+        $tagIds = $blog->tags->pluck('id')->toArray();
 
-        return Cache::rememberForever($cacheKey, function () use ($blog, $limit) {
-            // Get tag IDs from the current blog
-            $tagIds = $blog->tags->pluck('id')->toArray();
+        // Build query to find related blogs
+        return BlogModel::where($blog->getKeyName(), '<>', $blog->getKey())
+            ->where('is_active', true)
+            ->where(function ($query) use ($blog, $tagIds) {
+                // If blog has tags, find blogs with matching tags
+                if (count($tagIds) > 0) {
+                    $query->whereHas('tags', function ($q) use ($tagIds) {
+                        $q->whereIn('id', $tagIds);
+                    });
+                }
 
-            // Build query to find related blogs
-            $query = BlogModel::where('id', '<>', $blog->id)
-                ->where('is_active', true)
-                ->where(function ($query) use ($blog, $tagIds) {
-                    // If blog has tags, find blogs with matching tags
-                    if (count($tagIds) > 0) {
-                        $query->whereHas('tags', function ($q) use ($tagIds) {
-                            $q->whereIn('id', $tagIds);
-                        });
-                    }
-
-                    // If blog has category, also consider blogs from same category
-                    if ($blog->category) {
-                        $query->orWhere('category', $blog->category);
-                    }
-                });
-
-            return $query->latest()
-                ->take($limit)
-                ->get();
-        });
+                // If blog has category, also consider blogs from same category
+                if ($blog->category) {
+                    $query->orWhere('category', $blog->category);
+                }
+            })
+            ->latest()
+            ->take($limit)
+            ->get();
     }
 
     /**

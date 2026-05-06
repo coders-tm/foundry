@@ -101,6 +101,16 @@ class Blog extends Model
         return $options;
     }
 
+    public function scopeOnlyActive($query)
+    {
+        return $query->where('is_active', true);
+    }
+
+    public function scopeOnlyInactive($query)
+    {
+        return $query->where('is_active', false);
+    }
+
     protected static function booted()
     {
         parent::booted();
@@ -149,12 +159,12 @@ class Blog extends Model
                 // MySQL-specific implementation
                 $query->select('*')
                     ->addSelect(DB::raw("SUBSTRING_INDEX(REGEXP_REPLACE(REGEXP_REPLACE(description, '<[^>]+>', ' '), '[[:space:]]+', ' '), ' ', 20) AS short_desc"))
-                    ->addSelect(DB::raw("CONCAT('{$url}/blog/', slug) as url"));
+                    ->addSelect(DB::raw("CONCAT('{$url}/blog/', slug) as post_url"));
             } else {
                 // SQLite and other databases - use simpler approach
                 $query->select('*')
                     ->addSelect(DB::raw("SUBSTR(REPLACE(REPLACE(REPLACE(description, '<', ' '), '>', ' '), '  ', ' '), 1, 200) AS short_desc"))
-                    ->addSelect(DB::raw("'{$url}/blog/' || slug as url"));
+                    ->addSelect(DB::raw("'{$url}/blog/' || slug as post_url"));
             }
         });
     }

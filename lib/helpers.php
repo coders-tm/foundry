@@ -449,10 +449,12 @@ if (! function_exists('blog')) {
     function blog($key = null, $default = null)
     {
         if ($key) {
-            return request()->input('blog') ? optional(request()->input('blog'))->$key ?? $default : $default;
+            $blog = app('blog')->current();
+
+            return $blog ? $blog->{$key} ?? $default : $default;
         }
 
-        return request()->input('blog');
+        return app('blog')->current();
     }
 }
 

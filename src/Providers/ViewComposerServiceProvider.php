@@ -25,7 +25,7 @@ class ViewComposerServiceProvider extends ServiceProvider
     public function boot()
     {
         View::composer('*', function ($view) {
-            $view->with('blog', request()->input('blog'));
+            $view->with('blog', blog());
         });
     }
 }

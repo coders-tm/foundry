@@ -38,11 +38,11 @@ class ShortcodeServiceProvider extends ServiceProvider
         ]);
 
         Shortcodes::add('blog-title', function ($atts, $content, $tag, $manager) {
-            return request()->input('blog.title');
+            return app('blog')->get('title');
         });
 
         Shortcodes::add('page-title', function ($atts, $content, $tag, $manager) {
-            return request()->input('page.title');
+            return app('blog')->get('title');
         });
     }
 }

@@ -24,10 +24,9 @@ class Blog extends Shortcode
         // Get related blogs if available
         $related = app('blog')->related($blog, 3);
 
-        return $this->view('shortcodes.blog', array_merge(
-            $atts,
-            $blog->toArray(),
-            ['related' => $related]
-        ));
+        return $this->view('shortcodes.blog', array_merge($atts, [
+            'blog' => $blog,
+            'related' => $related,
+        ], $blog->toArray()));
     }
 }
