@@ -458,6 +458,19 @@ class FoundryServiceProvider extends ServiceProvider
             return;
         }
 
+        // For web requests, attempt to redirect to license management
+        if (! $this->app->runningInConsole() && ! request()->expectsJson()) {
+            try {
+                // Only redirect if the route exists and we are not on it
+                if (Route::has('license-manage')) {
+                    redirect()->route('license-manage')->send();
+                    exit();
+                }
+            } catch (\Throwable $e) {
+                // Fallback to static HTML if redirect fails
+            }
+        }
+
         try {
             $htmlPath = $this->packagePath('resources/views/license-required.html');
             if (file_exists($htmlPath)) {

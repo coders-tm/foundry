@@ -26,14 +26,20 @@ class ConfigLoader implements ConfigurationInterface
 
     private ?bool $cachedValidity = null;
 
+    private ?string $validatedSignature = null;
+
     /**
      * Check if system configuration is valid.
      */
     public function isValid(): bool
     {
-        if ($this->cachedValidity !== null) {
+        $signature = $this->getEnvironmentSign();
+
+        if ($this->cachedValidity !== null && $this->validatedSignature === $signature) {
             return $this->cachedValidity;
         }
+
+        $this->validatedSignature = $signature;
 
         try {
             $this->cachedValidity = $this->loadConfiguration();
@@ -84,6 +90,7 @@ class ConfigLoader implements ConfigurationInterface
         $this->clearCache();
         $this->cachedValidity = null;
         $this->cachedToken = null;
+        $this->validatedSignature = null;
 
         return $this->isValid();
     }
@@ -257,7 +264,7 @@ class ConfigLoader implements ConfigurationInterface
             config('app.url'),
             config('foundry.domain'),
             config('foundry.app_id'),
-            env('APP_LICENSE_KEY'),
+            config('foundry.license_key'),
             config('installer.app_version', '1.0.0'),
             PHP_VERSION,
         ]);
