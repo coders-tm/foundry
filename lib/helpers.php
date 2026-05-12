@@ -457,3 +457,65 @@ if (! function_exists('fluent_data')) {
         return new FluentData($data);
     }
 }
+
+if (! function_exists('get_socials')) {
+    /**
+     * Get social links with full URLs and icons.
+     */
+    function get_socials(): array
+    {
+        $socials = settings('socials', []);
+
+        $config = [
+            'facebook' => [
+                'name' => 'Facebook',
+                'icon' => 'fa-brands fa-facebook-f',
+                'baseUrl' => 'https://facebook.com/',
+            ],
+            'x' => [
+                'name' => 'Twitter/X',
+                'icon' => 'fa-brands fa-x-twitter',
+                'baseUrl' => 'https://x.com/',
+            ],
+            'instagram' => [
+                'name' => 'Instagram',
+                'icon' => 'fa-brands fa-instagram',
+                'baseUrl' => 'https://instagram.com/',
+            ],
+            'linkedin' => [
+                'name' => 'LinkedIn',
+                'icon' => 'fa-brands fa-linkedin-in',
+                'baseUrl' => 'https://linkedin.com/',
+            ],
+            'github' => [
+                'name' => 'GitHub',
+                'icon' => 'fa-brands fa-github',
+                'baseUrl' => 'https://github.com/',
+            ],
+            'youtube' => [
+                'name' => 'YouTube',
+                'icon' => 'fa-brands fa-youtube',
+                'baseUrl' => 'https://youtube.com/',
+            ],
+            'tiktok' => [
+                'name' => 'TikTok',
+                'icon' => 'fa-brands fa-tiktok',
+                'baseUrl' => 'https://tiktok.com/',
+            ],
+        ];
+
+        return collect($socials)->map(function ($item) use ($config) {
+            $platform = $item['platform'] ?? '';
+            $username = $item['username'] ?? '';
+            $data = $config[$platform] ?? [];
+
+            return [
+                'platform' => $platform,
+                'username' => $username,
+                'name' => $data['name'] ?? ucfirst($platform),
+                'icon' => $data['icon'] ?? 'fa-solid fa-share-nodes',
+                'href' => ($data['baseUrl'] ?? '').$username,
+            ];
+        })->toArray();
+    }
+}

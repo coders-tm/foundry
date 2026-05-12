@@ -14,7 +14,7 @@ class Socials extends Shortcode
     public function render($content)
     {
         $atts = $this->atts();
-        $socials = settings('socials');
+        $socials = get_socials();
 
         return $this->view('shortcodes.socials', array_merge($atts, [
             'socials' => $socials,
