@@ -4,6 +4,7 @@ namespace Foundry\Services;
 
 use Foundry\Models\Module;
 use Foundry\Models\Permission;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Jenssegers\Agent\Agent;
 
@@ -18,14 +19,40 @@ class Helpers
             $device = $agent->browser().' on '.$agent->platform();
             $time = now()->format('M d, Y \a\t g:i a \U\T\C');
 
+            $locationString = '';
+            if ($location) {
+                if ($location instanceof \__PHP_Incomplete_Class) {
+                    try {
+                        Cache::forget("location.{$ip}");
+                    } catch (\Throwable $cacheEx) {
+                        // ignore
+                    }
+                } else {
+                    $region = data_get($location, 'regionName') ?: data_get($location, 'region');
+                    $country = data_get($location, 'countryCode') ?: data_get($location, 'country');
+                    if ($region && $country) {
+                        $locationString = "{$region}, {$country}";
+                    } elseif ($country) {
+                        $locationString = $country;
+                    }
+                }
+            }
+
             return collect([
                 'ip' => $ip,
                 'device' => $device,
-                'location' => $location ? "{$location->regionName}, {$location->countryCode}" : '',
+                'location' => $locationString,
                 'time' => $time,
             ]);
         } catch (\Throwable $e) {
-            throw $e;
+            report($e);
+
+            return collect([
+                'ip' => isset($ip) ? $ip : request()->ip(),
+                'device' => isset($device) ? $device : '',
+                'location' => '',
+                'time' => isset($time) ? $time : now()->format('M d, Y \a\t g:i a \U\T\C'),
+            ]);
         }
     }
 

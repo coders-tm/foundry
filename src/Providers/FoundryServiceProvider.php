@@ -17,6 +17,7 @@ use Foundry\Services\BlogService;
 use Foundry\Services\ConfigLoader;
 use Foundry\Services\Currency;
 use Foundry\Services\GuardManager;
+use Foundry\Services\IpLocationResolver;
 use Foundry\Services\MaskSensitiveConfig;
 use Foundry\Services\ResponseOptimizer;
 use Foundry\Services\SettingsService;
@@ -157,9 +158,14 @@ class FoundryServiceProvider extends ServiceProvider
         // Register core middleware
         $this->registerCoreMiddleware();
 
-        // Register Request macro for IP Location
+        // Register Request macro for IP Location with lazy loading support
         Request::macro('ipLocation', function ($key = null, $default = null) {
             /** @var Request $this */
+            if (! $this->attributes->has('ip_location')) {
+                $resolver = app(IpLocationResolver::class);
+                $this->attributes->set('ip_location', $resolver->resolve($this));
+            }
+
             $location = $this->attributes->get('ip_location');
 
             if (! $location) {
@@ -331,7 +337,6 @@ class FoundryServiceProvider extends ServiceProvider
         Route::aliasMiddleware('configure.guard', Middleware\ConfigureGuard::class);
         Route::aliasMiddleware('preserve.json.whitespace', Middleware\PreserveJsonWhitespace::class);
         Route::aliasMiddleware('resolve.currency', Middleware\ResolveCurrency::class);
-
         Route::aliasMiddleware('resolve.ip', Middleware\ResolveIpAddress::class);
     }
 
@@ -423,7 +428,6 @@ class FoundryServiceProvider extends ServiceProvider
         $kernel = $this->app->make('Illuminate\Contracts\Http\Kernel');
         $kernel->pushMiddleware(ApplicationState::class);
         $kernel->pushMiddleware(ResponseOptimizer::class);
-        $kernel->pushMiddleware(Middleware\ResolveIpAddress::class);
     }
 
     protected function isManagementRoute()

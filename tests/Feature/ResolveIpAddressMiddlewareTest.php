@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use Foundry\Http\Middleware\ResolveIpAddress;
 use Foundry\Tests\TestCase;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
 use PHPUnit\Framework\Attributes\Test;
 use Stevebauman\Location\Facades\Location;
@@ -26,7 +25,7 @@ class ResolveIpAddressMiddlewareTest extends TestCase
     }
 
     #[Test]
-    public function it_resolves_and_caches_ip_location()
+    public function it_resolves_ip_location()
     {
         $ip = '8.8.8.8';
         $position = new Position;
@@ -34,13 +33,13 @@ class ResolveIpAddressMiddlewareTest extends TestCase
         $position->countryCode = 'US';
         $position->countryName = 'United States';
 
-        // Mock Location service
+        // Mock Location service to expect two calls (one per request, as caching is disabled)
         Location::shouldReceive('get')
-            ->once()
+            ->twice()
             ->with($ip)
             ->andReturn($position);
 
-        // First request: should call Location service and cache it
+        // First request: should call Location service
         $this->getJson('/_test/ip-resolution', ['REMOTE_ADDR' => $ip])
             ->assertOk()
             ->assertJson([
@@ -50,12 +49,7 @@ class ResolveIpAddressMiddlewareTest extends TestCase
                 ],
             ]);
 
-        // Verify it is in cache
-        $this->assertTrue(Cache::has("location.{$ip}"));
-        $cachedLocation = Cache::get("location.{$ip}");
-        $this->assertEquals('US', $cachedLocation->countryCode);
-
-        // Second request: should use cache (Location service strict 'once' expectation ensures this)
+        // Second request: should call Location service again
         $this->getJson('/_test/ip-resolution', ['REMOTE_ADDR' => $ip])
             ->assertOk()
             ->assertJson([
@@ -65,12 +59,6 @@ class ResolveIpAddressMiddlewareTest extends TestCase
             ]);
 
         // Verify macro usage
-        $request = Request::create('/_test/ip-resolution', 'GET', [], [], [], ['REMOTE_ADDR' => $ip]);
-        // Manually run middleware logic or rely on the previous functional tests
-        // Since functional test confirms middleware sets logic, let's just test the macro on a request where we manually inject attribute for unit purpose,
-        // OR rely on functional test if we can access request from response.
-        // Let's create a unit test for macro.
-
         $request = new Request;
         $request->attributes->set('ip_location', (object) ['countryCode' => 'US']);
         $this->assertEquals('US', $request->ipLocation('countryCode'));
@@ -89,6 +77,7 @@ class ResolveIpAddressMiddlewareTest extends TestCase
         $position->countryCode = 'AU';
 
         Location::shouldReceive('get')
+            ->once()
             ->with($realClientIp)
             ->andReturn($position);
 
@@ -116,6 +105,7 @@ class ResolveIpAddressMiddlewareTest extends TestCase
 
         // Location::get should be called with the REAL remote addr, not the spoofed one
         Location::shouldReceive('get')
+            ->once()
             ->with($attackerIp)
             ->andReturn($position);
 
@@ -127,8 +117,5 @@ class ResolveIpAddressMiddlewareTest extends TestCase
             'REMOTE_ADDR' => $attackerIp,
             'HTTP_CF_CONNECTING_IP' => $spoofedIp,
         ])->assertOk();
-
-        $this->assertFalse(Cache::has("location.{$spoofedIp}"));
-        $this->assertTrue(Cache::has("location.{$attackerIp}"));
     }
 }
