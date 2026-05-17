@@ -120,7 +120,7 @@ class ApplicationState
             $loader->reload();
 
             if ($loader->isValid()) {
-                return redirect(admin_url('auth/login'));
+                return redirect(route('admin.dashboard'));
             } else {
                 throw ValidationException::withMessages([
                     'license' => [__('The license key provided is not valid.')],
