@@ -101,7 +101,7 @@ class ApplicationState
             $user = $request->user('admin');
             Auth::guard('admin')->logout();
 
-            if (! $user->is_active()) {
+            if (! $user->isActive()) {
                 throw ValidationException::withMessages([
                     'email' => [__('Your account has been disabled.')],
                 ]);
