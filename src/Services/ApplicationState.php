@@ -97,9 +97,9 @@ class ApplicationState
             ]
         );
 
-        if (Auth::guard('admins')->attempt($request->only(['email', 'password']))) {
-            $user = $request->user('admins');
-            Auth::guard('admins')->logout();
+        if (Auth::guard('admin')->attempt($request->only(['email', 'password']))) {
+            $user = $request->user('admin');
+            Auth::guard('admin')->logout();
 
             if (! $user->is_active()) {
                 throw ValidationException::withMessages([

@@ -8,10 +8,10 @@ applyTo: **/*.md
 
 ### Prerequisites
 
--   PHP 8.2 or higher
--   Composer installed
--   Basic understanding of Laravel
--   Familiarity with package development (helpful but not required)
+- PHP 8.2 or higher
+- Composer installed
+- Basic understanding of Laravel
+- Familiarity with package development (helpful but not required)
 
 ### Initial Setup (5 minutes)
 
@@ -76,7 +76,6 @@ foundry/
     ```
 
 2. **Fix the bug**
-
     - Locate the issue (usually in `src/Services/` or `src/Models/`)
     - Make the minimal change needed
     - Follow existing code patterns
@@ -102,7 +101,6 @@ foundry/
 ### Workflow 2: Adding a New Feature
 
 1. **Plan the feature**
-
     - Review existing patterns in similar features
     - Check `.github/instructions/` for relevant guidance
     - Outline the components needed:
@@ -132,7 +130,6 @@ foundry/
     ```
 
 3. **Implement incrementally**
-
     - Add migration (if database changes needed)
     - Create model (if new entity)
     - Add factory for testing
@@ -294,24 +291,24 @@ The package has **separate User and Admin models** with different authentication
 
 **Model Architecture:**
 
--   `Foundry\Models\Admin` - Base admin model
-    -   Extends Laravel's `Authenticatable`
-    -   Uses `admins` guard
-    -   Core authentication and permission features
--   `Foundry\Models\User` - User model
-    -   Extends `Admin` (inherits all admin functionality)
-    -   Uses `users` guard
-    -   Adds subscription/billing capabilities via `Billable` trait
+- `Foundry\Models\Admin` - Base admin model
+    - Extends Laravel's `Authenticatable`
+    - Uses `admin` guard
+    - Core authentication and permission features
+- `Foundry\Models\User` - User model
+    - Extends `Admin` (inherits all admin functionality)
+    - Uses `user` guard
+    - Adds subscription/billing capabilities via `Billable` trait
 
 **Guard Detection:**
 
 ```php
 // Check current guard
-if (guard('users')) {
+if (guard('user')) {
     // User-specific logic (customer/subscriber features)
 }
 
-if (guard('admins')) {
+if (guard('admin')) {
     // Admin-specific logic (management features)
 }
 
@@ -325,7 +322,7 @@ if (is_admin()) {
 }
 
 // Get current guard name
-$guardName = guard(); // Returns 'users', 'admins', or null
+$guardName = guard(); // Returns 'user', 'admin', or null
 ```
 
 **Route Organization:**
@@ -364,9 +361,9 @@ public function orders()
 
 **Important**: User extends Admin, so:
 
--   Users have all admin capabilities plus subscription features
--   Don't confuse the inheritance with permissions - guards control access
--   Always use the appropriate guard when authenticating
+- Users have all admin capabilities plus subscription features
+- Don't confuse the inheritance with permissions - guards control access
+- Always use the appropriate guard when authenticating
 
 ## Testing Best Practices
 
@@ -483,13 +480,11 @@ vendor/bin/phpstan analyse --verbose
 Once you're comfortable with the basics:
 
 1. **Explore advanced features**:
-
     - Payment gateway integrations (`src/Services/Gateways/`)
     - Theme system (`src/Services/Theme.php`)
     - Permission system (`src/Providers/FoundryPermissionsServiceProvider.php`)
 
 2. **Review context-specific instructions**:
-
     - [Service classes](.github/instructions/services.instructions.md)
     - [Controllers](.github/instructions/controllers.instructions.md)
     - [Models](.github/instructions/models.instructions.md)
