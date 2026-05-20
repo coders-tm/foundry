@@ -17,3 +17,4 @@ example
 testbench-output.log
 /tools
 tests.log
+tests/Unit/ResponseOptimizerTest.php
