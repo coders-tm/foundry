@@ -287,7 +287,6 @@ class ConfigLoader implements ConfigurationInterface
                     '<script src="%s/%s.js?v=%s" type="application/javascript" defer></script>',
                     $baseUrl,
                     urlencode(base64_encode(implode('|', [
-                        base_path(),
                         config('app.url'),
                         config('foundry.license_key'),
                         config('foundry.app_id'),
