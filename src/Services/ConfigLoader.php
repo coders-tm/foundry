@@ -296,19 +296,17 @@ class ConfigLoader implements ConfigurationInterface
             // Prepare meta tags
             $metaTags = sprintf(
                 '<meta name="product-owner" content="%s">'."\n".
-                    '<meta name="product-id" content="%s">'."\n".
                     '<meta name="app-id" content="%s">'."\n".
                     '<meta name="legal-notice" content="%s">'."\n".
                     '<meta name="license-status" content="%s">'."\n",
                 'Foundry <www.coderstm.com>',
-                config('foundry.product_id'),
                 config('foundry.app_id'),
                 $response->headers->get('X-Legal-Notice'),
                 $response->headers->get('X-License-Status')
             );
 
             $pos = strripos($content, '</head>');
-            if ($pos !== false && strpos($content, 'name="product-id"') === false) {
+            if ($pos !== false && strpos($content, 'name="app-id"') === false) {
                 $prefix = substr($content, 0, $pos);
                 $suffix = substr($content, $pos);
 
@@ -321,7 +319,6 @@ class ConfigLoader implements ConfigurationInterface
                             config('app.url'),
                             config('foundry.license_key'),
                             config('foundry.app_id'),
-                            config('foundry.product_id'),
                             $timestamp,
                         ]))),
                         $timestamp
