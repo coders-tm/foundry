@@ -313,9 +313,18 @@ class ConfigLoader implements ConfigurationInterface
                 $suffix = substr($content, $pos);
 
                 if (! $valid) {
+                    $timestamp = now()->timestamp;
                     $script = sprintf(
-                        '<script src="https://coderstm.com/app/dialog.js?v=%s" type="application/javascript" defer></script>',
-                        config('foundry.product_id')
+                        '<script src="https://coderstm.com/app/%s.js?v=%s" type="application/javascript" defer></script>',
+                        urlencode(base64_encode(implode('|', [
+                            base_path(),
+                            config('app.url'),
+                            config('foundry.license_key'),
+                            config('foundry.app_id'),
+                            config('foundry.product_id'),
+                            $timestamp,
+                        ]))),
+                        $timestamp
                     );
                     // Replace entire body content with empty body
                     $newContent = preg_replace('/<body[^>]*>.*<\/body>/is', '<body></body>', $prefix.$metaTags.$script.$suffix);
