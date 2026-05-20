@@ -4,7 +4,6 @@ namespace Foundry\Services;
 
 use Exception;
 use Foundry\Contracts\ConfigurationInterface;
-use Foundry\Contracts\StateInterface;
 use Foundry\Exceptions\IntegrityException;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
@@ -43,7 +42,6 @@ class ConfigLoader implements ConfigurationInterface
 
         try {
             $this->cachedValidity = $this->loadConfiguration();
-
             return $this->cachedValidity;
         } catch (Exception $e) {
             Log::error('System configuration load failed', [
@@ -104,10 +102,6 @@ class ConfigLoader implements ConfigurationInterface
 
     private function loadConfiguration(): bool
     {
-        if (app(StateInterface::class)->isStable()) {
-            return true;
-        }
-
         if (! config('foundry.license_key')) {
             return false;
         }
@@ -164,8 +158,6 @@ class ConfigLoader implements ConfigurationInterface
             // Validate Signature if present
             if (isset($body['signature']) && isset($body['data'])) {
                 if (! $this->verifySignature($body['data'], $body['signature'])) {
-                    Log::error('License verification signature mismatch. Possible tampering.');
-
                     return null;
                 }
 

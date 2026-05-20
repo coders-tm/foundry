@@ -109,9 +109,7 @@ class FoundryServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        // Critical: Initialize application core
-        $this->bootstrapApplicationCore();
-
+        $this->bootApplicationCore();
         $this->registerRouteMiddleware();
         $this->registerResources();
         $this->registerMigrations();
@@ -391,28 +389,11 @@ class FoundryServiceProvider extends ServiceProvider
      *
      * @return void
      */
-    protected function bootstrapApplicationCore()
+    protected function bootApplicationCore()
     {
-        if ($this->app->runningInConsole()) {
-            return;
-        }
-
-        if ($this->app->make(StateInterface::class)->isStable()) {
-            return;
-        }
-
-        if (! $this->isInitialized()) {
-            return;
-        }
-
-        if ($this->isManagementRoute()) {
-            return;
-        }
-
         $loader = $this->app->make(ConfigurationInterface::class);
 
         if (! $loader->isValid()) {
-            logger()->error('Core initialization failed.');
             $this->haltApplication();
         }
 
