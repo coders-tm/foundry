@@ -218,8 +218,8 @@ class SupportTicket extends Model
     {
         return [
             'id' => $this->id,
-            'url' => app_url("support-tickets/{$this->id}?action=edit"),
-            'admin_url' => admin_url("support-tickets/{$this->id}?action=edit"),
+            'url' => route('support-tickets.show', $this->id),
+            'admin_url' => route('admin.support-tickets.show', $this->id),
             'attachments' => $this->media->map(function ($file) {
                 return [
                     'name' => $file->name,

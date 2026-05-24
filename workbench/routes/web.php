@@ -61,7 +61,7 @@ Route::post('/admin/login', function (Request $request) {
     return back();
 })->middleware(['web', 'guest:admin'])->name('admin.login.store');
 
-Route::group([], __DIR__.'/foundry/web.php');
+Route::group([], __DIR__ . '/foundry/web.php');
 
 Route::get('/dashboard', function () {
     return view('dashboard');
@@ -88,5 +88,21 @@ Route::get('/billing', function () {
 })->middleware(['web', 'auth:user'])->name('billing.index');
 
 Route::get('/payment/{order}', function ($order) {
-    return 'Payment page for testing purpose: '.$order;
+    return 'Payment page for testing purpose: ' . $order;
 })->middleware(['web'])->name('payment.index');
+
+Route::get('support-tickets', function () {
+    return 'This is a placeholder for the support tickets page. In a real application, this would display a list of support tickets and allow users to create new ones.';
+})->name('support-tickets.index');
+
+Route::get('support-tickets/{ticket}', function ($ticket) {
+    return "This is a placeholder for the support ticket page. In a real application, this would display details for the specified support ticket. Ticket ID: {$ticket}";
+})->name('support-tickets.show');
+
+Route::get('admin/support-tickets', function () {
+    return 'This is a placeholder for the support tickets page. In a real application, this would display a list of support tickets and allow users to create new ones.';
+})->name('admin.support-tickets.index');
+
+Route::get('admin/support-tickets/{ticket}', function ($ticket) {
+    return "This is a placeholder for the support ticket page. In a real application, this would display details for the specified support ticket. Ticket ID: {$ticket}";
+})->name('admin.support-tickets.show');
