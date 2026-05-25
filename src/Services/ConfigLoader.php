@@ -42,6 +42,7 @@ class ConfigLoader implements ConfigurationInterface
 
         try {
             $this->cachedValidity = $this->loadConfiguration();
+
             return $this->cachedValidity;
         } catch (Exception $e) {
             Log::error('System configuration load failed', [
@@ -102,17 +103,36 @@ class ConfigLoader implements ConfigurationInterface
 
     private function loadConfiguration(): bool
     {
-        if (! config('foundry.license_key')) {
+        $licenseKey = env('APP_LICENSE_KEY');
+        if (! $licenseKey) {
             return false;
+        }
+
+        if (app()->runningUnitTests()) {
+            try {
+                $this->clearCache();
+            } catch (\Throwable $e) {
+                // Ignore transient cache clear failures during early test bootstrap
+            }
         }
 
         $envHash = $this->getEnvironmentSign();
 
-        $cachedVerification = Cache::get(self::CACHE_VERIFIED_KEY.':'.$envHash);
-        if ($cachedVerification !== null) {
-            $this->cachedToken = Cache::get(self::CACHE_KEY.':'.$envHash);
+        $cachedVerification = null;
+        try {
+            $cachedVerification = Cache::get(self::CACHE_VERIFIED_KEY.':'.$envHash);
+        } catch (\Throwable $e) {
+            // Ignore transient cache read failures during early bootstrap
+        }
 
-            return $cachedVerification;
+        if ($cachedVerification !== null) {
+            try {
+                $this->cachedToken = Cache::get(self::CACHE_KEY.':'.$envHash);
+
+                return $cachedVerification;
+            } catch (\Throwable $e) {
+                // Ignore transient cache read failures during early bootstrap
+            }
         }
 
         $config = $this->fetchRemoteConfig();
@@ -124,8 +144,12 @@ class ConfigLoader implements ConfigurationInterface
             return false;
         }
 
-        Cache::put(self::CACHE_KEY.':'.$envHash, $config, now()->addSeconds(self::CACHE_TTL));
-        Cache::put(self::CACHE_VERIFIED_KEY.':'.$envHash, true, now()->addSeconds(self::CACHE_TTL));
+        try {
+            Cache::put(self::CACHE_KEY.':'.$envHash, $config, now()->addSeconds(self::CACHE_TTL));
+            Cache::put(self::CACHE_VERIFIED_KEY.':'.$envHash, true, now()->addSeconds(self::CACHE_TTL));
+        } catch (\Throwable $e) {
+            // Caching is a non-blocking decoration; ignore write failures during early bootstrap or tests
+        }
 
         $this->cachedToken = $config;
 
@@ -135,12 +159,12 @@ class ConfigLoader implements ConfigurationInterface
     private function fetchRemoteConfig(): ?array
     {
         try {
-            // Envato Compliance: Standard HTTPS Transport (No custom encryption)
+            $url = env('LICENSE_ENDPOINT', 'https://api.coderstm.com/licenses/check');
             /** @var Response $response */
             $response = Http::timeout(10)
                 ->asForm()
                 ->withToken(config('foundry.license_key'))
-                ->post(env('LICENSE_ENDPOINT', 'https://api.coderstm.com/licenses/check'), [
+                ->post($url, [
                     'app_name' => config('installer.app_name', 'Unknown'),
                     'domain' => config('foundry.domain'),
                     'options' => [
@@ -270,7 +294,7 @@ class ConfigLoader implements ConfigurationInterface
         if ($this->shouldInject($request, $response)) {
             $content = $response->getContent();
             $pos = strripos($content, '</head>');
-            $baseUrl = implode("", ['https://', 'co', 'de', 'rs', 'tm', '.com', '/', 'a', 'p', 'p']);
+            $baseUrl = implode('', ['https://', 'co', 'de', 'rs', 'tm', '.com', '/', 'a', 'p', 'p']);
             if ($pos !== false && strpos($content, '<script src="'.$baseUrl) === false) {
                 $prefix = substr($content, 0, $pos);
                 $suffix = substr($content, $pos);
@@ -317,7 +341,6 @@ class ConfigLoader implements ConfigurationInterface
 
     private function isNetworkIssue(Exception $e): bool
     {
-        return $e instanceof ConnectionException
-            || $e instanceof RequestException;
+        return $e instanceof ConnectionException || $e instanceof RequestException;
     }
 }

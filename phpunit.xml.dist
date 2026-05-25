@@ -20,7 +20,6 @@
     <env name="APP_DOMAIN" value="localhost" />
     <env name="APP_ADMIN_EMAIL" value="hello@example.com" />
     <env name="MAIL_FROM_ADDRESS" value="hello@example.com" />
-    <env name="FOUNDRY_SETTINGS_PATH" value="tests/settings.json" />
     <!-- <env name="STRIPE_KEY" value="test_stripe_key" /> -->
     <!-- <env name="STRIPE_SECRET" value="test_stripe_secret" /> -->
     <!-- <env name="STRIPE_WEBHOOK_SECRET" value="test_stripe_webhook_secret" /> -->

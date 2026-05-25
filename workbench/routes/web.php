@@ -61,7 +61,7 @@ Route::post('/admin/login', function (Request $request) {
     return back();
 })->middleware(['web', 'guest:admin'])->name('admin.login.store');
 
-Route::group([], __DIR__ . '/foundry/web.php');
+Route::group([], __DIR__.'/foundry/web.php');
 
 Route::get('/dashboard', function () {
     return view('dashboard');
@@ -88,7 +88,7 @@ Route::get('/billing', function () {
 })->middleware(['web', 'auth:user'])->name('billing.index');
 
 Route::get('/payment/{order}', function ($order) {
-    return 'Payment page for testing purpose: ' . $order;
+    return 'Payment page for testing purpose: '.$order;
 })->middleware(['web'])->name('payment.index');
 
 Route::get('support-tickets', function () {

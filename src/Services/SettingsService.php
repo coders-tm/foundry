@@ -214,8 +214,7 @@ class SettingsService
     protected function getOverrideMap(): array
     {
         return config('foundry.settings_override', [
-            'config' => [
-                'alias' => 'app',
+            'app' => [
                 'email' => [
                     'foundry.admin_email',
                     'mail.from.address',
