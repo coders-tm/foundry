@@ -42,6 +42,7 @@ jobs:
           vendor/bin/testbench workbench:build
           vendor/bin/testbench package:test
         env:
+          APP_LICENSE_KEY: ${{ secrets.APP_LICENSE_KEY }}
           STRIPE_KEY: ${{ secrets.STRIPE_KEY }}
           STRIPE_SECRET: ${{ secrets.STRIPE_SECRET }}
           PAYSTACK_PUBLIC_KEY: ${{ secrets.PAYSTACK_PUBLIC_KEY }}
