@@ -78,20 +78,6 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | License Security Configuration
-    |--------------------------------------------------------------------------
-    |
-    | These settings control the license verification and security system.
-    | DO NOT modify these unless you understand the security implications.
-    |
-    */
-
-    'license_key' => env('APP_LICENSE_KEY'),
-    'app_id' => env('APP_ID', null),
-    'product_id' => env('PRODUCT_ID', null),
-
-    /*
-    |--------------------------------------------------------------------------
     | Subscription
     |--------------------------------------------------------------------------
     |

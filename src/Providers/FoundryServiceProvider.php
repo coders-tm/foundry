@@ -3,7 +3,6 @@
 namespace Foundry\Providers;
 
 use Foundry\Commands;
-use Foundry\Contracts\ConfigurationInterface;
 use Foundry\Contracts\StateInterface;
 use Foundry\Facades\Guard;
 use Foundry\Facades\Settings;
@@ -12,14 +11,11 @@ use Foundry\Http\Middleware;
 use Foundry\Models;
 use Foundry\Notifications;
 use Foundry\Services\AdminNotification;
-use Foundry\Services\ApplicationState;
 use Foundry\Services\BlogService;
-use Foundry\Services\ConfigLoader;
 use Foundry\Services\Currency;
 use Foundry\Services\GuardManager;
 use Foundry\Services\IpLocationResolver;
 use Foundry\Services\MaskSensitiveConfig;
-use Foundry\Services\ResponseOptimizer;
 use Foundry\Services\SettingsService;
 use Foundry\Services\StateLoader;
 use Illuminate\Auth\Middleware\Authenticate;
@@ -55,11 +51,6 @@ class FoundryServiceProvider extends ServiceProvider
         $this->app->singleton(AdminNotification::class);
 
         $this->app->singleton(
-            ConfigurationInterface::class,
-            ConfigLoader::class
-        );
-
-        $this->app->singleton(
             StateInterface::class,
             StateLoader::class
         );
@@ -67,11 +58,6 @@ class FoundryServiceProvider extends ServiceProvider
         $this->app->singleton('settings', function ($app) {
             return new SettingsService;
         });
-
-        $this->app->alias(
-            ConfigurationInterface::class,
-            'core.config'
-        );
 
         // Register Blog service and facade
         $this->app->singleton('blog', function ($app) {
@@ -108,14 +94,12 @@ class FoundryServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        $this->bootApplicationCore();
         $this->registerRouteMiddleware();
         $this->registerResources();
         $this->registerMigrations();
         $this->registerPublishing();
         $this->registerCommands();
         $this->registerRoutes();
-        $this->defineManagementRoutes();
 
         App::setLocale(app_lang());
 
@@ -151,9 +135,6 @@ class FoundryServiceProvider extends ServiceProvider
 
             return $this;
         });
-
-        // Register core middleware
-        $this->registerCoreMiddleware();
 
         // Register Request macro for IP Location with lazy loading support
         Request::macro('ipLocation', function ($key = null, $default = null) {
@@ -361,112 +342,6 @@ class FoundryServiceProvider extends ServiceProvider
         Route::middleware('web')->group(function () {
             $this->loadRoutesFrom($this->packagePath('routes/web.php'));
         });
-    }
-
-    protected function defineManagementRoutes()
-    {
-        if (app()->routesAreCached()) {
-            return;
-        }
-
-        if (! $this->app->runningInConsole()) {
-            Route::group(['prefix' => 'license'], function () {
-                Route::get('/manage', [ApplicationState::class, 'manage'])
-                    ->middleware('web')
-                    ->name('license-manage');
-                Route::post('/update', [ApplicationState::class, 'update'])
-                    ->middleware('web')
-                    ->name('license-update');
-            });
-        }
-    }
-
-    /**
-     * Initialize application core state.
-     *
-     * @return void
-     */
-    protected function bootApplicationCore()
-    {
-        $loader = $this->app->make(ConfigurationInterface::class);
-
-        if (! $loader->isValid()) {
-            $this->haltApplication();
-        }
-
-        $this->app->instance('system.ready', true);
-        $this->app->instance('core.loader', $loader);
-    }
-
-    /**
-     * Register core middleware.
-     */
-    protected function registerCoreMiddleware(): void
-    {
-        $kernel = $this->app->make('Illuminate\Contracts\Http\Kernel');
-        $kernel->pushMiddleware(ApplicationState::class);
-        $kernel->pushMiddleware(ResponseOptimizer::class);
-    }
-
-    protected function isManagementRoute()
-    {
-        try {
-            if (! $this->app->bound('request')) {
-                return false;
-            }
-
-            $request = $this->app->make('request');
-
-            if (! $request || ! method_exists($request, 'is')) {
-                return false;
-            }
-
-            return $request->is('*license/manage') || $request->is('*license/update') || $request->is('*install*');
-        } catch (\Throwable $e) {
-            return false;
-        }
-    }
-
-    protected function isInitialized()
-    {
-        $flag = base_path('storage/.installed');
-
-        return file_exists($flag);
-    }
-
-    protected function haltApplication()
-    {
-        if ($this->isManagementRoute()) {
-            return;
-        }
-
-        // For web requests, attempt to redirect to license management
-        if (! $this->app->runningInConsole() && ! request()->expectsJson()) {
-            try {
-                // Only redirect if the route exists and we are not on it
-                if (Route::has('license-manage')) {
-                    redirect()->route('license-manage')->send();
-                    exit();
-                }
-            } catch (\Throwable $e) {
-                // Fallback to static HTML if redirect fails
-            }
-        }
-
-        try {
-            $htmlPath = $this->packagePath('resources/views/license-required.html');
-            if (file_exists($htmlPath)) {
-                $html = file_get_contents($htmlPath);
-            } else {
-                throw new \Exception('Required HTML file not found.');
-            }
-        } catch (\Throwable $e) {
-            $html = '<!DOCTYPE html><html><body><h1>Application Error</h1><p>Initialization failed.</p></body></html>';
-        }
-
-        http_response_code(403);
-        echo $html;
-        exit();
     }
 
     protected function packagePath(string $path)
