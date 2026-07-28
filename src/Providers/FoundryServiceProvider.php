@@ -78,7 +78,6 @@ class FoundryServiceProvider extends ServiceProvider
             return new BlogService;
         });
 
-        // Register MaskSensitiveConfig as a singleton for direct usage (e.g. ThemeController)
         $this->app->singleton(MaskSensitiveConfig::class, function ($app) {
             return new MaskSensitiveConfig(
                 $app['files'],
@@ -315,8 +314,6 @@ class FoundryServiceProvider extends ServiceProvider
                 $this->packagePath('resources/views/includes') => resource_path('views/includes'),
                 $this->packagePath('resources/views/layouts') => resource_path('views/layouts'),
                 $this->packageStubPath('views/app.blade.php') => resource_path('views/app.blade.php'),
-
-                $this->packageStubPath('theme') => $this->app->basePath('themes/foundation'),
 
                 $this->packageStubPath('models') => app_path('Models'),
 

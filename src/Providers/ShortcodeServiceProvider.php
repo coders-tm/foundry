@@ -23,7 +23,6 @@ class ShortcodeServiceProvider extends ServiceProvider
     {
         Shortcodes::add([
             'plans' => Component\Plans::class,
-            'contact-form' => Component\ContactForm::class,
             'blogs' => Component\Blogs::class,
             'menu' => Component\Menu::class,
             'socials' => Component\Socials::class,

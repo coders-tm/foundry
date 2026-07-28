@@ -2,7 +2,6 @@ laravel: "@testbench"
 
 providers:
   - Barryvdh\DomPDF\ServiceProvider
-  - Qirolab\Theme\ThemeServiceProvider
   - Stevebauman\Location\LocationServiceProvider
   - Vedmant\LaravelShortcodes\LaravelShortcodesServiceProvider
   - Foundry\Providers\FoundryServiceProvider
@@ -10,7 +9,6 @@ providers:
   - Foundry\Providers\FoundryEventServiceProvider
   - Foundry\Providers\ShortcodeServiceProvider
   - Foundry\Providers\FortifyServiceProvider
-  - Coderstm\PageBuilder\Providers\PageBuilderServiceProvider
   - Workbench\App\Providers\WorkbenchServiceProvider
 
 migrations:

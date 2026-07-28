@@ -290,10 +290,4 @@ class HelpersTest extends BaseTestCase
     {
         $this->assertEquals('*', BaseRepository::getCountryCode(null));
     }
-
-    public function test_theme()
-    {
-        $this->assertEquals(theme('path', 'foundation'), '/themes/foundation/path');
-        $this->assertEquals(theme('/css/app.css', 'foundation'), '/themes/foundation/css/app.css');
-    }
 }

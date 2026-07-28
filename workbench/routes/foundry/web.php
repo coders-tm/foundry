@@ -304,21 +304,6 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     });
     Route::resource('blogs', Foundry\BlogController::class);
 
-    Route::group(['prefix' => 'themes', 'as' => 'themes.'], function () {
-        Route::get('/', [Foundry\ThemeController::class, 'index'])->name('index');
-        Route::post('/{theme}/active', [Foundry\ThemeController::class, 'activate'])->name('activate');
-        Route::delete('/{theme}/destroy', [Foundry\ThemeController::class, 'destroy'])->name('destroy');
-        Route::post('/{theme}/clone', [Foundry\ThemeController::class, 'clone'])->name('clone');
-        Route::post('/{theme}/assets', [Foundry\ThemeController::class, 'assetsUpload'])->name('assets');
-
-        Route::group(['prefix' => '{theme}/files'], function () {
-            Route::get('/', [Foundry\ThemeController::class, 'getFiles'])->name('files.list');
-            Route::post('/', [Foundry\ThemeController::class, 'saveFile'])->name('files.save');
-            Route::post('/create', [Foundry\ThemeController::class, 'createFile'])->name('files.create');
-            Route::get('/content', [Foundry\ThemeController::class, 'getFileContent'])->name('files.content');
-            Route::delete('/destroy', [Foundry\ThemeController::class, 'destroyThemeFile'])->name('files.destroy');
-        });
-    });
 });
 
 // Users (protected by auth:admin but without admin prefix)
@@ -362,8 +347,6 @@ Route::group(['prefix' => 'payment', 'as' => 'payment.'], function () {
     Route::post('setup-intent', [Foundry\PaymentController::class, 'setupPaymentIntent'])->name('setup-intent');
     Route::post('confirm', [Foundry\PaymentController::class, 'confirmPayment'])->name('confirm');
 });
-
-Route::get('/themes/{theme}/assets', [Foundry\ThemeController::class, 'assets'])->name('themes.assets.preview');
 
 // Exchange Rates
 Route::get('/exchange-rates/estimate', [Foundry\ExchangeRateController::class, 'estimate'])->name('exchange-rates.estimate');
