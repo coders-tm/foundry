@@ -6,20 +6,10 @@ namespace Foundry;
  * Billable configuration and model registry.
  *
  * Provides a facade-like interface for configuring billable settings,
- * including model bindings and central vs tenant configuration.
+ * including model bindings.
  */
 class Billable
 {
-    /**
-     * Use central configuration for billable functionality.
-     *
-     * When true, all billable data is stored in a central location.
-     * When false, data is stored per-tenant (if applicable).
-     *
-     * @var bool
-     */
-    public static $central = false;
-
     /**
      * Get the customer model class name.
      */
@@ -34,17 +24,6 @@ class Billable
     public static function getPaymentMethodModel(): string
     {
         return Foundry::$billablePaymentMethodModel;
-    }
-
-    /**
-     * Configure billable to use central storage.
-     *
-     * @param  bool  $central
-     * @return void
-     */
-    public static function useCentral($central = true)
-    {
-        self::$central = $central;
     }
 
     /**
@@ -69,4 +48,5 @@ class Billable
         Foundry::useBillablePaymentMethodModel($model);
     }
 }
+
 
