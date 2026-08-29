@@ -28,27 +28,31 @@ class PaypalPayment extends BillablePayment
      */
     public function setup()
     {
-        if (! $this->userId) {
+        if (! $this->getUserId()) {
             throw new Exception('No user identified for PayPal billable setup.');
         }
 
         $customer = $this->getOrCreateCustomer(
-            $this->userId,
+            $this->getUserId(),
             self::PROVIDER
         );
 
         if ($this->paymentMethod) {
-            $this->createOrUpdatePaymentMethod(
-                $this->userId,
+            $pm = $this->createOrUpdatePaymentMethod(
+                $this->getUserId(),
                 self::PROVIDER,
                 $this->paymentMethod,
                 [
                     'type' => 'paypal',
                 ]
             );
+
+            $pm->markAsDefault();
+
+            return $pm;
         }
 
-        return $customer;
+        return $this->getPaymentMethod($this->getUserId(), self::PROVIDER);
     }
 
     /**
@@ -56,12 +60,12 @@ class PaypalPayment extends BillablePayment
      */
     public function remove()
     {
-        if (! $this->userId) {
+        if (! $this->getUserId()) {
             throw new Exception('No user identified for PayPal billable removal.');
         }
 
         $this->deletePaymentMethod(
-            $this->userId,
+            $this->getUserId(),
             self::PROVIDER
         );
 
@@ -71,22 +75,18 @@ class PaypalPayment extends BillablePayment
     /**
      * Charge a Payable entity with PayPal using a saved Vault ID.
      *
-     * @param  Payable  $payable
-     * @param  mixed  $paymentMethod
-     * @param  array  $options
-     * @return PaymentResult
      *
      * @throws Exception
      */
     public function charge(Payable $payable, mixed $paymentMethod = null, array $options = []): PaymentResult
     {
-        if (! $this->userId) {
+        if (! $this->getUserId()) {
             throw new Exception('No user identified for charging.');
         }
 
         $pmRecord = $paymentMethod;
         if (! $pmRecord) {
-            $pmRecord = $this->getPaymentMethod($this->userId, self::PROVIDER);
+            $pmRecord = $this->getPaymentMethod($this->getUserId(), self::PROVIDER);
         }
 
         $pmId = is_object($pmRecord) ? ($pmRecord->provider_id ?? null) : $pmRecord;
@@ -143,7 +143,7 @@ class PaypalPayment extends BillablePayment
             );
         } catch (Exception $e) {
             logger()->error('PayPal charge failed', [
-                'user_id' => $this->userId,
+                'user_id' => $this->getUserId(),
                 'error' => $e->getMessage(),
             ]);
 

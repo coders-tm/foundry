@@ -3,6 +3,7 @@
 namespace Tests\Feature\Subscription;
 
 use Foundry\Billable\BillableManager;
+use Foundry\Exceptions\PaymentException;
 use Foundry\Foundry;
 use Foundry\Models\Order;
 use Foundry\Models\Subscription;
@@ -188,7 +189,7 @@ class PaypalBillableTest extends TestCase
             'status' => 'FAILED',
         ]);
 
-        $this->expectException(\Foundry\Exceptions\PaymentException::class);
+        $this->expectException(PaymentException::class);
 
         $payable = Payable::fromOrder($order);
         $manager = new BillableManager($subscription->user);

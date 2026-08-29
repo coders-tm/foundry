@@ -24,11 +24,35 @@ class PaymentMethod extends Model
         'provider',
         'provider_id',
         'options',
+        'is_default',
     ];
 
     protected $casts = [
         'options' => 'json',
+        'is_default' => 'boolean',
     ];
+
+    /**
+     * Scope query to only include default payment methods.
+     */
+    public function scopeDefault($query)
+    {
+        return $query->where('is_default', true);
+    }
+
+    /**
+     * Mark this payment method as the default for the user.
+     */
+    public function markAsDefault(): self
+    {
+        static::where('user_id', $this->user_id)
+            ->where('id', '!=', $this->id)
+            ->update(['is_default' => false]);
+
+        $this->update(['is_default' => true]);
+
+        return $this;
+    }
 
     /**
      * Get the payment provider gateway associated with this payment method.

@@ -2,182 +2,89 @@
 
 namespace Foundry\Billable\Http\Controllers;
 
-use Foundry\Billable\BillableManager;
-use Foundry\Billable\Services\GoCardlessPayment;
-use Foundry\Models\Subscription;
-use Illuminate\Auth\AuthorizationException;
+use Foundry\Billable\BillableProcessor;
+use Foundry\Billable\Responses\RedirectResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-use Illuminate\Validation\ValidationException;
 
 /**
- * API Controller for managing user auto-renewal payment settings.
+ * Controller for managing user off-session payment methods.
  */
 class BillableController extends Controller
 {
     /**
-     * Get the auto-renewal status for a subscription.
-     *
-     * @throws AuthorizationException
+     * Create / set up a new payment method for the authenticated user.
      */
-    public function status(Request $request, Subscription $subscription): JsonResponse
+    public function create(Request $request): JsonResponse
     {
-        $this->authorize('view', $subscription);
+        $request->validate([
+            'provider' => 'required|string',
+        ]);
 
-        $manager = new BillableManager($subscription->user);
+        $manager = $request->user()->billable($request->provider)
+            ->setPaymentMethod($request->payment_method ?? null);
+
+        $manager->validate($request);
+
+        $result = $manager->setup();
+
+        if ($result instanceof RedirectResponse) {
+            return response()->json([
+                'action'       => 'redirect',
+                'redirect_url' => $result->getUrl(),
+                'message'      => __('Please complete the Direct Debit setup process.'),
+                'data'         => $result->getData(),
+            ]);
+        }
 
         return response()->json([
-            'status' => $manager->status(),
-            'subscription' => [
-                'id' => $subscription->id,
-                'name' => $subscription->name,
-                'provider' => $subscription->provider,
-                'auto_renewal_enabled' => $subscription->auto_renewal_enabled,
-            ],
+            'message' => __('Payment method has been added successfully.'),
+            'data'    => $result,
         ]);
     }
 
     /**
-     * Setup auto-renewal for a subscription.
-     *
-     * @throws AuthorizationException
-     * @throws ValidationException
+     * Handle provider redirect setup callback.
      */
-    public function setup(Request $request, Subscription $subscription): JsonResponse
+    public function callback(Request $request, string $provider)
     {
-        $this->authorize('update', $subscription);
-
-        $validated = $request->validate([
-            'payment_method' => 'nullable|string',
-            'provider' => 'required_if:payment_method,null|nullable|string',
-        ]);
-
         try {
-            $provider = $validated['provider'] ?? $subscription->provider;
-            $manager = new BillableManager($subscription->user);
+            BillableProcessor::make($provider)
+                ->setUser($request->user())
+                ->handleCallback($request);
 
-            if ($provider) {
-                $manager->setProvider($provider);
-            }
-
-            if ($validated['payment_method'] ?? null) {
-                $manager->setPaymentMethod($validated['payment_method']);
-            }
-
-            if ($provider === 'gocardless' && ! ($validated['payment_method'] ?? null)) {
-                $goCardless = new GoCardlessPayment($subscription->user);
-                $redirectFlow = $goCardless->createRedirectFlow();
-
-                return response()->json([
-                    'status' => 'redirect_required',
-                    'redirect_url' => $redirectFlow['redirect_url'],
-                    'flow_id' => $redirectFlow['flow_id'],
-                ]);
-            }
-
-            $result = $manager->setup();
-
-            if ($provider) {
-                $subscription->provider = $provider;
-            }
-            $subscription->auto_renewal_enabled = true;
-            $subscription->save();
-
-            return response()->json([
-                'status' => 'setup_complete',
-                'subscription' => $subscription->fresh()->toArray(),
-                'auto_renewal' => $manager->status(),
-            ]);
+            return redirect()->to('/billing/payment-method?setup=success');
         } catch (\Exception $e) {
-            logger()->error('Auto-renewal setup failed', [
-                'subscription_id' => $subscription->id,
-                'error' => $e->getMessage(),
-            ]);
+            report($e);
 
-            return response()->json([
-                'message' => 'Failed to setup auto-renewal',
-                'error' => $e->getMessage(),
-            ], 422);
+            return redirect()->to('/billing/payment-method?setup=failed&error='.urlencode($e->getMessage()));
         }
     }
 
     /**
-     * Handle GoCardless redirect flow completion.
-     *
-     * @throws AuthorizationException
+     * Confirm a payment method setup (e.g. 3DS confirmation for Stripe).
      */
-    public function handleCallback(Request $request, Subscription $subscription): JsonResponse
+    public function confirm(Request $request): JsonResponse
     {
-        $this->authorize('update', $subscription);
-
-        $validated = $request->validate([
-            'flow_id' => 'required|string',
-            'session_token' => 'required|string',
+        $request->validate([
+            'provider'               => 'required|string',
+            'options'                => 'required|array',
+            'options.payment_method' => 'required|string',
         ]);
 
         try {
-            $manager = new BillableManager($subscription->user);
-            $manager->setProvider('gocardless');
-            $result = $manager->handleCallback($request);
-
-            $subscription->provider = 'gocardless';
-            $subscription->auto_renewal_enabled = true;
-            $subscription->save();
+            $pm = $request->user()->billable()
+                ->confirm($request->provider, $request->options);
 
             return response()->json([
-                'status' => 'callback_processed',
-                'subscription' => $subscription->fresh()->toArray(),
-                'auto_renewal' => $manager->status(),
+                'message' => __('Payment method has been confirmed successfully.'),
+                'data'    => $pm,
             ]);
         } catch (\Exception $e) {
-            logger()->error('Auto-renewal callback failed', [
-                'subscription_id' => $subscription->id,
-                'error' => $e->getMessage(),
-            ]);
-
             return response()->json([
-                'message' => 'Failed to process callback',
-                'error' => $e->getMessage(),
-            ], 422);
-        }
-    }
-
-    /**
-     * Remove auto-renewal from a subscription.
-     *
-     * @throws AuthorizationException
-     */
-    public function remove(Request $request, Subscription $subscription): JsonResponse
-    {
-        $this->authorize('update', $subscription);
-
-        try {
-            $manager = new BillableManager($subscription->user);
-            if ($subscription->provider) {
-                $manager->setProvider($subscription->provider);
-            }
-
-            $manager->remove();
-
-            $subscription->auto_renewal_enabled = false;
-            $subscription->save();
-
-            return response()->json([
-                'status' => 'removal_complete',
-                'subscription' => $subscription->fresh()->toArray(),
-                'auto_renewal' => $manager->status(),
-            ]);
-        } catch (\Exception $e) {
-            logger()->error('Auto-renewal removal failed', [
-                'subscription_id' => $subscription->id,
-                'error' => $e->getMessage(),
-            ]);
-
-            return response()->json([
-                'message' => 'Failed to remove auto-renewal',
-                'error' => $e->getMessage(),
-            ], 422);
+                'message' => __('Failed to confirm payment method.'),
+            ], 400);
         }
     }
 }

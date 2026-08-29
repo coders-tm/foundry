@@ -20,6 +20,7 @@ return new class extends Migration
             $table->foreignUuid('user_id')->nullable();
             $table->string('provider')->index();
             $table->string('provider_id')->nullable()->index();
+            $table->boolean('is_default')->default(false);
             $table->json('options')->nullable();
 
             $table->timestamps();

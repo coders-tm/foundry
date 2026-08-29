@@ -4,12 +4,15 @@ namespace Foundry\Billable\Services;
 
 use Foundry\Billable\Billable;
 use Foundry\Billable\Exceptions\PaymentIncomplete;
+use Foundry\Billable\Models\PaymentMethod;
 use Foundry\Billable\Payments\StripePayment as StripePaymentWrapper;
 use Foundry\Foundry;
 use Foundry\Models\PaymentMethod as PaymentMethodModel;
 use Foundry\Payment\Mappers\StripePayment as StripePaymentMapper;
 use Foundry\Payment\Payable;
 use Foundry\Payment\PaymentResult;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
 use Stripe\Exception\CardException;
 
 /**
@@ -26,24 +29,71 @@ class StripePayment extends BillablePayment
     public const PROVIDER = 'stripe';
 
     /**
+     * Validate setup request parameters for Stripe.
+     */
+    public function validate(Request $request): array
+    {
+        return $request->validate([
+            'payment_method' => 'required|string',
+        ]);
+    }
+
+    /**
+     * Confirm Stripe payment method setup (e.g. 3DS confirmation).
+     *
+     * @param  array  $options  Options array containing payment_method and optional setup_intent
+     *
+     * @throws \Exception
+     */
+    public function confirm(array $options): PaymentMethod
+    {
+        $pmId = $options['payment_method'] ?? null;
+        if (! $pmId) {
+            throw new \InvalidArgumentException('Missing payment_method in options.');
+        }
+
+        $paymentMethod = PaymentMethod::where([
+            'user_id' => $this->getUserId(),
+            'provider' => self::PROVIDER,
+            'provider_id' => $pmId,
+        ])->firstOrFail();
+
+        $setupIntentId = $options['setup_intent'] ?? null;
+        if ($setupIntentId) {
+            $setupIntent = Foundry::stripe()->setupIntents->retrieve($setupIntentId);
+            if ($setupIntent->status === 'succeeded') {
+                $paymentMethod->update([
+                    'options' => array_merge((array) $paymentMethod->options, $options, [
+                        'requires_action' => false,
+                    ]),
+                ]);
+
+                return $paymentMethod;
+            }
+        }
+
+        throw new \Exception('Failed to confirm Stripe payment method setup.');
+    }
+
+    /**
      * Set up a saved Stripe payment method for the user.
      */
     public function setup()
     {
-        if (! $this->userId) {
+        if (! $this->getUserId()) {
             throw new \Exception('No user identified for Stripe billable setup.');
         }
 
-        $customer = $this->getOrCreateCustomer(
-            $this->userId,
+        $this->getOrCreateCustomer(
+            $this->getUserId(),
             self::PROVIDER
         );
 
         if ($this->paymentMethod) {
-            $this->addOrUpdatePaymentMethod($this->paymentMethod);
+            return $this->addOrUpdatePaymentMethod($this->paymentMethod);
         }
 
-        return $customer;
+        return $this->getPaymentMethod($this->getUserId(), self::PROVIDER);
     }
 
     /**
@@ -51,12 +101,12 @@ class StripePayment extends BillablePayment
      */
     public function remove()
     {
-        if (! $this->userId) {
+        if (! $this->getUserId()) {
             throw new \Exception('No user identified for Stripe billable removal.');
         }
 
         $this->deletePaymentMethod(
-            $this->userId,
+            $this->getUserId(),
             self::PROVIDER
         );
 
@@ -66,22 +116,18 @@ class StripePayment extends BillablePayment
     /**
      * Charge a Payable entity using the saved Stripe payment method.
      *
-     * @param  Payable  $payable
-     * @param  mixed  $paymentMethod
-     * @param  array  $options
-     * @return PaymentResult
      *
      * @throws \Exception
      */
     public function charge(Payable $payable, mixed $paymentMethod = null, array $options = []): PaymentResult
     {
-        if (! $this->userId) {
+        if (! $this->getUserId()) {
             throw new \Exception('No user identified for charging.');
         }
 
         $pmRecord = $paymentMethod;
         if (! $pmRecord) {
-            $pmRecord = $this->getPaymentMethod($this->userId, self::PROVIDER);
+            $pmRecord = $this->getPaymentMethod($this->getUserId(), self::PROVIDER);
         }
 
         $pmId = is_object($pmRecord) ? ($pmRecord->provider_id ?? null) : $pmRecord;
@@ -91,7 +137,7 @@ class StripePayment extends BillablePayment
         }
 
         $customer = $this->getOrCreateCustomer(
-            $this->userId,
+            $this->getUserId(),
             self::PROVIDER
         );
 
@@ -111,7 +157,7 @@ class StripePayment extends BillablePayment
             'confirm' => true,
             'description' => $payable->getDescription(),
             'metadata' => array_merge($payable->getMetadata(), [
-                'user_id' => $this->userId,
+                'user_id' => $this->getUserId(),
             ]),
         ], $options);
 
@@ -146,7 +192,7 @@ class StripePayment extends BillablePayment
             }
 
             logger()->error('Stripe charge failed', [
-                'user_id' => $this->userId,
+                'user_id' => $this->getUserId(),
                 'error' => $e->getMessage(),
             ]);
 
@@ -155,7 +201,7 @@ class StripePayment extends BillablePayment
             throw $incompleteEx;
         } catch (\Throwable $e) {
             logger()->error('Stripe charge error', [
-                'user_id' => $this->userId,
+                'user_id' => $this->getUserId(),
                 'error' => $e->getMessage(),
             ]);
 
@@ -169,7 +215,7 @@ class StripePayment extends BillablePayment
     protected function getOrCreateStripeCustomer()
     {
         $customer = $this->getOrCreateCustomer(
-            $this->userId,
+            $this->getUserId(),
             self::PROVIDER
         );
 
@@ -191,11 +237,11 @@ class StripePayment extends BillablePayment
      */
     protected function createStripeCustomer()
     {
-        $user = $this->user instanceof \Illuminate\Database\Eloquent\Model ? $this->user : \Foundry\Billable::user();
+        $user = $this->user instanceof Model ? $this->user : \Foundry\Billable::user();
 
         $params = [
             'metadata' => [
-                'user_id' => $this->userId,
+                'user_id' => $this->getUserId(),
             ],
         ];
 
@@ -225,7 +271,7 @@ class StripePayment extends BillablePayment
     /**
      * Add or update a payment method for the customer.
      */
-    protected function addOrUpdatePaymentMethod(string $paymentMethodId): void
+    protected function addOrUpdatePaymentMethod(string $paymentMethodId): PaymentMethod
     {
         $stripeCustomer = $this->getOrCreateStripeCustomer();
         $stripe = Foundry::stripe();
@@ -250,8 +296,8 @@ class StripePayment extends BillablePayment
             ],
         ]);
 
-        $this->createOrUpdatePaymentMethod(
-            $this->userId,
+        $pm = $this->createOrUpdatePaymentMethod(
+            $this->getUserId(),
             self::PROVIDER,
             $paymentMethodId,
             [
@@ -261,5 +307,9 @@ class StripePayment extends BillablePayment
                 'card_exp_year' => $paymentMethod->card->exp_year ?? '',
             ]
         );
+
+        $pm->markAsDefault();
+
+        return $pm;
     }
 }

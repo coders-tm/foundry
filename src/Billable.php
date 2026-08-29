@@ -18,22 +18,6 @@ class Billable
     public static $userResolver;
 
     /**
-     * Get the customer model class name.
-     */
-    public static function getCustomerModel(): string
-    {
-        return Foundry::$billableCustomerModel;
-    }
-
-    /**
-     * Get the payment method model class name.
-     */
-    public static function getPaymentMethodModel(): string
-    {
-        return Foundry::$billablePaymentMethodModel;
-    }
-
-    /**
      * Set the customer model class.
      *
      * @param  string  $model

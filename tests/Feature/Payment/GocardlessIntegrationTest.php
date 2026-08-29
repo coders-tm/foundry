@@ -4,9 +4,6 @@ namespace Tests\Feature\Payment;
 
 use Foundry\Foundry;
 use Foundry\Models\PaymentMethod;
-use Foundry\Models\Subscription;
-use Foundry\Models\Subscription\Plan;
-use Foundry\Models\User;
 use Foundry\Tests\Feature\FeatureTestCase;
 use GoCardlessPro\Client;
 use Illuminate\Foundation\Testing\WithFaker;
@@ -57,8 +54,6 @@ class GocardlessIntegrationTest extends FeatureTestCase
 
         $this->assertInstanceOf(Client::class, $client);
     }
-
-
 
     #[Test]
     public function it_handles_gocardless_payment_methods_array()

@@ -2,10 +2,14 @@
 
 namespace Foundry\Billable\Services;
 
+use Foundry\Billable;
 use Foundry\Billable\Payments\GoCardlessPayment as GoCardlessPaymentWrapper;
+use Foundry\Billable\Responses\RedirectResponse;
 use Foundry\Foundry;
 use Foundry\Payment\Payable;
 use Foundry\Payment\PaymentResult;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
 
 /**
  * GoCardless billable payment service.
@@ -21,6 +25,32 @@ class GoCardlessPayment extends BillablePayment
     public const PROVIDER = 'gocardless';
 
     /**
+     * Handle GoCardless redirect flow callback.
+     *
+     * @return mixed
+     *
+     * @throws \Exception
+     */
+    public function handleCallback(Request $request)
+    {
+        $flowId = $request->get('flow_id');
+        if (! $flowId) {
+            throw new \Exception('Missing flow_id in callback.');
+        }
+
+        $client = Foundry::gocardless();
+        $completedFlow = $client->redirectFlows()->complete($flowId, ['session_token' => $request->get('session_token')]);
+
+        if (! $completedFlow || ! $completedFlow->links->mandate) {
+            throw new \Exception('Failed to complete redirect flow.');
+        }
+
+        $this->paymentMethod = $completedFlow->links->mandate;
+
+        return $this->setup();
+    }
+
+    /**
      * Set up a saved GoCardless Mandate for the user.
      */
     public function setup()
@@ -29,7 +59,40 @@ class GoCardlessPayment extends BillablePayment
             return $this->updateMandateAndSetup($this->paymentMethod);
         }
 
-        throw new \Exception('GoCardless requires a redirect flow to be completed.');
+        return $this->createRedirectFlow();
+    }
+
+    /**
+     * Initiate a GoCardless redirect flow for Direct Debit setup.
+     */
+    public function createRedirectFlow(?string $successUrl = null): RedirectResponse
+    {
+        if (! $this->getUserId()) {
+            throw new \Exception('No user identified for GoCardless redirect flow.');
+        }
+
+        $user = $this->user instanceof Model ? $this->user : Billable::user();
+
+        $client = Foundry::gocardless();
+        $sessionToken = bin2hex(random_bytes(16));
+
+        $redirectFlow = $client->redirectFlows()->create([
+            'params' => [
+                'description' => 'Direct Debit Mandate Setup',
+                'session_token' => $sessionToken,
+                'success_redirect_url' => $successUrl ?? route('payment.gocardless.success'),
+                'prefilled_customer' => [
+                    'given_name' => $user->first_name ?? $user->name ?? '',
+                    'family_name' => $user->last_name ?? '',
+                    'email' => $user->email ?? '',
+                ],
+            ],
+        ]);
+
+        return new RedirectResponse($redirectFlow->redirect_url, [
+            'flow_id' => $redirectFlow->id,
+            'session_token' => $sessionToken,
+        ]);
     }
 
     /**
@@ -37,7 +100,7 @@ class GoCardlessPayment extends BillablePayment
      */
     protected function updateMandateAndSetup(string $mandateId)
     {
-        if (! $this->userId) {
+        if (! $this->getUserId()) {
             throw new \Exception('No user identified for GoCardless setup.');
         }
 
@@ -48,7 +111,7 @@ class GoCardlessPayment extends BillablePayment
         }
 
         $customer = $this->getOrCreateCustomer(
-            $this->userId,
+            $this->getUserId(),
             self::PROVIDER
         );
 
@@ -58,8 +121,8 @@ class GoCardlessPayment extends BillablePayment
             ]);
         }
 
-        $this->createOrUpdatePaymentMethod(
-            $this->userId,
+        $pm = $this->createOrUpdatePaymentMethod(
+            $this->getUserId(),
             self::PROVIDER,
             $mandateId,
             [
@@ -70,7 +133,9 @@ class GoCardlessPayment extends BillablePayment
             ]
         );
 
-        return $customer;
+        $pm->markAsDefault();
+
+        return $pm;
     }
 
     /**
@@ -78,12 +143,12 @@ class GoCardlessPayment extends BillablePayment
      */
     public function remove()
     {
-        if (! $this->userId) {
+        if (! $this->getUserId()) {
             throw new \Exception('No user identified for GoCardless removal.');
         }
 
         $this->deletePaymentMethod(
-            $this->userId,
+            $this->getUserId(),
             self::PROVIDER
         );
 
@@ -93,22 +158,18 @@ class GoCardlessPayment extends BillablePayment
     /**
      * Charge a Payable entity using a saved GoCardless Mandate.
      *
-     * @param  Payable  $payable
-     * @param  mixed  $paymentMethod
-     * @param  array  $options
-     * @return PaymentResult
      *
      * @throws \Exception
      */
     public function charge(Payable $payable, mixed $paymentMethod = null, array $options = []): PaymentResult
     {
-        if (! $this->userId) {
+        if (! $this->getUserId()) {
             throw new \Exception('No user identified for charging.');
         }
 
         $pmRecord = $paymentMethod;
         if (! $pmRecord) {
-            $pmRecord = $this->getPaymentMethod($this->userId, self::PROVIDER);
+            $pmRecord = $this->getPaymentMethod($this->getUserId(), self::PROVIDER);
         }
 
         $pmId = is_object($pmRecord) ? ($pmRecord->provider_id ?? null) : $pmRecord;
@@ -128,7 +189,7 @@ class GoCardlessPayment extends BillablePayment
                     'mandate' => $pmId,
                 ],
                 'metadata' => array_merge($payable->getMetadata(), [
-                    'user_id' => $this->userId,
+                    'user_id' => $this->getUserId(),
                 ]),
             ], $options);
 
@@ -152,7 +213,7 @@ class GoCardlessPayment extends BillablePayment
             );
         } catch (\Exception $e) {
             logger()->error('GoCardless charge failed', [
-                'user_id' => $this->userId,
+                'user_id' => $this->getUserId(),
                 'error' => $e->getMessage(),
             ]);
 
