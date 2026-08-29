@@ -2,53 +2,36 @@
 
 namespace Foundry\Billable\Traits;
 
-use Foundry\Billable\Payments\GoCardlessPayment;
-use Foundry\Billable\Services\GoCardlessSubscription;
-use Foundry\Models\Subscription;
+use Foundry\Billable\Services\GoCardlessPayment;
+use Foundry\Payment\Payable;
+use Foundry\Payment\PaymentResult;
 
 /**
- * Trait for managing GoCardless-related auto-renewal operations.
- *
- * Provides methods for setting up, removing, and charging subscriptions via GoCardless.
+ * Trait for managing GoCardless-related billable operations.
  */
 trait ManageGoCardless
 {
     /**
-     * Set up a GoCardless subscription for auto-renewal.
-     *
-     * @param  Subscription  $subscription
-     * @return mixed
-     *
-     * @throws \Exception
+     * Set up a GoCardless payment method (mandate) for a user.
      */
-    protected function setupGoCardlessSubscription($subscription, ?string $mandateId = null)
+    protected function setupGoCardlessPayment(mixed $user, ?string $mandateId = null)
     {
-        return (new GoCardlessSubscription($subscription, $mandateId))->setup();
+        return (new GoCardlessPayment($user, $mandateId))->setup();
     }
 
     /**
-     * Charge a GoCardless subscription.
-     *
-     * @param  Subscription  $subscription
-     * @return GoCardlessPayment
-     *
-     * @throws \Exception
+     * Charge a Payable entity using GoCardless.
      */
-    protected function chargeGoCardlessSubscription($subscription, array $options = [])
+    protected function chargeGoCardlessPayment(mixed $user, Payable $payable, mixed $mandateId = null, array $options = []): PaymentResult
     {
-        return (new GoCardlessSubscription($subscription))->charge($options);
+        return (new GoCardlessPayment($user, $mandateId))->charge($payable, $mandateId, $options);
     }
 
     /**
-     * Remove a GoCardless subscription.
-     *
-     * @param  Subscription  $subscription
-     * @return Subscription
-     *
-     * @throws \Exception
+     * Remove a GoCardless mandate for a user.
      */
-    protected function removeGoCardlessSubscription($subscription)
+    protected function removeGoCardlessPayment(mixed $user)
     {
-        return (new GoCardlessSubscription($subscription))->remove();
+        return (new GoCardlessPayment($user))->remove();
     }
 }

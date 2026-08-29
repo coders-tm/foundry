@@ -3,10 +3,12 @@
 namespace Tests\Feature\Subscription;
 
 use Foundry\Billable\BillableManager;
-use Foundry\Billable\Payments\GoCardlessPayment;
-use Foundry\Billable\Services\GoCardlessSubscription;
+use Foundry\Billable\Services\GoCardlessPayment;
+use Foundry\Models\Order;
 use Foundry\Models\Subscription;
 use Foundry\Models\Subscription\Plan;
+use Foundry\Payment\Payable;
+use Foundry\Payment\PaymentResult;
 use Foundry\Tests\TestCase;
 use Illuminate\Foundation\Testing\WithFaker;
 use PHPUnit\Framework\Attributes\Test;
@@ -19,14 +21,13 @@ class GoCardlessBillableTest extends TestCase
     {
         parent::setUp();
 
-        // Skip tests if Stripe keys are not configured
         if (empty(config('gocardless.secret'))) {
             $this->markTestSkipped('GoCardless API keys not configured.');
         }
     }
 
     /**
-     * Test setup and removal of GoCardless auto-renewal.
+     * Test setup and removal of GoCardless payment method.
      */
     #[Test]
     public function test_auto_renewal_for_gocardless()
@@ -35,29 +36,28 @@ class GoCardlessBillableTest extends TestCase
             'provider' => 'gocardless',
             'auto_renewal_enabled' => true,
         ]);
-        $paymentMethod = 'MD123456';  // Mock mandate ID
+        $paymentMethod = 'MD123456';
 
-        // Mock the GoCardlessSubscription class
-        $this->mock(GoCardlessSubscription::class, function ($mock) use ($subscription) {
-            $mock->shouldReceive('setup')->once()->andReturn($subscription);
-            $mock->shouldReceive('remove')->once()->andReturn($subscription);
+        $this->mock(GoCardlessPayment::class, function ($mock) {
+            $mock->shouldReceive('setup')->once()->andReturn(true);
+            $mock->shouldReceive('remove')->once()->andReturn(true);
         });
 
-        $manager = new BillableManager($subscription, $paymentMethod);
+        $manager = new BillableManager($subscription->user, $paymentMethod);
         $manager->setProvider('gocardless');
         $result = $manager->setup();
 
-        $this->assertInstanceOf(Subscription::class, $result);
-        $this->assertEquals('gocardless', $result->provider);
+        $this->assertTrue((bool) $result);
 
-        $manager = new BillableManager($subscription, $paymentMethod);
+        $manager = new BillableManager($subscription->user, $paymentMethod);
+        $manager->setProvider('gocardless');
         $result = $manager->remove();
 
-        $this->assertInstanceOf(Subscription::class, $result);
+        $this->assertTrue((bool) $result);
     }
 
     /**
-     * Test charging a GoCardless auto-renewal.
+     * Test charging a GoCardless payment.
      */
     #[Test]
     public function test_auto_renewal_charge_for_gocardless()
@@ -68,27 +68,34 @@ class GoCardlessBillableTest extends TestCase
             'plan_id' => $plan->id,
             'auto_renewal_enabled' => true,
         ]);
-        $paymentMethod = 'MD123456';  // Mock mandate ID
 
-        // Mock the GoCardlessSubscription charge method
-        $this->mock(GoCardlessSubscription::class, function ($mock) {
+        $order = Order::factory()->create([
+            'orderable_id' => $subscription->id,
+            'orderable_type' => Subscription::class,
+            'grand_total' => 100.00,
+        ]);
+
+        $paymentMethod = 'MD123456';
+
+        $this->mock(GoCardlessPayment::class, function ($mock) {
             $mock->shouldReceive('setup')->once()->andReturn(true);
-            $mock->shouldReceive('charge')->once()->andReturn(new GoCardlessPayment([
-                'id' => 'PM123456',
-                'amount' => 10000,
-                'currency' => 'gbp',
-                'status' => 'paid',
-            ]));
+            $mock->shouldReceive('charge')->once()->andReturn(PaymentResult::success(
+                paymentData: null,
+                transactionId: 'PM123456',
+                status: 'paid'
+            ));
         });
 
-        $manager = new BillableManager($subscription, $paymentMethod);
+        $manager = new BillableManager($subscription->user, $paymentMethod);
         $manager->setProvider('gocardless');
         $manager->setup();
 
-        $manager = new BillableManager($subscription);
-        $result = $manager->charge();
+        $payable = Payable::fromOrder($order);
+        $manager = new BillableManager($subscription->user);
+        $result = $manager->charge($payable);
 
-        $this->assertInstanceOf(GoCardlessPayment::class, $result);
-        $this->assertEquals('succeeded', $result->status());
+        $this->assertInstanceOf(PaymentResult::class, $result);
+        $this->assertTrue($result->isSuccess());
+        $this->assertEquals('paid', $result->getStatus());
     }
 }

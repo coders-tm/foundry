@@ -6,12 +6,13 @@ use Foundry\Billable\BillableManager;
 use Foundry\Billable\Exceptions\PaymentIncomplete;
 use Foundry\Billable\Listeners\ChargeRenewalPayment;
 use Foundry\Billable\Listeners\StripeWebhookListener;
-use Foundry\Billable\Payments\StripePayment;
 use Foundry\Events\Stripe\WebhookReceived;
 use Foundry\Events\SubscriptionRenewed;
 use Foundry\Models\Order;
 use Foundry\Models\Subscription;
 use Foundry\Models\Subscription\Plan;
+use Foundry\Payment\Payable;
+use Foundry\Payment\PaymentResult;
 use Foundry\Tests\TestCase;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -21,21 +22,20 @@ class BillableTest extends TestCase
     {
         parent::setUp();
 
-        // Skip tests if Stripe keys are not configured
         if (empty(config('stripe.secret'))) {
             $this->markTestSkipped('Stripe API keys not configured.');
         }
     }
 
     /**
-     * Test retrieving auto-renewal status for a subscription.
+     * Test retrieving auto-renewal status for a user.
      */
     #[Test]
     public function test_get_auto_renewal_status()
     {
         $subscription = Subscription::factory()->create();
 
-        $manager = new BillableManager($subscription);
+        $manager = new BillableManager($subscription->user);
         $status = $manager->status();
 
         $this->assertIsArray($status);
@@ -51,21 +51,10 @@ class BillableTest extends TestCase
     {
         $subscription = Subscription::factory()->create(['provider' => 'stripe']);
 
-        // Create an order for the subscription as required by the manager
-        $order = Order::factory()->create([
-            'orderable_id' => $subscription->id,
-            'orderable_type' => Subscription::class,
-        ]);
-
-        $manager = new BillableManager($subscription, 'pm_card_visa');
+        $manager = new BillableManager($subscription->user, 'pm_card_visa');
         $manager->setProvider('stripe');
         $result = $manager->setup();
 
-        $this->assertInstanceOf(Subscription::class, $result);
-        $this->assertEquals('stripe', $result->provider);
-        $this->assertEquals(1, $result->auto_renewal_enabled);
-
-        // Verify models were created
         $this->assertDatabaseHas('payment_provider_customers', [
             'user_id' => $subscription->user_id,
             'provider' => 'stripe',
@@ -78,7 +67,7 @@ class BillableTest extends TestCase
     }
 
     /**
-     * Test auto-renewal charge for Stripe.
+     * Test charging a Payable entity via Stripe off-session.
      */
     #[Test]
     public function test_charge_stripe_auto_renewal()
@@ -96,17 +85,19 @@ class BillableTest extends TestCase
             'grand_total' => 10.00,
         ]);
 
-        // First setup the customer and payment method
-        $manager = new BillableManager($subscription, 'pm_card_visa');
+        // First setup customer and payment method
+        $manager = new BillableManager($subscription->user, 'pm_card_visa');
+        $manager->setProvider('stripe');
         $manager->setup();
 
-        // Now charge
-        $manager = new BillableManager($subscription);
-        $payment = $manager->charge();
+        // Now charge a Payable instance
+        $payable = Payable::fromOrder($order);
+        $manager = new BillableManager($subscription->user);
+        $result = $manager->charge($payable);
 
-        $this->assertInstanceOf(StripePayment::class, $payment);
-        $this->assertEquals('succeeded', $payment->status());
-        $this->assertEquals(1000, $payment->amount());
+        $this->assertInstanceOf(PaymentResult::class, $result);
+        $this->assertTrue($result->isSuccess());
+        $this->assertEquals('succeeded', $result->getStatus());
     }
 
     /**
@@ -128,12 +119,14 @@ class BillableTest extends TestCase
             'grand_total' => 10.00,
         ]);
 
-        $manager = new BillableManager($subscription, 'pm_card_threeDSecure2Required');
+        $manager = new BillableManager($subscription->user, 'pm_card_threeDSecure2Required');
+        $manager->setProvider('stripe');
         $manager->setup();
 
         try {
-            $manager = new BillableManager($subscription);
-            $manager->charge();
+            $payable = Payable::fromOrder($order);
+            $manager = new BillableManager($subscription->user);
+            $manager->charge($payable);
             $this->fail('Expected PaymentIncomplete exception was not thrown.');
         } catch (PaymentIncomplete $e) {
             $this->assertInstanceOf(PaymentIncomplete::class, $e);
@@ -142,7 +135,7 @@ class BillableTest extends TestCase
     }
 
     /**
-     * Test auto-renewal removal for Stripe.
+     * Test removal of saved payment method.
      */
     #[Test]
     public function test_remove_stripe_auto_renewal()
@@ -152,21 +145,15 @@ class BillableTest extends TestCase
             'auto_renewal_enabled' => true,
         ]);
 
-        $order = Order::factory()->create([
-            'orderable_id' => $subscription->id,
-            'orderable_type' => Subscription::class,
-        ]);
-
-        // Setup first
-        $manager = new BillableManager($subscription, 'pm_card_visa');
+        $manager = new BillableManager($subscription->user, 'pm_card_visa');
+        $manager->setProvider('stripe');
         $manager->setup();
 
-        // Then remove
-        $manager = new BillableManager($subscription);
+        $manager = new BillableManager($subscription->user);
+        $manager->setProvider('stripe');
         $result = $manager->remove();
 
-        $this->assertEquals(0, $result->auto_renewal_enabled);
-        $this->assertFalse($result->fresh()->auto_renewal_enabled);
+        $this->assertTrue($result);
     }
 
     /**
@@ -188,17 +175,14 @@ class BillableTest extends TestCase
             'grand_total' => 10.00,
         ]);
 
-        // Setup payment method
-        $manager = new BillableManager($subscription, 'pm_card_visa');
+        $manager = new BillableManager($subscription->user, 'pm_card_visa');
+        $manager->setProvider('stripe');
         $manager->setup();
 
-        // Mock the listener or just trigger the event and check for logs/side effects
-        // In this case, we'll check if a success log is generated (assuming your listener logs)
         $event = new SubscriptionRenewed($subscription);
         $listener = new ChargeRenewalPayment;
         $listener->handle($event);
 
-        // If we reach here without exception and can verify the charge, it's successful
         $this->assertTrue(true);
     }
 
@@ -224,8 +208,6 @@ class BillableTest extends TestCase
 
         $event = new WebhookReceived($payload);
         $listener = new StripeWebhookListener;
-
-        // Handle event - this should not throw exception
         $listener->handle($event);
 
         $this->assertTrue(true);

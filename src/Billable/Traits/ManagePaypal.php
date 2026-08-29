@@ -2,53 +2,36 @@
 
 namespace Foundry\Billable\Traits;
 
-use Foundry\Billable\Payments\PaypalPayment;
-use Foundry\Billable\Services\PaypalSubscription;
-use Foundry\Models\Subscription;
+use Foundry\Billable\Services\PaypalPayment;
+use Foundry\Payment\Payable;
+use Foundry\Payment\PaymentResult;
 
 /**
- * Trait for managing PayPal-related auto-renewal operations.
- *
- * Provides methods for setting up, removing, and charging subscriptions via PayPal.
+ * Trait for managing PayPal-related billable operations.
  */
 trait ManagePaypal
 {
     /**
-     * Set up a PayPal subscription for auto-renewal.
-     *
-     * @param  Subscription  $subscription
-     * @return mixed
-     *
-     * @throws \Exception
+     * Set up a PayPal payment method for a user.
      */
-    protected function setupPaypalSubscription($subscription, mixed $paymentMethod = null)
+    protected function setupPaypalPayment(mixed $user, mixed $paymentMethod = null)
     {
-        return (new PaypalSubscription($subscription, $paymentMethod))->setup();
+        return (new PaypalPayment($user, $paymentMethod))->setup();
     }
 
     /**
-     * Charge a PayPal subscription.
-     *
-     * @param  Subscription  $subscription
-     * @return PaypalPayment
-     *
-     * @throws \Exception
+     * Charge a Payable entity using PayPal.
      */
-    protected function chargePaypalSubscription($subscription, array $options = [])
+    protected function chargePaypalPayment(mixed $user, Payable $payable, mixed $paymentMethod = null, array $options = []): PaymentResult
     {
-        return (new PaypalSubscription($subscription))->charge($options);
+        return (new PaypalPayment($user, $paymentMethod))->charge($payable, $paymentMethod, $options);
     }
 
     /**
-     * Remove a PayPal subscription.
-     *
-     * @param  Subscription  $subscription
-     * @return Subscription
-     *
-     * @throws \Exception
+     * Remove a PayPal payment method for a user.
      */
-    protected function removePaypalSubscription($subscription)
+    protected function removePaypalPayment(mixed $user)
     {
-        return (new PaypalSubscription($subscription))->remove();
+        return (new PaypalPayment($user))->remove();
     }
 }

@@ -532,7 +532,7 @@ class SubscriptionMetrics extends MetricsCalculator
 
     protected function trialConversionBetween(Carbon $start, Carbon $end): float
     {
-        $totalTrials = Subscription::query()
+        $totalTrials = Foundry::$subscriptionModel::query()
             ->whereNotNull('trial_ends_at')
             ->whereBetween('created_at', [$start, $end])
             ->count();
@@ -541,7 +541,7 @@ class SubscriptionMetrics extends MetricsCalculator
             return 0.0;
         }
 
-        $converted = Subscription::query()
+        $converted = Foundry::$subscriptionModel::query()
             ->whereNotNull('trial_ends_at')
             ->whereBetween('created_at', [$start, $end])
             ->where(function ($q) {

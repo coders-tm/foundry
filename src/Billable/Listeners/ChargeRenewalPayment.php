@@ -4,48 +4,63 @@ namespace Foundry\Billable\Listeners;
 
 use Foundry\Billable\BillableManager;
 use Foundry\Events\SubscriptionRenewed;
+use Foundry\Payment\Payable;
 
 /**
  * Listener for charging renewal payments on subscription renewal.
  *
- * Listens to the SubscriptionRenewed event and automatically attempts to charge
- * the subscription via the configured payment provider if auto-renewal is enabled.
+ * Listens to the SubscriptionRenewed event, constructs a Payable from the
+ * subscription invoice, attempts off-session charge via BillableManager,
+ * and updates the invoice status upon receiving PaymentResult.
  */
 class ChargeRenewalPayment
 {
     /**
      * Handle the subscription renewal event.
-     *
-     * @param  \Foundry\Events\Subscription\SubscriptionRenewed  $event
+
+     * @param  SubscriptionRenewed  $event
      * @return void
      */
     public function handle(SubscriptionRenewed $event)
     {
         $subscription = $event->subscription;
 
-        // Only charge if auto-renewal is enabled
         if (! ($subscription->auto_renewal_enabled ?? false)) {
             return;
         }
 
-        // Only charge if a provider is configured
         if (! $subscription->provider) {
             return;
         }
 
-        try {
-            $manager = new BillableManager($subscription);
-            $payment = $manager->charge();
+        $invoice = $subscription->latestInvoice;
 
-            // Log successful charge
-            logger()->info('Auto-renewal charge successful', [
-                'subscription_id' => $subscription->id,
-                'payment_id' => $payment->id(),
-                'amount' => $payment->amount(),
-                'provider' => $subscription->provider,
-            ]);
+        if (! $invoice) {
+            return;
+        }
+
+        try {
+            $payable = Payable::fromOrder($invoice);
+            $manager = new BillableManager($subscription->user);
+            $result = $manager->charge($payable);
+
+            if ($result->isSuccess()) {
+                $invoice->markAsPaid(
+                    $subscription->provider,
+                    [
+                        'id' => $result->getTransactionId(),
+                        'status' => $result->getStatus(),
+                        'note' => 'Automatic subscription renewal charge',
+                    ]
+                );
+
+                logger()->info('Auto-renewal charge successful', [
+                    'subscription_id' => $subscription->id,
+                    'transaction_id' => $result->getTransactionId(),
+                    'provider' => $subscription->provider,
+                ]);
+            }
         } catch (\Exception $e) {
-            // Log charging error - don't rethrow to avoid disrupting the event
             logger()->error('Auto-renewal charge failed', [
                 'subscription_id' => $subscription->id,
                 'provider' => $subscription->provider,

@@ -3,7 +3,7 @@
 namespace Foundry\Billable\Http\Controllers;
 
 use Foundry\Billable\BillableManager;
-use Foundry\Billable\Services\GoCardlessSubscription;
+use Foundry\Billable\Services\GoCardlessPayment;
 use Foundry\Models\Subscription;
 use Illuminate\Auth\AuthorizationException;
 use Illuminate\Http\JsonResponse;
@@ -12,16 +12,12 @@ use Illuminate\Routing\Controller;
 use Illuminate\Validation\ValidationException;
 
 /**
- * API Controller for managing user auto-renewal settings.
- *
- * Provides endpoints for users to view, setup, and remove auto-renewal
- * from their subscriptions with different payment providers.
+ * API Controller for managing user auto-renewal payment settings.
  */
 class BillableController extends Controller
 {
     /**
      * Get the auto-renewal status for a subscription.
-     *
      *
      * @throws AuthorizationException
      */
@@ -29,7 +25,7 @@ class BillableController extends Controller
     {
         $this->authorize('view', $subscription);
 
-        $manager = new BillableManager($subscription);
+        $manager = new BillableManager($subscription->user);
 
         return response()->json([
             'status' => $manager->status(),
@@ -37,16 +33,13 @@ class BillableController extends Controller
                 'id' => $subscription->id,
                 'name' => $subscription->name,
                 'provider' => $subscription->provider,
+                'auto_renewal_enabled' => $subscription->auto_renewal_enabled,
             ],
         ]);
     }
 
     /**
      * Setup auto-renewal for a subscription.
-     *
-     * For Stripe, accepts a payment_method_id.
-     * For GoCardless, initiates a redirect flow.
-     *
      *
      * @throws AuthorizationException
      * @throws ValidationException
@@ -61,19 +54,19 @@ class BillableController extends Controller
         ]);
 
         try {
-            $manager = new BillableManager($subscription);
+            $provider = $validated['provider'] ?? $subscription->provider;
+            $manager = new BillableManager($subscription->user);
 
-            if ($validated['provider'] ?? null) {
-                $manager->setProvider($validated['provider']);
+            if ($provider) {
+                $manager->setProvider($provider);
             }
 
             if ($validated['payment_method'] ?? null) {
                 $manager->setPaymentMethod($validated['payment_method']);
             }
 
-            // For GoCardless, we might need to initiate a redirect flow
-            if ($subscription->provider === 'gocardless' && ! $validated['payment_method']) {
-                $goCardless = new GoCardlessSubscription($subscription);
+            if ($provider === 'gocardless' && ! ($validated['payment_method'] ?? null)) {
+                $goCardless = new GoCardlessPayment($subscription->user);
                 $redirectFlow = $goCardless->createRedirectFlow();
 
                 return response()->json([
@@ -85,9 +78,15 @@ class BillableController extends Controller
 
             $result = $manager->setup();
 
+            if ($provider) {
+                $subscription->provider = $provider;
+            }
+            $subscription->auto_renewal_enabled = true;
+            $subscription->save();
+
             return response()->json([
                 'status' => 'setup_complete',
-                'subscription' => $result->toArray(),
+                'subscription' => $subscription->fresh()->toArray(),
                 'auto_renewal' => $manager->status(),
             ]);
         } catch (\Exception $e) {
@@ -106,7 +105,6 @@ class BillableController extends Controller
     /**
      * Handle GoCardless redirect flow completion.
      *
-     *
      * @throws AuthorizationException
      */
     public function handleCallback(Request $request, Subscription $subscription): JsonResponse
@@ -119,12 +117,17 @@ class BillableController extends Controller
         ]);
 
         try {
-            $manager = new BillableManager($subscription);
+            $manager = new BillableManager($subscription->user);
+            $manager->setProvider('gocardless');
             $result = $manager->handleCallback($request);
+
+            $subscription->provider = 'gocardless';
+            $subscription->auto_renewal_enabled = true;
+            $subscription->save();
 
             return response()->json([
                 'status' => 'callback_processed',
-                'subscription' => $result->toArray(),
+                'subscription' => $subscription->fresh()->toArray(),
                 'auto_renewal' => $manager->status(),
             ]);
         } catch (\Exception $e) {
@@ -143,7 +146,6 @@ class BillableController extends Controller
     /**
      * Remove auto-renewal from a subscription.
      *
-     *
      * @throws AuthorizationException
      */
     public function remove(Request $request, Subscription $subscription): JsonResponse
@@ -151,12 +153,19 @@ class BillableController extends Controller
         $this->authorize('update', $subscription);
 
         try {
-            $manager = new BillableManager($subscription);
-            $result = $manager->remove();
+            $manager = new BillableManager($subscription->user);
+            if ($subscription->provider) {
+                $manager->setProvider($subscription->provider);
+            }
+
+            $manager->remove();
+
+            $subscription->auto_renewal_enabled = false;
+            $subscription->save();
 
             return response()->json([
                 'status' => 'removal_complete',
-                'subscription' => $result->toArray(),
+                'subscription' => $subscription->fresh()->toArray(),
                 'auto_renewal' => $manager->status(),
             ]);
         } catch (\Exception $e) {
@@ -172,4 +181,3 @@ class BillableController extends Controller
         }
     }
 }
-

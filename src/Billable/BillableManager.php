@@ -2,31 +2,38 @@
 
 namespace Foundry\Billable;
 
-use Foundry\Billable;
+use Foundry\Billable\Models\Customer as CustomerModel;
+use Foundry\Billable\Models\PaymentMethod as PaymentMethodModel;
+use Foundry\Billable\Services\GoCardlessPayment;
+use Foundry\Billable\Services\PaypalPayment;
+use Foundry\Billable\Services\StripePayment;
 use Foundry\Billable\Traits\ManageGoCardless;
 use Foundry\Billable\Traits\ManagePaypal;
 use Foundry\Billable\Traits\ManageStripe;
 use Foundry\Foundry;
-use Foundry\Models\Subscription;
+use Foundry\Payment\Payable;
+use Foundry\Payment\PaymentResult;
 use Illuminate\Http\Request;
 
 /**
- * BillableManager - Main orchestrator for billable operations.
+ * BillableManager - Main orchestrator for off-session billable payment operations.
  *
- * Coordinates subscription setup, removal, and charging across different
- * payment providers (Stripe, GoCardless). Acts as the main entry point
- * for billable functionality.
+ * Manages user payment methods and executes charges against Payable entities
+ * (Orders, Subscriptions, Invoices, etc.) using stored payment methods.
  */
 class BillableManager
 {
     use ManageGoCardless, ManagePaypal, ManageStripe;
 
     /**
-     * The subscription model instance.
-     *
-     * @var Subscription
+     * The user model or ID instance.
      */
-    protected $subscription;
+    protected mixed $user;
+
+    /**
+     * The resolved user ID.
+     */
+    protected string|int|null $userId = null;
 
     /**
      * The payment method or mandate reference.
@@ -34,22 +41,32 @@ class BillableManager
     protected mixed $paymentMethod;
 
     /**
-     * The payment provider name.
+     * Optional payment provider hint.
      */
-    protected ?string $provider;
+    protected ?string $provider = null;
 
     /**
      * Create a new BillableManager instance.
      */
-    public function __construct(Subscription $subscription, mixed $paymentMethod = null)
+    public function __construct(mixed $user = null, mixed $paymentMethod = null)
     {
-        $this->subscription = $subscription;
+        $this->user = $user ?? \Foundry\Billable::user();
         $this->paymentMethod = $paymentMethod;
-        $this->provider = $subscription->provider;
+
+        if (is_numeric($this->user) || is_string($this->user)) {
+            $this->userId = $this->user;
+        } elseif (is_object($this->user)) {
+            $this->userId = $this->user->id ?? $this->user->user_id ?? null;
+        }
+
+        if (! $this->userId && \Foundry\Billable::user()) {
+            $this->user = \Foundry\Billable::user();
+            $this->userId = $this->user->id;
+        }
     }
 
     /**
-     * Set the payment provider.
+     * Set the payment provider hint.
      *
      * @return $this
      */
@@ -73,9 +90,37 @@ class BillableManager
     }
 
     /**
-     * Set up the subscription for auto-renewal.
-     *
-     * Routes to the appropriate provider-specific setup method.
+     * Resolve saved PaymentMethod model instance.
+     */
+    public function resolvePaymentMethod(mixed $paymentMethod = null, ?string $provider = null): ?PaymentMethodModel
+    {
+        if ($paymentMethod instanceof PaymentMethodModel) {
+            return $paymentMethod;
+        }
+
+        $modelClass = \Foundry\Billable::getPaymentMethodModel();
+
+        if (is_string($paymentMethod) && ! empty($paymentMethod)) {
+            $found = $modelClass::where('id', $paymentMethod)
+                ->orWhere('provider_id', $paymentMethod)
+                ->first();
+
+            if ($found) {
+                return $found;
+            }
+        }
+
+        $query = $modelClass::where('user_id', $this->userId);
+
+        if ($provider) {
+            $query->where('provider', $provider);
+        }
+
+        return $query->first();
+    }
+
+    /**
+     * Set up a saved payment method with the appropriate provider.
      *
      * @return mixed
      *
@@ -83,23 +128,28 @@ class BillableManager
      */
     public function setup()
     {
-        if (! $this->provider) {
-            throw new \Exception('No payment provider configured for this subscription.');
+        $provider = $this->provider;
+
+        if (! $provider && $this->paymentMethod instanceof PaymentMethodModel) {
+            $provider = $this->paymentMethod->provider;
         }
 
-        $method = 'setup'.ucfirst($this->provider).'Subscription';
-
-        if (! method_exists($this, $method)) {
-            throw new \Exception("Payment provider `{$this->provider}` doesn't support auto renewal.");
+        if (! $provider) {
+            throw new \Exception('No payment provider configured for setup.');
         }
 
-        return $this->$method($this->subscription, $this->paymentMethod);
+        $service = match ($provider) {
+            'stripe' => new StripePayment($this->user, $this->paymentMethod),
+            'paypal' => new PaypalPayment($this->user, $this->paymentMethod),
+            'gocardless' => new GoCardlessPayment($this->user, $this->paymentMethod),
+            default => throw new \Exception("Unsupported payment provider: {$provider}")
+        };
+
+        return $service->setup();
     }
 
     /**
-     * Remove auto-renewal from the subscription.
-     *
-     * Routes to the appropriate provider-specific remove method.
+     * Remove a saved payment method.
      *
      * @return mixed
      *
@@ -107,79 +157,83 @@ class BillableManager
      */
     public function remove()
     {
-        if (! $this->provider) {
-            throw new \Exception('No payment provider configured for this subscription.');
+        $provider = $this->provider;
+
+        if (! $provider && $this->paymentMethod instanceof PaymentMethodModel) {
+            $provider = $this->paymentMethod->provider;
         }
 
-        $method = 'remove'.ucfirst($this->provider).'Subscription';
-
-        if (! method_exists($this, $method)) {
-            throw new \Exception("Payment provider `{$this->provider}` doesn't support auto renewal removal.");
+        if (! $provider) {
+            $pm = $this->resolvePaymentMethod($this->paymentMethod);
+            $provider = $pm?->provider;
         }
 
-        return $this->$method($this->subscription);
+        if (! $provider) {
+            throw new \Exception('No payment provider configured for removal.');
+        }
+
+        $service = match ($provider) {
+            'stripe' => new StripePayment($this->user, $this->paymentMethod),
+            'paypal' => new PaypalPayment($this->user, $this->paymentMethod),
+            'gocardless' => new GoCardlessPayment($this->user, $this->paymentMethod),
+            default => throw new \Exception("Unsupported payment provider: {$provider}")
+        };
+
+        return $service->remove();
     }
 
     /**
-     * Charge the subscription.
+     * Charge a Payable entity using user's saved payment method.
      *
-     * Routes to the appropriate provider-specific charge method.
-     *
-     * @return mixed
+     * @param  Payable  $payable  The entity being charged
+     * @param  mixed  $paymentMethod  Specific payment method or null to use default
+     * @param  array  $options  Additional options
+     * @return PaymentResult
      *
      * @throws \Exception
      */
-    public function charge(array $options = [])
+    public function charge(Payable $payable, mixed $paymentMethod = null, array $options = []): PaymentResult
     {
-        if (! $this->provider) {
-            throw new \Exception('No payment provider configured for this subscription.');
+        $targetPm = $paymentMethod ?? $this->paymentMethod;
+        $pmModel = $this->resolvePaymentMethod($targetPm, $this->provider);
+
+        if (! $pmModel) {
+            throw new \Exception('No payment method found attached to user.');
         }
 
-        $method = 'charge'.ucfirst($this->provider).'Subscription';
+        $provider = $pmModel->provider;
 
-        if (! method_exists($this, $method)) {
-            throw new \Exception("Payment provider `{$this->provider}` doesn't support charging.");
-        }
+        $service = match ($provider) {
+            'stripe' => new StripePayment($this->user, $pmModel),
+            'paypal' => new PaypalPayment($this->user, $pmModel),
+            'gocardless' => new GoCardlessPayment($this->user, $pmModel),
+            default => throw new \Exception("Unsupported payment provider: {$provider}")
+        };
 
-        return $this->$method($this->subscription, $options);
+        return $service->charge($payable, $pmModel, $options);
     }
 
     /**
-     * Get the status of auto-renewal for this subscription.
+     * Get status of user's billable payment methods.
      */
     public function status(): array
     {
-        $paymentMethod = null;
-        $customer = null;
+        $pmClass = \Foundry\Billable::getPaymentMethodModel();
+        $customerClass = \Foundry\Billable::getCustomerModel();
 
-        if ($this->provider) {
-            $model = Billable::getPaymentMethodModel();
-            $paymentMethod = $model::where('user_id', $this->subscription->user_id)
-                ->where('provider', $this->provider)
-                ->first();
-
-            $customerModel = Billable::getCustomerModel();
-            $customer = $customerModel::where('user_id', $this->subscription->user_id)
-                ->where('provider', $this->provider)
-                ->first();
-        }
+        $paymentMethod = $pmClass::where('user_id', $this->userId)->first();
+        $customer = $customerClass::where('user_id', $this->userId)->first();
 
         return [
-            'enabled' => $this->subscription->auto_renewal_enabled ?? false,
-            'provider' => $this->provider,
+            'enabled' => $paymentMethod !== null,
+            'provider' => $paymentMethod?->provider,
             'payment_method' => $paymentMethod?->toArray(),
             'customer' => $customer?->toArray(),
         ];
     }
 
     /**
-     * Handle provider-specific callback processing.
-     *
-     * Currently used for GoCardless redirect flow completion.
-     *
-     * @return mixed
-     *
-     * @throws \Exception
+     * Handle provider-specific callback processing (e.g. GoCardless redirect flow).
      */
     public function handleCallback(Request $request)
     {
@@ -187,14 +241,12 @@ class BillableManager
             throw new \Exception('No payment provider configured for callback.');
         }
 
-        // For GoCardless, handle redirect flow
         if ($this->provider === 'gocardless') {
             $flowId = $request->get('flow_id');
             if (! $flowId) {
                 throw new \Exception('Missing flow_id in callback.');
             }
 
-            // Complete the redirect flow and get mandate ID
             $client = Foundry::gocardless();
             $completedFlow = $client->redirectFlows()->complete($flowId, ['session_token' => $request->get('session_token')]);
 
@@ -202,7 +254,6 @@ class BillableManager
                 throw new \Exception('Failed to complete redirect flow.');
             }
 
-            // Setup with the mandate
             $this->setPaymentMethod($completedFlow->links->mandate);
 
             return $this->setup();
@@ -211,4 +262,3 @@ class BillableManager
         throw new \Exception("Callback handling not supported for provider: {$this->provider}");
     }
 }
-

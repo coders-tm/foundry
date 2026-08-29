@@ -2,53 +2,36 @@
 
 namespace Foundry\Billable\Traits;
 
-use Foundry\Billable\Payments\StripePayment;
-use Foundry\Billable\Services\StripeSubscription;
-use Foundry\Models\Subscription;
+use Foundry\Billable\Services\StripePayment;
+use Foundry\Payment\Payable;
+use Foundry\Payment\PaymentResult;
 
 /**
- * Trait for managing Stripe-related auto-renewal operations.
- *
- * Provides methods for setting up, removing, and charging subscriptions via Stripe.
+ * Trait for managing Stripe-related billable operations.
  */
 trait ManageStripe
 {
     /**
-     * Set up a Stripe subscription for auto-renewal.
-     *
-     * @param  Subscription  $subscription
-     * @return mixed
-     *
-     * @throws \Exception
+     * Set up a Stripe payment method for a user.
      */
-    protected function setupStripeSubscription($subscription, ?string $paymentMethodId = null)
+    protected function setupStripePayment(mixed $user, mixed $paymentMethodId = null)
     {
-        return (new StripeSubscription($subscription, $paymentMethodId))->setup();
+        return (new StripePayment($user, $paymentMethodId))->setup();
     }
 
     /**
-     * Charge a Stripe subscription.
-     *
-     * @param  Subscription  $subscription
-     * @return StripePayment
-     *
-     * @throws \Exception
+     * Charge a Payable entity using Stripe.
      */
-    protected function chargeStripeSubscription($subscription, array $options = [])
+    protected function chargeStripePayment(mixed $user, Payable $payable, mixed $paymentMethodId = null, array $options = []): PaymentResult
     {
-        return (new StripeSubscription($subscription))->charge($options);
+        return (new StripePayment($user, $paymentMethodId))->charge($payable, $paymentMethodId, $options);
     }
 
     /**
-     * Remove a Stripe subscription.
-     *
-     * @param  Subscription  $subscription
-     * @return Subscription
-     *
-     * @throws \Exception
+     * Remove a Stripe payment method for a user.
      */
-    protected function removeStripeSubscription($subscription)
+    protected function removeStripePayment(mixed $user)
     {
-        return (new StripeSubscription($subscription))->remove();
+        return (new StripePayment($user))->remove();
     }
 }

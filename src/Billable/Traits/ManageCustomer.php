@@ -20,7 +20,7 @@ trait ManageCustomer
      */
     protected function getOrCreateCustomer($userId, $provider)
     {
-        $model = Billable::getCustomerModel();
+        $model = \Foundry\Billable::getCustomerModel();
 
         return $model::firstOrCreate(
             [
@@ -42,7 +42,7 @@ trait ManageCustomer
      */
     protected function getPaymentMethod($userId, $provider)
     {
-        $model = Billable::getPaymentMethodModel();
+        $model = \Foundry\Billable::getPaymentMethodModel();
 
         return $model::where('user_id', $userId)
             ->where('provider', $provider)
@@ -59,7 +59,7 @@ trait ManageCustomer
      */
     protected function createOrUpdatePaymentMethod($userId, $provider, $providerId, array $options = [])
     {
-        $model = Billable::getPaymentMethodModel();
+        $model = \Foundry\Billable::getPaymentMethodModel();
 
         return $model::updateOrCreate(
             [
@@ -82,7 +82,7 @@ trait ManageCustomer
      */
     protected function deletePaymentMethod($userId, $provider)
     {
-        $model = Billable::getPaymentMethodModel();
+        $model = \Foundry\Billable::getPaymentMethodModel();
 
         return (bool) $model::where('user_id', $userId)
             ->where('provider', $provider)

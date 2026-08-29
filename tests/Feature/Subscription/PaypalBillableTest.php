@@ -3,10 +3,12 @@
 namespace Tests\Feature\Subscription;
 
 use Foundry\Billable\BillableManager;
-use Foundry\Billable\Payments\PaypalPayment;
 use Foundry\Foundry;
+use Foundry\Models\Order;
 use Foundry\Models\Subscription;
 use Foundry\Models\Subscription\Plan;
+use Foundry\Payment\Payable;
+use Foundry\Payment\PaymentResult;
 use Foundry\Tests\TestCase;
 use PHPUnit\Framework\Attributes\Test;
 use ReflectionProperty;
@@ -16,14 +18,10 @@ class PaypalBillableTest extends TestCase
 {
     protected function tearDown(): void
     {
-        // Reset the static PayPal client in Foundry after each test
         $this->setStaticPaypalClient(null);
         parent::tearDown();
     }
 
-    /**
-     * Helper to mock the PayPal SDK and inject it into Foundry.
-     */
     protected function mockPaypal()
     {
         $mock = $this->mock(PayPal::class);
@@ -35,9 +33,6 @@ class PaypalBillableTest extends TestCase
         return $mock;
     }
 
-    /**
-     * Set the static paypalClient property in Foundry via reflection.
-     */
     protected function setStaticPaypalClient($client)
     {
         $property = new ReflectionProperty(Foundry::class, 'paypalClient');
@@ -53,15 +48,10 @@ class PaypalBillableTest extends TestCase
     {
         $subscription = Subscription::factory()->create(['provider' => 'paypal']);
 
-        $manager = new BillableManager($subscription, 'VAULT-ID-123');
+        $manager = new BillableManager($subscription->user, 'VAULT-ID-123');
         $manager->setProvider('paypal');
         $result = $manager->setup();
 
-        $this->assertInstanceOf(Subscription::class, $result);
-        $this->assertEquals('paypal', $result->provider);
-        $this->assertEquals(1, $result->auto_renewal_enabled);
-
-        // Verify models were created
         $this->assertDatabaseHas('payment_provider_customers', [
             'user_id' => $subscription->user_id,
             'provider' => 'paypal',
@@ -85,16 +75,15 @@ class PaypalBillableTest extends TestCase
             'auto_renewal_enabled' => true,
         ]);
 
-        // Setup first
-        $manager = new BillableManager($subscription, 'VAULT-ID-123');
+        $manager = new BillableManager($subscription->user, 'VAULT-ID-123');
+        $manager->setProvider('paypal');
         $manager->setup();
 
-        // Then remove
-        $manager = new BillableManager($subscription);
+        $manager = new BillableManager($subscription->user);
+        $manager->setProvider('paypal');
         $result = $manager->remove();
 
-        $this->assertEquals(0, $result->auto_renewal_enabled);
-        $this->assertFalse($result->fresh()->auto_renewal_enabled);
+        $this->assertTrue($result);
 
         $this->assertDatabaseMissing('users_payment_methods', [
             'user_id' => $subscription->user_id,
@@ -103,7 +92,7 @@ class PaypalBillableTest extends TestCase
     }
 
     /**
-     * Test auto-renewal charge for PayPal using realistic mocking.
+     * Test charging a Payable entity via PayPal using Vault ID.
      */
     #[Test]
     public function test_charge_paypal_auto_renewal()
@@ -115,20 +104,23 @@ class PaypalBillableTest extends TestCase
             'auto_renewal_enabled' => true,
         ]);
 
-        // Setup payment method
-        $manager = new BillableManager($subscription, 'VAULT-ID-123');
+        $order = Order::factory()->create([
+            'orderable_id' => $subscription->id,
+            'orderable_type' => Subscription::class,
+            'grand_total' => 25.00,
+        ]);
+
+        $manager = new BillableManager($subscription->user, 'VAULT-ID-123');
+        $manager->setProvider('paypal');
         $manager->setup();
 
-        // Mock the PayPal SDK
         $paypal = $this->mockPaypal();
 
-        // Realistic order creation response
         $paypal->shouldReceive('createOrder')->once()->andReturn([
             'id' => 'ORDER-123',
             'status' => 'CREATED',
         ]);
 
-        // Realistic capture response matching PaypalPayment expectations
         $paypal->shouldReceive('capturePaymentOrder')->once()->with('ORDER-123')->andReturn([
             'id' => 'CAPTURE-123',
             'status' => 'COMPLETED',
@@ -151,14 +143,14 @@ class PaypalBillableTest extends TestCase
             ],
         ]);
 
-        $manager = new BillableManager($subscription);
-        $payment = $manager->charge();
+        $payable = Payable::fromOrder($order);
+        $manager = new BillableManager($subscription->user);
+        $result = $manager->charge($payable);
 
-        $this->assertInstanceOf(PaypalPayment::class, $payment);
-        $this->assertEquals('CAPTURE-123', $payment->id());
-        $this->assertEquals('succeeded', $payment->status());
-        $this->assertEquals(2500, $payment->amount());
-        $this->assertEquals('USD', $payment->currency());
+        $this->assertInstanceOf(PaymentResult::class, $result);
+        $this->assertTrue($result->isSuccess());
+        $this->assertEquals('CAPTURE-123', $result->getTransactionId());
+        $this->assertEquals('COMPLETED', $result->getStatus());
     }
 
     /**
@@ -174,7 +166,14 @@ class PaypalBillableTest extends TestCase
             'auto_renewal_enabled' => true,
         ]);
 
-        $manager = new BillableManager($subscription, 'VAULT-ID-123');
+        $order = Order::factory()->create([
+            'orderable_id' => $subscription->id,
+            'orderable_type' => Subscription::class,
+            'grand_total' => 25.00,
+        ]);
+
+        $manager = new BillableManager($subscription->user, 'VAULT-ID-123');
+        $manager->setProvider('paypal');
         $manager->setup();
 
         $paypal = $this->mockPaypal();
@@ -189,34 +188,10 @@ class PaypalBillableTest extends TestCase
             'status' => 'FAILED',
         ]);
 
-        $this->expectException(\Exception::class);
-        $this->expectExceptionMessage('PayPal charge failed');
+        $this->expectException(\Foundry\Exceptions\PaymentException::class);
 
-        $manager = new BillableManager($subscription);
-        $manager->charge();
-    }
-
-    /**
-     * Test mapping of PayPal payment response.
-     */
-    #[Test]
-    public function test_paypal_payment_normalization()
-    {
-        $data = [
-            'id' => 'CAPTURE-123',
-            'status' => 'COMPLETED',
-            'amount' => [
-                'currency_code' => 'USD',
-                'value' => '10.00',
-            ],
-            'create_time' => '2023-01-01T00:00:00Z',
-        ];
-
-        $payment = new PaypalPayment($data);
-
-        $this->assertEquals('CAPTURE-123', $payment->id());
-        $this->assertEquals('succeeded', $payment->status());
-        $this->assertEquals(1000, $payment->amount());
-        $this->assertEquals('USD', $payment->currency());
+        $payable = Payable::fromOrder($order);
+        $manager = new BillableManager($subscription->user);
+        $manager->charge($payable);
     }
 }
