@@ -112,6 +112,11 @@ class PaymentMethodSeeder extends Seeder
                 'API_KEY' => 'RAZORPAY_API_KEY',
                 'API_SECRET' => 'RAZORPAY_API_SECRET',
             ],
+            PaymentMethod::PADDLE => [
+                'API_KEY' => 'PADDLE_API_KEY',
+                'CLIENT_TOKEN' => 'PADDLE_CLIENT_TOKEN',
+                'WEBHOOK_SECRET' => 'PADDLE_WEBHOOK_SECRET',
+            ],
             default => [],
         };
     }

@@ -149,6 +149,24 @@ class PaymentMethodFactory extends Factory
     }
 
     /**
+     * Configure the factory for Paddle payment method.
+     */
+    public function paddle(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'name' => 'Paddle',
+            'label' => 'Paddle',
+            'provider' => PaymentMethod::PADDLE,
+            'credentials' => collect([
+                ['key' => 'API_KEY', 'value' => 'pdl_test_'.fake()->uuid(), 'publish' => false],
+                ['key' => 'CLIENT_TOKEN', 'value' => 'pdl_ct_'.fake()->uuid(), 'publish' => true],
+                ['key' => 'WEBHOOK_SECRET', 'value' => 'pdl_wh_'.fake()->uuid(), 'publish' => false],
+            ]),
+            'methods' => ['card', 'paypal'],
+        ]);
+    }
+
+    /**
      * Configure the factory for active payment method.
      */
     public function active(): static

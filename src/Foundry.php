@@ -7,6 +7,7 @@ use Flutterwave\Config\PackageConfig;
 use Flutterwave\Flutterwave;
 use Foundry\Services\Payment\KlarnaClient;
 use Foundry\Services\Payment\MercadoPagoClient;
+use Foundry\Services\Payment\PaddleClient;
 use Foundry\Services\Payment\XenditClient;
 use GoCardlessPro\Client;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -16,6 +17,8 @@ use Money\Currency;
 use Money\Formatter\IntlMoneyFormatter;
 use Money\Money;
 use NumberFormatter;
+use Paddle\SDK\Client as PaddleSdkClient;
+use Paddle\SDK\Environment;
 use Razorpay\Api\Api;
 use Srmklive\PayPal\Services\PayPal;
 use Stripe\StripeClient;
@@ -719,5 +722,34 @@ class Foundry
         }
 
         return static::$alipayClient = null;
+    }
+
+    /**
+     * The cached Paddle client instance.
+     *
+     * @var PaddleSdkClient|null
+     */
+    protected static $paddleClient;
+
+    /**
+     * Get the Paddle client instance using official paddlehq/paddle-php-sdk.
+     *
+     * @return PaddleClient|null
+     */
+    public static function paddle(array $options = [])
+    {
+        if (static::$paddleClient) {
+            return static::$paddleClient;
+        }
+
+        return static::$paddleClient = PaddleClient::make($options);
+    }
+
+    /**
+     * Set the cached Paddle client instance (useful for testing).
+     */
+    public static function setPaddleClient(?PaddleSdkClient $client): void
+    {
+        static::$paddleClient = $client;
     }
 }

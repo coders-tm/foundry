@@ -561,5 +561,48 @@
     "logo": "fas fa-university",
     "description": "Pay via bank transfer",
     "payment_instructions": "Please transfer the amount to the following bank account:\n\n**Bank Name:** Your Bank Name\n**Account Number:** 1234567890\n**Account Name:** Your Account Name\n\nOnce the transfer is complete, please send us a confirmation email with the transaction details."
+  },
+  {
+    "name": "Paddle",
+    "provider": "paddle",
+    "link": "https://paddle.com/",
+    "webhook": "{{API_URL}}/paddle/webhook",
+    "active": false,
+    "logo": "fas fa-credit-card",
+    "description": "Paddle handles global payments, sales tax, subscriptions, and billing compliance in one unified solution.",
+    "credentials": [
+      {
+        "key": "API_KEY",
+        "value": "",
+        "label": "API Key",
+        "publish": false
+      },
+      {
+        "key": "CLIENT_TOKEN",
+        "value": "",
+        "label": "Client Token",
+        "publish": true
+      },
+      {
+        "key": "WEBHOOK_SECRET",
+        "value": "",
+        "label": "Webhook Secret",
+        "publish": false
+      }
+    ],
+    "methods": [
+      {
+        "key": "card",
+        "label": "Credit / Debit Card",
+        "enabled": true,
+        "type": "CREDIT_CARD"
+      },
+      {
+        "key": "paypal",
+        "label": "PayPal",
+        "enabled": true,
+        "type": "DIGITAL_WALLET"
+      }
+    ]
   }
 ]

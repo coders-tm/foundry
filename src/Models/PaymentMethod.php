@@ -39,6 +39,8 @@ class PaymentMethod extends Model
 
     const ALIPAY = 'alipay';
 
+    const PADDLE = 'paddle';
+
     const DIRECT_DEBIT = 'direct_debit';
 
     const MANUAL = 'manual';
@@ -205,6 +207,11 @@ class PaymentMethod extends Model
     public static function wallet()
     {
         return static::findProvider(static::WALLET);
+    }
+
+    public static function paddle()
+    {
+        return static::findProvider(static::PADDLE);
     }
 
     public static function toPublic()
@@ -463,6 +470,19 @@ class PaymentMethod extends Model
                     'alipay.webhook_url' => $paymentMethod->webhook,
                     'alipay.enabled' => $paymentMethod->active,
                     'alipay.supported_currencies' => $paymentMethod->supported_currencies,
+                ];
+
+            case self::PADDLE:
+                return [
+                    'paddle.id' => $paymentMethod->id,
+                    'paddle.api_key' => $paymentMethod->configs['API_KEY'] ?? null,
+                    'paddle.client_token' => $paymentMethod->configs['CLIENT_TOKEN'] ?? null,
+                    'paddle.webhook_secret' => $paymentMethod->configs['WEBHOOK_SECRET'] ?? null,
+                    'paddle.environment' => $paymentMethod->test_mode ? 'sandbox' : 'live',
+                    'paddle.test_mode' => $paymentMethod->test_mode,
+                    'paddle.webhook_url' => $paymentMethod->webhook,
+                    'paddle.enabled' => $paymentMethod->active,
+                    'paddle.supported_currencies' => $paymentMethod->supported_currencies,
                 ];
 
             default:

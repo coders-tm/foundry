@@ -9,6 +9,7 @@ use Foundry\Payment\Processors\FlutterwaveProcessor;
 use Foundry\Payment\Processors\KlarnaProcessor;
 use Foundry\Payment\Processors\ManualProcessor;
 use Foundry\Payment\Processors\MercadoPagoProcessor;
+use Foundry\Payment\Processors\PaddleProcessor;
 use Foundry\Payment\Processors\PaypalProcessor;
 use Foundry\Payment\Processors\PaystackProcessor;
 use Foundry\Payment\Processors\RazorpayProcessor;
@@ -36,6 +37,7 @@ class Processor
             'paystack' => new PaystackProcessor,
             'flutterwave' => new FlutterwaveProcessor,
             'alipay' => new AlipayProcessor,
+            'paddle' => new PaddleProcessor,
             default => throw new \InvalidArgumentException("Unsupported payment provider: {$provider}")
         };
     }
@@ -57,6 +59,7 @@ class Processor
             'paystack',
             'flutterwave',
             'alipay',
+            'paddle',
         ];
     }
 
