@@ -18,7 +18,6 @@ use Foundry\Notifications\SubscriptionCancelNotification;
 use Foundry\Notifications\SubscriptionDowngradeNotification;
 use Foundry\Notifications\SubscriptionUpgradeNotification;
 use Foundry\Services\Admin\SubscriptionService;
-use Foundry\Services\GatewaySubscriptionFactory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\ResourceCollection;
@@ -190,9 +189,15 @@ class SubscriptionController extends Controller
                 $user->notify(new SubscriptionUpgradeNotification($subscription));
             }
 
-            $gateway = GatewaySubscriptionFactory::make($subscription);
+            $latestInvoice = $subscription->latestInvoice;
 
-            return response()->json($gateway->setup(), 200);
+            return response()->json([
+                'subscription' => $this->transformSubscription($subscription),
+                'invoice' => $latestInvoice,
+                'message' => __('You have successfully subscribed to :plan plan.', [
+                    'plan' => $plan->label,
+                ]),
+            ], 200);
         }
     }
 

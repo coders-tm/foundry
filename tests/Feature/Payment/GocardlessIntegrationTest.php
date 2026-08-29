@@ -7,8 +7,6 @@ use Foundry\Models\PaymentMethod;
 use Foundry\Models\Subscription;
 use Foundry\Models\Subscription\Plan;
 use Foundry\Models\User;
-use Foundry\Services\Gateways\GoCardlessSubscriptionGateway;
-use Foundry\Services\GatewaySubscriptionFactory;
 use Foundry\Tests\Feature\FeatureTestCase;
 use GoCardlessPro\Client;
 use Illuminate\Foundation\Testing\WithFaker;
@@ -25,8 +23,8 @@ class GocardlessIntegrationTest extends FeatureTestCase
         parent::setUp();
 
         // Skip all tests if GoCardless credentials are not configured
-        if (! env('GOCARDLESS_ACCESS_TOKEN') || ! env('GOCARDLESS_WEBHOOK_SECRET')) {
-            $this->markTestSkipped('GoCardless credentials not configured. Set GOCARDLESS_ACCESS_TOKEN and GOCARDLESS_WEBHOOK_SECRET in phpunit.xml');
+        if (! env('GOCARDLESS_ACCESS_TOKEN')) {
+            $this->markTestSkipped('GoCardless credentials not configured. Set GOCARDLESS_ACCESS_TOKEN in phpunit.xml');
         }
 
         // Get GoCardless payment method created by seeder (don't filter by enabled status)
@@ -60,24 +58,7 @@ class GocardlessIntegrationTest extends FeatureTestCase
         $this->assertInstanceOf(Client::class, $client);
     }
 
-    #[Test]
-    public function it_creates_subscription_gateway_for_gocardless()
-    {
-        // Create a real subscription using factory
-        $user = User::factory()->create();
-        $plan = Plan::factory()->create();
 
-        $subscription = Subscription::factory()->create([
-            'user_id' => $user->id,
-            'plan_id' => $plan->id,
-            'provider' => 'gocardless',
-            'status' => 'active',
-        ]);
-
-        $gateway = GatewaySubscriptionFactory::make($subscription);
-
-        $this->assertInstanceOf(GoCardlessSubscriptionGateway::class, $gateway);
-    }
 
     #[Test]
     public function it_handles_gocardless_payment_methods_array()

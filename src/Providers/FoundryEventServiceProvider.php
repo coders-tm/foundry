@@ -11,8 +11,6 @@ use Foundry\Events\SubscriptionRenewed;
 use Foundry\Events\SupportTicketCreated;
 use Foundry\Events\SupportTicketReplyCreated;
 use Foundry\Events\UserSubscribed;
-use Foundry\Listeners\GoCardless\SubscriptionCancelledListener;
-use Foundry\Listeners\GoCardless\SubscriptionChangeListener;
 use Foundry\Listeners\LoginListener;
 use Foundry\Listeners\LogoutListener;
 use Foundry\Listeners\SendSignupNotification;
@@ -43,10 +41,8 @@ class FoundryEventServiceProvider extends EventServiceProvider
             SendSignupNotification::class,
         ],
         SubscriptionPlanChanged::class => [
-            SubscriptionChangeListener::class,
         ],
         SubscriptionCancelled::class => [
-            SubscriptionCancelledListener::class,
         ],
         SubscriptionRenewed::class => [
             SendSubscriptionRenewNotification::class,
