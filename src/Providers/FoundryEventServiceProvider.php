@@ -2,8 +2,8 @@
 
 namespace Foundry\Providers;
 
-use Foundry\AutoRenewal\Listeners\ChargeRenewalPayment;
-use Foundry\AutoRenewal\Listeners\StripeWebhookListener;
+use Foundry\Billable\Listeners\ChargeRenewalPayment;
+use Foundry\Billable\Listeners\StripeWebhookListener;
 use Foundry\Events\Stripe\WebhookReceived;
 use Foundry\Events\SubscriptionCancelled;
 use Foundry\Events\SubscriptionPlanChanged;

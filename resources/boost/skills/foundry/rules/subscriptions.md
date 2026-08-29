@@ -7,7 +7,7 @@
 - **Trait**: `Foundry\Concerns\ManagesSubscriptions` — Handles the higher-level subscription logic.
 - **Model**: `Foundry\Models\Subscription` — Core subscription model.
 - **Model**: `Foundry\Models\Subscription\Plan` — Defines prices and intervals.
-- **Modular Package**: `Foundry\AutoRenewal` — Handles automated charging and provider synchronization.
+- **Modular Package**: `Foundry\Billable` — Handles automated charging and provider synchronization.
 
 ## Feature Usage Tracking
 - **Trait**: `Foundry\Concerns\HasFeature` — Check and track usage.

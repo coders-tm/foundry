@@ -95,18 +95,18 @@ class Foundry
     public static $couponModel = 'Foundry\\Models\\Coupon';
 
     /**
-     * The auto-renewal customer model class name.
+     * The billable customer model class name.
      *
      * @var string
      */
-    public static $autoRenewalCustomerModel = 'Foundry\\AutoRenewal\\Models\\Customer';
+    public static $billableCustomerModel = 'Foundry\\Billable\\Models\\Customer';
 
     /**
-     * The auto-renewal payment method model class name.
+     * The billable payment method model class name.
      *
      * @var string
      */
-    public static $autoRenewalPaymentMethodModel = 'Foundry\\AutoRenewal\\Models\\PaymentMethod';
+    public static $billablePaymentMethodModel = 'Foundry\\Billable\\Models\\PaymentMethod';
 
     /**
      * Indicates if Foundry's migrations will be run.
@@ -358,25 +358,25 @@ class Foundry
     }
 
     /**
-     * Set the auto-renewal customer model class name.
+     * Set the billable customer model class name.
      *
      * @param  string  $model
      * @return void
      */
-    public static function useAutoRenewalCustomerModel($model)
+    public static function useBillableCustomerModel($model)
     {
-        static::$autoRenewalCustomerModel = $model;
+        static::$billableCustomerModel = $model;
     }
 
     /**
-     * Set the auto-renewal payment method model class name.
+     * Set the billable payment method model class name.
      *
      * @param  string  $model
      * @return void
      */
-    public static function useAutoRenewalPaymentMethodModel($model)
+    public static function useBillablePaymentMethodModel($model)
     {
-        static::$autoRenewalPaymentMethodModel = $model;
+        static::$billablePaymentMethodModel = $model;
     }
 
     /**
