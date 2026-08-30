@@ -1,10 +1,10 @@
 <?php
 
-namespace Tests\Feature\Subscription;
+namespace Tests\Feature\Mandate;
 
-use Foundry\Billable\BillableManager;
 use Foundry\Exceptions\PaymentException;
 use Foundry\Foundry;
+use Foundry\Mandate\BillerManager;
 use Foundry\Models\Order;
 use Foundry\Models\Subscription;
 use Foundry\Models\Subscription\Plan;
@@ -49,7 +49,7 @@ class PaypalBillableTest extends TestCase
     {
         $subscription = Subscription::factory()->create(['provider' => 'paypal']);
 
-        $manager = new BillableManager($subscription->user, 'VAULT-ID-123');
+        $manager = new BillerManager($subscription->user, 'VAULT-ID-123');
         $manager->setProvider('paypal');
         $result = $manager->setup();
 
@@ -76,13 +76,13 @@ class PaypalBillableTest extends TestCase
             'auto_renewal_enabled' => true,
         ]);
 
-        $manager = new BillableManager($subscription->user, 'VAULT-ID-123');
+        $manager = new BillerManager($subscription->user, 'VAULT-ID-123');
         $manager->setProvider('paypal');
         $manager->setup();
 
-        $manager = new BillableManager($subscription->user);
+        $manager = new BillerManager($subscription->user);
         $manager->setProvider('paypal');
-        $result = $manager->remove();
+        $result = $manager->removePaymentMethod();
 
         $this->assertTrue($result);
 
@@ -111,7 +111,7 @@ class PaypalBillableTest extends TestCase
             'grand_total' => 25.00,
         ]);
 
-        $manager = new BillableManager($subscription->user, 'VAULT-ID-123');
+        $manager = new BillerManager($subscription->user, 'VAULT-ID-123');
         $manager->setProvider('paypal');
         $manager->setup();
 
@@ -145,7 +145,7 @@ class PaypalBillableTest extends TestCase
         ]);
 
         $payable = Payable::fromOrder($order);
-        $manager = new BillableManager($subscription->user);
+        $manager = new BillerManager($subscription->user);
         $result = $manager->charge($payable);
 
         $this->assertInstanceOf(PaymentResult::class, $result);
@@ -173,7 +173,7 @@ class PaypalBillableTest extends TestCase
             'grand_total' => 25.00,
         ]);
 
-        $manager = new BillableManager($subscription->user, 'VAULT-ID-123');
+        $manager = new BillerManager($subscription->user, 'VAULT-ID-123');
         $manager->setProvider('paypal');
         $manager->setup();
 
@@ -192,7 +192,7 @@ class PaypalBillableTest extends TestCase
         $this->expectException(PaymentException::class);
 
         $payable = Payable::fromOrder($order);
-        $manager = new BillableManager($subscription->user);
+        $manager = new BillerManager($subscription->user);
         $manager->charge($payable);
     }
 }

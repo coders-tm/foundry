@@ -1,6 +1,6 @@
 <?php
 
-namespace Foundry\Billable\Models;
+namespace Foundry\Mandate\Models;
 
 use Foundry\Models\PaymentMethod as PaymentProvider;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;

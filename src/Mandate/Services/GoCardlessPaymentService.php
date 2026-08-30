@@ -1,23 +1,19 @@
 <?php
 
-namespace Foundry\Billable\Services;
+namespace Foundry\Mandate\Services;
 
-use Foundry\Billable;
-use Foundry\Billable\Payments\GoCardlessPayment as GoCardlessPaymentWrapper;
-use Foundry\Billable\Responses\RedirectResponse;
 use Foundry\Foundry;
+use Foundry\Mandate\Models\PaymentMethod;
+use Foundry\Mandate\Payments\GoCardlessPayment as GoCardlessPaymentWrapper;
+use Foundry\Mandate\Responses\RedirectResponse;
 use Foundry\Payment\Payable;
 use Foundry\Payment\PaymentResult;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 
 /**
- * GoCardless billable payment service.
- *
- * Manages GoCardless customer records, stores Direct Debit mandate references,
- * and charges Payable entities off-session against active mandates.
+ * GoCardless payment service implementation.
  */
-class GoCardlessPayment extends BillablePayment
+class GoCardlessPaymentService extends PaymentService
 {
     /**
      * Provider identifier.
@@ -27,11 +23,11 @@ class GoCardlessPayment extends BillablePayment
     /**
      * Handle GoCardless redirect flow callback.
      *
-     * @return mixed
+     * @return PaymentMethod
      *
      * @throws \Exception
      */
-    public function handleCallback(Request $request)
+    public function handleCallback(Request $request): mixed
     {
         $flowId = $request->get('flow_id');
         if (! $flowId) {
@@ -51,9 +47,11 @@ class GoCardlessPayment extends BillablePayment
     }
 
     /**
-     * Set up a saved GoCardless Mandate for the user.
+     * Set up a saved GoCardless Mandate.
+     *
+     * @return PaymentMethod|RedirectResponse
      */
-    public function setup()
+    public function setup(): mixed
     {
         if ($this->paymentMethod) {
             return $this->updateMandateAndSetup($this->paymentMethod);
@@ -64,14 +62,17 @@ class GoCardlessPayment extends BillablePayment
 
     /**
      * Initiate a GoCardless redirect flow for Direct Debit setup.
+     *
+     *
+     * @throws \Exception
      */
     public function createRedirectFlow(?string $successUrl = null): RedirectResponse
     {
         if (! $this->getUserId()) {
-            throw new \Exception('No user identified for GoCardless redirect flow.');
+            throw new \Exception('User model key is required for GoCardless redirect flow.');
         }
 
-        $user = $this->user instanceof Model ? $this->user : Billable::user();
+        $user = $this->user;
 
         $client = Foundry::gocardless();
         $sessionToken = bin2hex(random_bytes(16));
@@ -97,11 +98,14 @@ class GoCardlessPayment extends BillablePayment
 
     /**
      * Complete mandate registration for GoCardless.
+     *
+     *
+     * @throws \Exception
      */
-    protected function updateMandateAndSetup(string $mandateId)
+    protected function updateMandateAndSetup(string $mandateId): PaymentMethod
     {
         if (! $this->getUserId()) {
-            throw new \Exception('No user identified for GoCardless setup.');
+            throw new \Exception('User model key is required for GoCardless setup.');
         }
 
         $mandate = Foundry::gocardless()->mandates()->get($mandateId);
@@ -139,12 +143,15 @@ class GoCardlessPayment extends BillablePayment
     }
 
     /**
-     * Remove saved GoCardless Mandate for the user.
+     * Remove saved GoCardless Mandate.
+     *
+     *
+     * @throws \Exception
      */
-    public function remove()
+    public function remove(): bool
     {
         if (! $this->getUserId()) {
-            throw new \Exception('No user identified for GoCardless removal.');
+            throw new \Exception('User model key is required for GoCardless removal.');
         }
 
         $this->deletePaymentMethod(
@@ -164,7 +171,7 @@ class GoCardlessPayment extends BillablePayment
     public function charge(Payable $payable, mixed $paymentMethod = null, array $options = []): PaymentResult
     {
         if (! $this->getUserId()) {
-            throw new \Exception('No user identified for charging.');
+            throw new \Exception('User model key is required for charging.');
         }
 
         $pmRecord = $paymentMethod;

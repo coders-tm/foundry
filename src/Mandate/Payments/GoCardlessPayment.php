@@ -1,6 +1,6 @@
 <?php
 
-namespace Foundry\Billable\Payments;
+namespace Foundry\Mandate\Payments;
 
 /**
  * GoCardless payment wrapper for normalizing GoCardless payment responses.

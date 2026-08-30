@@ -1,13 +1,13 @@
 <?php
 
-namespace Tests\Feature\Subscription;
+namespace Tests\Feature\Mandate;
 
-use Foundry\Billable\BillableManager;
-use Foundry\Billable\Exceptions\PaymentIncomplete;
-use Foundry\Billable\Listeners\ChargeRenewalPayment;
-use Foundry\Billable\Listeners\StripeWebhookListener;
 use Foundry\Events\Stripe\WebhookReceived;
 use Foundry\Events\SubscriptionRenewed;
+use Foundry\Mandate\BillerManager;
+use Foundry\Mandate\Exceptions\PaymentIncomplete;
+use Foundry\Mandate\Listeners\ChargeRenewalPayment;
+use Foundry\Mandate\Listeners\StripeWebhookListener;
 use Foundry\Models\Order;
 use Foundry\Models\Subscription;
 use Foundry\Models\Subscription\Plan;
@@ -16,7 +16,7 @@ use Foundry\Payment\PaymentResult;
 use Foundry\Tests\TestCase;
 use PHPUnit\Framework\Attributes\Test;
 
-class BillableTest extends TestCase
+class StripeBillableTest extends TestCase
 {
     protected function setUp(): void
     {
@@ -35,8 +35,8 @@ class BillableTest extends TestCase
     {
         $subscription = Subscription::factory()->create();
 
-        $manager = new BillableManager($subscription->user);
-        $status = $manager->status();
+        $manager = new BillerManager($subscription->user);
+        $status = $manager->paymentMethodStatus();
 
         $this->assertIsArray($status);
         $this->assertArrayHasKey('enabled', $status);
@@ -51,7 +51,7 @@ class BillableTest extends TestCase
     {
         $subscription = Subscription::factory()->create(['provider' => 'stripe']);
 
-        $manager = new BillableManager($subscription->user, 'pm_card_visa');
+        $manager = new BillerManager($subscription->user, 'pm_card_visa');
         $manager->setProvider('stripe');
         $result = $manager->setup();
 
@@ -86,13 +86,13 @@ class BillableTest extends TestCase
         ]);
 
         // First setup customer and payment method
-        $manager = new BillableManager($subscription->user, 'pm_card_visa');
+        $manager = new BillerManager($subscription->user, 'pm_card_visa');
         $manager->setProvider('stripe');
         $manager->setup();
 
         // Now charge a Payable instance
         $payable = Payable::fromOrder($order);
-        $manager = new BillableManager($subscription->user);
+        $manager = new BillerManager($subscription->user);
         $result = $manager->charge($payable);
 
         $this->assertInstanceOf(PaymentResult::class, $result);
@@ -119,13 +119,13 @@ class BillableTest extends TestCase
             'grand_total' => 10.00,
         ]);
 
-        $manager = new BillableManager($subscription->user, 'pm_card_threeDSecure2Required');
+        $manager = new BillerManager($subscription->user, 'pm_card_threeDSecure2Required');
         $manager->setProvider('stripe');
         $manager->setup();
 
         try {
             $payable = Payable::fromOrder($order);
-            $manager = new BillableManager($subscription->user);
+            $manager = new BillerManager($subscription->user);
             $manager->charge($payable);
             $this->fail('Expected PaymentIncomplete exception was not thrown.');
         } catch (PaymentIncomplete $e) {
@@ -145,13 +145,13 @@ class BillableTest extends TestCase
             'auto_renewal_enabled' => true,
         ]);
 
-        $manager = new BillableManager($subscription->user, 'pm_card_visa');
+        $manager = new BillerManager($subscription->user, 'pm_card_visa');
         $manager->setProvider('stripe');
         $manager->setup();
 
-        $manager = new BillableManager($subscription->user);
+        $manager = new BillerManager($subscription->user);
         $manager->setProvider('stripe');
-        $result = $manager->remove();
+        $result = $manager->removePaymentMethod();
 
         $this->assertTrue($result);
     }
@@ -175,7 +175,7 @@ class BillableTest extends TestCase
             'grand_total' => 10.00,
         ]);
 
-        $manager = new BillableManager($subscription->user, 'pm_card_visa');
+        $manager = new BillerManager($subscription->user, 'pm_card_visa');
         $manager->setProvider('stripe');
         $manager->setup();
 

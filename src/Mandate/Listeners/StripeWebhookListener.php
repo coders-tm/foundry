@@ -1,6 +1,6 @@
 <?php
 
-namespace Foundry\Billable\Listeners;
+namespace Foundry\Mandate\Listeners;
 
 use Foundry\Events\Stripe\WebhookReceived;
 

@@ -1,9 +1,9 @@
 <?php
 
-namespace Foundry\Billable\Exceptions;
+namespace Foundry\Mandate\Exceptions;
 
 use Exception;
-use Foundry\Billable\Payments\Payment;
+use Foundry\Mandate\Payments\Payment;
 
 /**
  * Exception thrown when a payment is incomplete and requires further action.

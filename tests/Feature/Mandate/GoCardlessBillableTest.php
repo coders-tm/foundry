@@ -1,10 +1,11 @@
 <?php
 
-namespace Tests\Feature\Subscription;
+namespace Tests\Feature\Mandate;
 
-use Foundry\Billable\BillableManager;
-use Foundry\Billable\Services\GoCardlessPayment;
+use Foundry\Mandate\BillerManager;
+use Foundry\Mandate\Services\GoCardlessPayment;
 use Foundry\Models\Order;
+use Foundry\Models\PaymentMethod;
 use Foundry\Models\Subscription;
 use Foundry\Models\Subscription\Plan;
 use Foundry\Payment\Payable;
@@ -21,7 +22,7 @@ class GoCardlessBillableTest extends TestCase
     {
         parent::setUp();
 
-        if (empty(config('gocardless.secret'))) {
+        if (empty(config('gocardless.access_token')) || config('gocardless.access_token') === 'test_gocardless_access_token') {
             $this->markTestSkipped('GoCardless API keys not configured.');
         }
     }
@@ -43,15 +44,15 @@ class GoCardlessBillableTest extends TestCase
             $mock->shouldReceive('remove')->once()->andReturn(true);
         });
 
-        $manager = new BillableManager($subscription->user, $paymentMethod);
+        $manager = new BillerManager($subscription->user, $paymentMethod);
         $manager->setProvider('gocardless');
         $result = $manager->setup();
 
         $this->assertTrue((bool) $result);
 
-        $manager = new BillableManager($subscription->user, $paymentMethod);
+        $manager = new BillerManager($subscription->user, $paymentMethod);
         $manager->setProvider('gocardless');
-        $result = $manager->remove();
+        $result = $manager->removePaymentMethod();
 
         $this->assertTrue((bool) $result);
     }
@@ -86,12 +87,12 @@ class GoCardlessBillableTest extends TestCase
             ));
         });
 
-        $manager = new BillableManager($subscription->user, $paymentMethod);
+        $manager = new BillerManager($subscription->user, $paymentMethod);
         $manager->setProvider('gocardless');
         $manager->setup();
 
         $payable = Payable::fromOrder($order);
-        $manager = new BillableManager($subscription->user);
+        $manager = new BillerManager($subscription->user);
         $result = $manager->charge($payable);
 
         $this->assertInstanceOf(PaymentResult::class, $result);

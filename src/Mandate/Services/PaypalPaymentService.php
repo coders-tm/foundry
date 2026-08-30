@@ -1,22 +1,20 @@
 <?php
 
-namespace Foundry\Billable\Services;
+namespace Foundry\Mandate\Services;
 
 use Exception;
-use Foundry\Billable\Payments\PaypalPayment as PaypalPaymentWrapper;
 use Foundry\Foundry;
-use Foundry\Models\PaymentMethod as PaymentMethodModel;
+use Foundry\Mandate\Models\PaymentMethod as PaymentMethodModel;
+use Foundry\Mandate\Payments\PaypalPayment as PaypalPaymentWrapper;
+use Foundry\Models\PaymentMethod;
 use Foundry\Payment\Mappers\PayPalPayment as PaypalPaymentMapper;
 use Foundry\Payment\Payable;
 use Foundry\Payment\PaymentResult;
 
 /**
- * PayPal billable payment service.
- *
- * Manages PayPal customer records, stores Vault IDs / billing agreements,
- * and charges Payable entities off-session.
+ * PayPal payment service implementation.
  */
-class PaypalPayment extends BillablePayment
+class PaypalPaymentService extends PaymentService
 {
     /**
      * Provider identifier.
@@ -24,15 +22,18 @@ class PaypalPayment extends BillablePayment
     public const PROVIDER = 'paypal';
 
     /**
-     * Set up saved PayPal Vault ID / billing agreement for the user.
+     * Set up a saved PayPal Vault ID or billing agreement.
+     *
+     *
+     * @throws Exception
      */
-    public function setup()
+    public function setup(): ?PaymentMethodModel
     {
         if (! $this->getUserId()) {
-            throw new Exception('No user identified for PayPal billable setup.');
+            throw new Exception('User model key is required for PayPal setup.');
         }
 
-        $customer = $this->getOrCreateCustomer(
+        $this->getOrCreateCustomer(
             $this->getUserId(),
             self::PROVIDER
         );
@@ -56,12 +57,15 @@ class PaypalPayment extends BillablePayment
     }
 
     /**
-     * Remove saved PayPal payment method for the user.
+     * Remove the saved PayPal payment method.
+     *
+     *
+     * @throws Exception
      */
-    public function remove()
+    public function remove(): bool
     {
         if (! $this->getUserId()) {
-            throw new Exception('No user identified for PayPal billable removal.');
+            throw new Exception('User model key is required for PayPal removal.');
         }
 
         $this->deletePaymentMethod(
@@ -73,15 +77,16 @@ class PaypalPayment extends BillablePayment
     }
 
     /**
-     * Charge a Payable entity with PayPal using a saved Vault ID.
+     * Charge a Payable entity using a saved PayPal Vault ID.
      *
+     * @param  PaymentMethodModel|string|null  $paymentMethod
      *
      * @throws Exception
      */
     public function charge(Payable $payable, mixed $paymentMethod = null, array $options = []): PaymentResult
     {
         if (! $this->getUserId()) {
-            throw new Exception('No user identified for charging.');
+            throw new Exception('User model key is required for charging.');
         }
 
         $pmRecord = $paymentMethod;
@@ -128,7 +133,7 @@ class PaypalPayment extends BillablePayment
                 throw new Exception('PayPal charge failed: '.json_encode($response));
             }
 
-            $paymentMethodModel = PaymentMethodModel::byProvider(self::PROVIDER);
+            $paymentMethodModel = PaymentMethod::byProvider(self::PROVIDER);
             $paymentMapper = new PaypalPaymentMapper($response, $paymentMethodModel);
             $wrapper = new PaypalPaymentWrapper($response);
 

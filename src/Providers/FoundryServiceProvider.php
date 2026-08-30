@@ -2,7 +2,6 @@
 
 namespace Foundry\Providers;
 
-
 use Foundry\Commands;
 use Foundry\Contracts\StateInterface;
 use Foundry\Facades\Guard;

@@ -1,27 +1,23 @@
 <?php
 
-namespace Foundry\Billable\Services;
+namespace Foundry\Mandate\Services;
 
-use Foundry\Billable\Billable;
-use Foundry\Billable\Exceptions\PaymentIncomplete;
-use Foundry\Billable\Models\PaymentMethod;
-use Foundry\Billable\Payments\StripePayment as StripePaymentWrapper;
 use Foundry\Foundry;
-use Foundry\Models\PaymentMethod as PaymentMethodModel;
+use Foundry\Mandate\Exceptions\PaymentIncomplete;
+use Foundry\Mandate\Models\PaymentMethod;
+use Foundry\Mandate\Models\PaymentMethod as PaymentMethodModel;
+use Foundry\Mandate\Payments\StripePayment as StripePaymentWrapper;
 use Foundry\Payment\Mappers\StripePayment as StripePaymentMapper;
 use Foundry\Payment\Payable;
 use Foundry\Payment\PaymentResult;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
+use Stripe\Customer;
 use Stripe\Exception\CardException;
 
 /**
- * Stripe billable payment service.
- *
- * Manages Stripe customer records, attaches payment methods, and charges
- * Payable entities off-session using saved payment methods / payment intents.
+ * Stripe payment service implementation.
  */
-class StripePayment extends BillablePayment
+class StripePaymentService extends PaymentService
 {
     /**
      * Provider identifier.
@@ -39,9 +35,8 @@ class StripePayment extends BillablePayment
     }
 
     /**
-     * Confirm Stripe payment method setup (e.g. 3DS confirmation).
+     * Confirm Stripe payment method setup.
      *
-     * @param  array  $options  Options array containing payment_method and optional setup_intent
      *
      * @throws \Exception
      */
@@ -76,12 +71,15 @@ class StripePayment extends BillablePayment
     }
 
     /**
-     * Set up a saved Stripe payment method for the user.
+     * Set up a saved Stripe payment method.
+     *
+     *
+     * @throws \Exception
      */
-    public function setup()
+    public function setup(): ?PaymentMethod
     {
         if (! $this->getUserId()) {
-            throw new \Exception('No user identified for Stripe billable setup.');
+            throw new \Exception('User model key is required for Stripe setup.');
         }
 
         $this->getOrCreateCustomer(
@@ -97,12 +95,15 @@ class StripePayment extends BillablePayment
     }
 
     /**
-     * Remove saved Stripe payment method for the user.
+     * Remove the saved Stripe payment method.
+     *
+     *
+     * @throws \Exception
      */
-    public function remove()
+    public function remove(): bool
     {
         if (! $this->getUserId()) {
-            throw new \Exception('No user identified for Stripe billable removal.');
+            throw new \Exception('User model key is required for Stripe removal.');
         }
 
         $this->deletePaymentMethod(
@@ -114,15 +115,16 @@ class StripePayment extends BillablePayment
     }
 
     /**
-     * Charge a Payable entity using the saved Stripe payment method.
+     * Charge a Payable entity using a saved Stripe payment method.
      *
+     * @param  PaymentMethodModel|string|null  $paymentMethod
      *
      * @throws \Exception
      */
     public function charge(Payable $payable, mixed $paymentMethod = null, array $options = []): PaymentResult
     {
         if (! $this->getUserId()) {
-            throw new \Exception('No user identified for charging.');
+            throw new \Exception('User model key is required for charging.');
         }
 
         $pmRecord = $paymentMethod;
@@ -165,7 +167,7 @@ class StripePayment extends BillablePayment
             $stripe = Foundry::stripe();
             $paymentIntent = $stripe->paymentIntents->create($chargeParams);
 
-            $paymentMethodModel = PaymentMethodModel::byProvider(self::PROVIDER);
+            $paymentMethodModel = \Foundry\Models\PaymentMethod::byProvider(self::PROVIDER);
             $paymentMapper = new StripePaymentMapper($paymentIntent, $paymentMethodModel);
             $wrapper = new StripePaymentWrapper($paymentIntent->toArray());
 
@@ -210,7 +212,9 @@ class StripePayment extends BillablePayment
     }
 
     /**
-     * Create or retrieve the Stripe customer.
+     * Create or retrieve the Stripe customer instance.
+     *
+     * @return Customer
      */
     protected function getOrCreateStripeCustomer()
     {
@@ -234,10 +238,12 @@ class StripePayment extends BillablePayment
 
     /**
      * Create a new Stripe customer.
+     *
+     * @return Customer
      */
     protected function createStripeCustomer()
     {
-        $user = $this->user instanceof Model ? $this->user : \Foundry\Billable::user();
+        $user = $this->user;
 
         $params = [
             'metadata' => [

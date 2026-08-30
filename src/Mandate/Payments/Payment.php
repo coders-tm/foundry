@@ -1,6 +1,6 @@
 <?php
 
-namespace Foundry\Billable\Payments;
+namespace Foundry\Mandate\Payments;
 
 /**
  * Base payment wrapper providing a consistent interface for payment objects.

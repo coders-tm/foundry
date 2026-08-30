@@ -1,6 +1,6 @@
 <?php
 
-namespace Foundry\Billable\Responses;
+namespace Foundry\Mandate\Responses;
 
 class RedirectResponse
 {

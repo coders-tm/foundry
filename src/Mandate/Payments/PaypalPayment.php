@@ -1,6 +1,6 @@
 <?php
 
-namespace Foundry\Billable\Payments;
+namespace Foundry\Mandate\Payments;
 
 use Carbon\Carbon;
 
