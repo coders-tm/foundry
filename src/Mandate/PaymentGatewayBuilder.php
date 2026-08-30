@@ -5,6 +5,7 @@ namespace Foundry\Mandate;
 use Foundry\Mandate\Models\PaymentMethod;
 use Foundry\Mandate\Responses\RedirectResponse;
 use Foundry\Mandate\Services\GoCardlessPaymentService;
+use Foundry\Mandate\Services\PaddlePaymentService;
 use Foundry\Mandate\Services\PaymentService;
 use Foundry\Mandate\Services\PaypalPaymentService;
 use Foundry\Mandate\Services\StripePaymentService;
@@ -92,6 +93,7 @@ class PaymentGatewayBuilder
             PaymentProvider::STRIPE => new StripePaymentService($this->user, $this->paymentMethod),
             PaymentProvider::PAYPAL => new PaypalPaymentService($this->user, $this->paymentMethod),
             PaymentProvider::GOCARDLESS => new GoCardlessPaymentService($this->user, $this->paymentMethod),
+            PaymentProvider::PADDLE => new PaddlePaymentService($this->user, $this->paymentMethod),
             default => throw new \InvalidArgumentException("Unsupported payment provider: {$this->provider}"),
         };
     }
@@ -160,6 +162,7 @@ class PaymentGatewayBuilder
             PaymentProvider::STRIPE,
             PaymentProvider::PAYPAL,
             PaymentProvider::GOCARDLESS,
+            PaymentProvider::PADDLE,
         ];
     }
 
