@@ -4,13 +4,13 @@ namespace Foundry\Payment\Mappers;
 
 use DateTime;
 use Foundry\Models\Payment;
-use Foundry\Models\PaymentMethod;
+use Foundry\Services\PaymentProvider;
 
 class AlipayPayment extends AbstractPayment
 {
-    public function __construct($response, PaymentMethod $paymentMethod)
+    public function __construct($response)
     {
-        $this->paymentMethod = $paymentMethod;
+        $this->paymentMethod = PaymentProvider::ALIPAY;
 
         // Yansongda response can be a Collection or object
         $data = is_array($response) ? $response : (method_exists($response, 'toArray') ? $response->toArray() : (array) $response);

@@ -4,7 +4,6 @@ namespace Foundry\Tests\Feature;
 
 use Foundry\Exceptions\PaymentException;
 use Foundry\Models\Order;
-use Foundry\Models\PaymentMethod;
 use Foundry\Models\Subscription\Plan;
 use Foundry\Models\User;
 use Foundry\Models\WalletBalance;
@@ -19,24 +18,11 @@ class WalletTest extends TestCase
 {
     protected User $user;
 
-    protected PaymentMethod $walletPaymentMethod;
-
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->user = User::factory()->create();
-
-        // Create wallet payment method
-        $this->walletPaymentMethod = PaymentMethod::firstOrCreate(
-            ['provider' => PaymentMethod::WALLET],
-            [
-                'name' => 'Wallet Balance',
-                'active' => true,
-                'logo' => 'fas fa-wallet',
-                'description' => 'Pay using your wallet balance',
-            ]
-        );
     }
 
     #[Test]
@@ -114,7 +100,7 @@ class WalletTest extends TestCase
             'amount' => 100.00,
             'currency' => 'usd',
             'status' => 'completed', // Payment::STATUS_COMPLETED
-            'payment_method_id' => $this->walletPaymentMethod->id,
+            'provider' => 'wallet',
         ]);
 
         // Reload order to get updated paid_total (now a real column, auto-updated by Payment observer)
@@ -221,7 +207,6 @@ class WalletTest extends TestCase
         );
 
         $processor = Processor::make('wallet');
-        $processor->setPaymentMethod($this->walletPaymentMethod);
 
         $payable = Payable::make([
             'grand_total' => 50.00,
@@ -247,7 +232,6 @@ class WalletTest extends TestCase
         $this->user->creditWallet(100.00, 'test', 'Initial balance');
 
         $processor = Processor::make('wallet');
-        $processor->setPaymentMethod($this->walletPaymentMethod);
 
         $order = Order::factory()->create([
             'customer_id' => $this->user->id,
@@ -272,7 +256,6 @@ class WalletTest extends TestCase
         $this->user->creditWallet(30.00, 'test', 'Initial balance');
 
         $processor = Processor::make('wallet');
-        $processor->setPaymentMethod($this->walletPaymentMethod);
 
         $payable = Payable::make([
             'grand_total' => 50.00,
@@ -331,7 +314,7 @@ class WalletTest extends TestCase
         $order->payments()->create([
             'amount' => 100.00,
             'status' => 'completed', // Payment::STATUS_COMPLETED
-            'payment_method_id' => $this->walletPaymentMethod->id,
+            'provider' => 'wallet',
         ]);
 
         // Reload order to get updated paid_total (auto-updated by Payment observer)

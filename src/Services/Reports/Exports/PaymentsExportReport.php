@@ -57,7 +57,6 @@ class PaymentsExportReport extends AbstractReport
     public function query(array $filters)
     {
         return DB::table('payments')
-            ->leftJoin('payment_methods', 'payments.payment_method_id', '=', 'payment_methods.id')
             ->select([
                 'payments.id',
                 'payments.transaction_id',
@@ -72,7 +71,7 @@ class PaymentsExportReport extends AbstractReport
                 'payments.processed_at',
                 'payments.created_at',
                 'payments.note',
-                DB::raw('COALESCE(payment_methods.name, payment_methods.provider, "") as payment_method_name'),
+                DB::raw('COALESCE(payments.provider, "") as payment_method_name'),
             ])
             ->orderBy('payments.created_at', 'desc');
     }

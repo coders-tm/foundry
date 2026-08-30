@@ -5,9 +5,9 @@ namespace Tests\Feature;
 use Foundry\Models\ExchangeRate;
 use Foundry\Models\Order;
 use Foundry\Models\Payment;
-use Foundry\Models\PaymentMethod;
 use Foundry\Models\User;
 use Foundry\Payment\Payable;
+use Foundry\Services\PaymentProvider;
 use Foundry\Tests\Feature\FeatureTestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
@@ -23,13 +23,6 @@ class PaymentCurrencyHandlingTest extends FeatureTestCase
 
         // Setup currencies (Base: USD)
         Config::set('app.currency', 'USD');
-
-        // Create payment method
-        PaymentMethod::create([
-            'name' => 'Stripe',
-            'provider' => 'stripe',
-            'active' => true,
-        ]);
     }
 
     #[Test]
@@ -65,7 +58,7 @@ class PaymentCurrencyHandlingTest extends FeatureTestCase
         // Simulate Payment Creation (as done in PaymentController/Order)
         // Create a Payment record mimicking the result of a processor
         $payment = Payment::createForOrder($order, [
-            'payment_method_id' => PaymentMethod::where('provider', 'stripe')->first()->id,
+            'provider' => PaymentProvider::STRIPE,
             'transaction_id' => 'tx_123456',
             'amount' => $payable->getGrandTotal(), // Base Amount (100)
             'status' => 'completed',

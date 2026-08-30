@@ -4,7 +4,7 @@ namespace Foundry\Payment\Mappers;
 
 use DateTime;
 use Foundry\Models\Payment;
-use Foundry\Models\PaymentMethod;
+use Foundry\Services\PaymentProvider;
 
 class FlutterwavePayment extends AbstractPayment
 {
@@ -12,9 +12,8 @@ class FlutterwavePayment extends AbstractPayment
      * Create from Flutterwave transaction response
      *
      * @param  object|array  $response  Flutterwave transaction response
-     * @param  PaymentMethod  $paymentMethod  Payment method (required)
      */
-    public function __construct($response, PaymentMethod $paymentMethod)
+    public function __construct($response)
     {
         // Convert to array if object
         if (is_object($response)) {
@@ -22,7 +21,7 @@ class FlutterwavePayment extends AbstractPayment
         }
 
         // Set payment method
-        $this->paymentMethod = $paymentMethod;
+        $this->paymentMethod = PaymentProvider::FLUTTERWAVE;
 
         $this->transactionId = $response['tx_ref'] ?? $response['id'] ?? uniqid('flw_');
 

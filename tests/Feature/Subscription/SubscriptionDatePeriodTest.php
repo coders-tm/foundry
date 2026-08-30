@@ -4,11 +4,11 @@ namespace Foundry\Tests\Feature\Subscription;
 
 use Carbon\Carbon;
 use Foundry\Contracts\SubscriptionStatus;
-use Foundry\Models\PaymentMethod;
 use Foundry\Models\Subscription;
 use Foundry\Models\Subscription\Plan;
 use Foundry\Models\User;
 use Foundry\Services\Admin\SubscriptionService;
+use Foundry\Services\PaymentProvider;
 use Foundry\Tests\TestCase;
 
 /**
@@ -23,7 +23,7 @@ class SubscriptionDatePeriodTest extends TestCase
 
     protected Plan $yearlyPlan;
 
-    protected PaymentMethod $paymentMethod;
+    protected string $paymentMethod = PaymentProvider::STRIPE;
 
     protected function setUp(): void
     {
@@ -47,8 +47,6 @@ class SubscriptionDatePeriodTest extends TestCase
             'price' => 100.00,
             'trial_days' => 0,
         ]);
-
-        $this->paymentMethod = PaymentMethod::first();
     }
 
     /**
@@ -172,7 +170,7 @@ class SubscriptionDatePeriodTest extends TestCase
             'plan' => $this->yearlyPlan->id,
             'starts_at' => $customStart->toDateTimeString(),
             'mark_as_paid' => true,
-            'payment_method' => $this->paymentMethod->id,
+            'payment_method' => $this->paymentMethod,
         ], $subscription);
 
         $this->assertEquals(
@@ -210,7 +208,7 @@ class SubscriptionDatePeriodTest extends TestCase
             'starts_at' => $customStart->toDateTimeString(),
             'expires_at' => $customExpiry->toDateTimeString(),
             'mark_as_paid' => true,
-            'payment_method' => $this->paymentMethod->id,
+            'payment_method' => $this->paymentMethod,
         ], $subscription);
 
         $this->assertEquals(
@@ -241,7 +239,7 @@ class SubscriptionDatePeriodTest extends TestCase
         $updated = $service->createOrUpdate($this->user, [
             'plan' => $this->yearlyPlan->id,
             'mark_as_paid' => true,
-            'payment_method' => $this->paymentMethod->id,
+            'payment_method' => $this->paymentMethod,
         ], $subscription);
 
         $this->assertNotNull($updated->starts_at, 'starts_at must be set');
@@ -274,7 +272,7 @@ class SubscriptionDatePeriodTest extends TestCase
             'plan' => $this->yearlyPlan->id,
             'starts_at' => $customStart->toDateTimeString(),
             'mark_as_paid' => true,
-            'payment_method' => $this->paymentMethod->id,
+            'payment_method' => $this->paymentMethod,
         ], $subscription);
 
         $this->assertDatabaseHas('subscriptions', [

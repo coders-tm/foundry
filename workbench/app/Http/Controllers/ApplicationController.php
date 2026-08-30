@@ -4,8 +4,8 @@ namespace Workbench\App\Http\Controllers;
 
 use Foundry\Foundry;
 use Foundry\Mail\TestEmail;
-use Foundry\Models\PaymentMethod;
 use Foundry\Models\Setting;
+use Foundry\Services\PaymentProvider;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
@@ -56,7 +56,7 @@ class ApplicationController extends Controller
         if ($request->filled('includes')) {
             foreach ($request->includes ?? [] as $item) {
                 if ($item === 'payment-methods') {
-                    $response[$item] = PaymentMethod::toPublic();
+                    $response[$item] = PaymentProvider::toPublic();
                 } else {
                     $response[$item] = settings($item);
                 }
@@ -72,7 +72,7 @@ class ApplicationController extends Controller
 
     public function paymentMethods()
     {
-        return response()->json(PaymentMethod::toPublic(), 200);
+        return response()->json(PaymentProvider::toPublic(), 200);
     }
 
     public function updateSettings(Request $request)

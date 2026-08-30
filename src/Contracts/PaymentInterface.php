@@ -5,11 +5,6 @@ namespace Foundry\Contracts;
 interface PaymentInterface
 {
     /**
-     * Get the payment method ID
-     */
-    public function getPaymentMethodId(): string|int;
-
-    /**
      * Get the transaction ID
      */
     public function getTransactionId(): string;

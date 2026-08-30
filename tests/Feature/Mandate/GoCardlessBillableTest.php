@@ -5,11 +5,11 @@ namespace Tests\Feature\Mandate;
 use Foundry\Mandate\BillerManager;
 use Foundry\Mandate\Services\GoCardlessPayment;
 use Foundry\Models\Order;
-use Foundry\Models\PaymentMethod;
 use Foundry\Models\Subscription;
 use Foundry\Models\Subscription\Plan;
 use Foundry\Payment\Payable;
 use Foundry\Payment\PaymentResult;
+use Foundry\Services\PaymentProvider;
 use Foundry\Tests\TestCase;
 use Illuminate\Foundation\Testing\WithFaker;
 use PHPUnit\Framework\Attributes\Test;
@@ -22,7 +22,7 @@ class GoCardlessBillableTest extends TestCase
     {
         parent::setUp();
 
-        if (empty(config('gocardless.access_token')) || config('gocardless.access_token') === 'test_gocardless_access_token') {
+        if (empty(config('foundry.payment_providers.gocardless.access_token')) || config('foundry.payment_providers.gocardless.access_token') === 'test_gocardless_access_token') {
             $this->markTestSkipped('GoCardless API keys not configured.');
         }
     }
@@ -34,7 +34,7 @@ class GoCardlessBillableTest extends TestCase
     public function test_auto_renewal_for_gocardless()
     {
         $subscription = Subscription::factory()->create([
-            'provider' => 'gocardless',
+            'provider' => PaymentProvider::GOCARDLESS,
             'auto_renewal_enabled' => true,
         ]);
         $paymentMethod = 'MD123456';
@@ -45,13 +45,13 @@ class GoCardlessBillableTest extends TestCase
         });
 
         $manager = new BillerManager($subscription->user, $paymentMethod);
-        $manager->setProvider('gocardless');
+        $manager->setProvider(PaymentProvider::GOCARDLESS);
         $result = $manager->setup();
 
         $this->assertTrue((bool) $result);
 
         $manager = new BillerManager($subscription->user, $paymentMethod);
-        $manager->setProvider('gocardless');
+        $manager->setProvider(PaymentProvider::GOCARDLESS);
         $result = $manager->removePaymentMethod();
 
         $this->assertTrue((bool) $result);
@@ -65,7 +65,7 @@ class GoCardlessBillableTest extends TestCase
     {
         $plan = Plan::factory()->create(['price' => 100]);
         $subscription = Subscription::factory()->create([
-            'provider' => 'gocardless',
+            'provider' => PaymentProvider::GOCARDLESS,
             'plan_id' => $plan->id,
             'auto_renewal_enabled' => true,
         ]);
@@ -88,7 +88,7 @@ class GoCardlessBillableTest extends TestCase
         });
 
         $manager = new BillerManager($subscription->user, $paymentMethod);
-        $manager->setProvider('gocardless');
+        $manager->setProvider(PaymentProvider::GOCARDLESS);
         $manager->setup();
 
         $payable = Payable::fromOrder($order);

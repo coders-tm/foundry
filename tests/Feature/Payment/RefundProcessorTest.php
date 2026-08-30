@@ -6,10 +6,10 @@ use Foundry\Enum\PaymentStatus;
 use Foundry\Exceptions\RefundException;
 use Foundry\Models\Order;
 use Foundry\Models\Payment;
-use Foundry\Models\PaymentMethod;
 use Foundry\Models\User;
 use Foundry\Payment\Processor;
 use Foundry\Payment\RefundResult;
+use Foundry\Services\PaymentProvider;
 use Foundry\Tests\TestCase;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -22,39 +22,19 @@ class RefundProcessorTest extends TestCase
 
     protected Order $order;
 
-    protected PaymentMethod $stripePaymentMethod;
+    protected string $stripeProvider = PaymentProvider::STRIPE;
 
-    protected PaymentMethod $paypalPaymentMethod;
+    protected string $paypalProvider = PaymentProvider::PAYPAL;
 
-    protected PaymentMethod $walletPaymentMethod;
+    protected string $walletProvider = PaymentProvider::WALLET;
 
-    protected PaymentMethod $manualPaymentMethod;
+    protected string $manualProvider = PaymentProvider::MANUAL;
 
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->user = User::factory()->create();
-
-        $this->stripePaymentMethod = PaymentMethod::firstOrCreate(
-            ['provider' => PaymentMethod::STRIPE],
-            ['name' => 'Credit Card', 'active' => true]
-        );
-
-        $this->paypalPaymentMethod = PaymentMethod::firstOrCreate(
-            ['provider' => PaymentMethod::PAYPAL],
-            ['name' => 'PayPal', 'active' => true]
-        );
-
-        $this->walletPaymentMethod = PaymentMethod::firstOrCreate(
-            ['provider' => PaymentMethod::WALLET],
-            ['name' => 'Wallet', 'active' => true]
-        );
-
-        $this->manualPaymentMethod = PaymentMethod::firstOrCreate(
-            ['provider' => PaymentMethod::MANUAL],
-            ['name' => 'Manual', 'active' => true]
-        );
 
         $this->order = Order::factory()->create([
             'customer_id' => $this->user->id,
@@ -63,10 +43,6 @@ class RefundProcessorTest extends TestCase
             'payment_status' => PaymentStatus::PAID,
         ]);
     }
-
-    // =========================================
-    // RefundResult Class Tests
-    // =========================================
 
     #[Test]
     public function refund_result_can_create_success()
@@ -138,7 +114,7 @@ class RefundProcessorTest extends TestCase
     #[Test]
     public function stripe_processor_supports_refund()
     {
-        $processor = Processor::make('stripe');
+        $processor = Processor::make(PaymentProvider::STRIPE);
 
         $this->assertTrue($processor->supportsRefund());
     }
@@ -146,7 +122,7 @@ class RefundProcessorTest extends TestCase
     #[Test]
     public function paypal_processor_supports_refund()
     {
-        $processor = Processor::make('paypal');
+        $processor = Processor::make(PaymentProvider::PAYPAL);
 
         $this->assertTrue($processor->supportsRefund());
     }
@@ -154,7 +130,7 @@ class RefundProcessorTest extends TestCase
     #[Test]
     public function razorpay_processor_supports_refund()
     {
-        $processor = Processor::make('razorpay');
+        $processor = Processor::make(PaymentProvider::RAZORPAY);
 
         $this->assertTrue($processor->supportsRefund());
     }
@@ -162,7 +138,7 @@ class RefundProcessorTest extends TestCase
     #[Test]
     public function flutterwave_processor_supports_refund()
     {
-        $processor = Processor::make('flutterwave');
+        $processor = Processor::make(PaymentProvider::FLUTTERWAVE);
 
         $this->assertTrue($processor->supportsRefund());
     }
@@ -170,7 +146,7 @@ class RefundProcessorTest extends TestCase
     #[Test]
     public function wallet_processor_does_not_support_refund()
     {
-        $processor = Processor::make('wallet');
+        $processor = Processor::make(PaymentProvider::WALLET);
 
         $this->assertFalse($processor->supportsRefund());
     }
@@ -178,7 +154,7 @@ class RefundProcessorTest extends TestCase
     #[Test]
     public function manual_processor_does_not_support_refund()
     {
-        $processor = Processor::make('manual');
+        $processor = Processor::make(PaymentProvider::MANUAL);
 
         $this->assertFalse($processor->supportsRefund());
     }
@@ -186,10 +162,9 @@ class RefundProcessorTest extends TestCase
     #[Test]
     public function wallet_processor_throws_on_refund()
     {
-        $processor = Processor::make('wallet');
-        $processor->setPaymentMethod($this->walletPaymentMethod);
+        $processor = Processor::make(PaymentProvider::WALLET);
 
-        $payment = $this->createPayment($this->walletPaymentMethod);
+        $payment = $this->createPayment(PaymentProvider::WALLET);
 
         $this->expectException(RefundException::class);
         $this->expectExceptionMessage('Wallet payments cannot be refunded');
@@ -200,10 +175,9 @@ class RefundProcessorTest extends TestCase
     #[Test]
     public function manual_processor_throws_on_refund()
     {
-        $processor = Processor::make('manual');
-        $processor->setPaymentMethod($this->manualPaymentMethod);
+        $processor = Processor::make(PaymentProvider::MANUAL);
 
-        $payment = $this->createPayment($this->manualPaymentMethod);
+        $payment = $this->createPayment(PaymentProvider::MANUAL);
 
         $this->expectException(RefundException::class);
         $this->expectExceptionMessage('not supported');
@@ -214,7 +188,7 @@ class RefundProcessorTest extends TestCase
     #[Test]
     public function payment_calculates_refundable_amount()
     {
-        $payment = $this->createPayment($this->stripePaymentMethod, 100.00);
+        $payment = $this->createPayment('stripe', 100.00);
 
         $this->assertEquals(100.00, $payment->refundable_amount);
 
@@ -228,7 +202,7 @@ class RefundProcessorTest extends TestCase
     #[Test]
     public function payment_process_refund_updates_status()
     {
-        $payment = $this->createPayment($this->stripePaymentMethod, 100.00);
+        $payment = $this->createPayment('stripe', 100.00);
 
         // Full refund (even if partial amount requested, it forces full)
         $payment->processRefund(40.00, 'Refund request');
@@ -242,7 +216,7 @@ class RefundProcessorTest extends TestCase
     #[Test]
     public function payment_is_refunded_check()
     {
-        $payment = $this->createPayment($this->stripePaymentMethod, 100.00);
+        $payment = $this->createPayment('stripe', 100.00);
 
         $this->assertFalse($payment->isRefunded());
 
@@ -254,7 +228,7 @@ class RefundProcessorTest extends TestCase
     #[Test]
     public function order_refund_creates_refund_record()
     {
-        $payment = $this->createPayment($this->stripePaymentMethod);
+        $payment = $this->createPayment('stripe');
 
         $refund = $this->order->refundToWallet('Test refund');
 
@@ -269,7 +243,7 @@ class RefundProcessorTest extends TestCase
     #[Test]
     public function order_refund_updates_order_totals()
     {
-        $payment = $this->createPayment($this->stripePaymentMethod);
+        $payment = $this->createPayment('stripe');
         $originalRefundTotal = $this->order->refund_total;
 
         $this->order->refundToWallet('Test refund');
@@ -281,7 +255,7 @@ class RefundProcessorTest extends TestCase
     #[Test]
     public function order_multiple_refunds_throws_exception()
     {
-        $payment = $this->createPayment($this->stripePaymentMethod);
+        $payment = $this->createPayment('stripe');
 
         $this->order->refundToWallet('First refund');
         $this->order->refresh();
@@ -292,12 +266,12 @@ class RefundProcessorTest extends TestCase
         $this->order->refundToWallet('Second refund');
     }
 
-    protected function createPayment(PaymentMethod $method, float $amount = 100.00): Payment
+    protected function createPayment(string $provider = PaymentProvider::STRIPE, float $amount = 100.00): Payment
     {
         return $this->order->payments()->create([
             'amount' => $amount,
             'status' => PaymentStatus::COMPLETED,
-            'payment_method_id' => $method->id,
+            'provider' => $provider,
             'transaction_id' => 'txn_'.uniqid(),
             'processed_at' => now(),
         ]);

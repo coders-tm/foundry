@@ -4,11 +4,10 @@ namespace Foundry\Payment\Mappers;
 
 use DateTime;
 use Foundry\Contracts\PaymentInterface;
-use Foundry\Models\PaymentMethod;
 
 abstract class AbstractPayment implements PaymentInterface
 {
-    protected PaymentMethod $paymentMethod;
+    protected mixed $paymentMethod = null;
 
     protected string $transactionId;
 
@@ -33,14 +32,9 @@ abstract class AbstractPayment implements PaymentInterface
      */
     abstract protected function extractMetadata($response): array;
 
-    public function getPaymentMethod(): PaymentMethod
+    public function getPaymentMethod(): mixed
     {
         return $this->paymentMethod;
-    }
-
-    public function getPaymentMethodId(): string|int
-    {
-        return $this->paymentMethod->id;
     }
 
     public function getTransactionId(): string
@@ -92,8 +86,12 @@ abstract class AbstractPayment implements PaymentInterface
      */
     public function toArray(): array
     {
+        $provider = is_array($this->paymentMethod)
+            ? ($this->paymentMethod['provider'] ?? 'unknown')
+            : (string) ($this->paymentMethod ?? 'unknown');
+
         return [
-            'payment_method_id' => $this->getPaymentMethodId(),
+            'provider' => $provider,
             'transaction_id' => $this->getTransactionId(),
             'status' => $this->getStatus(),
             'note' => $this->getNote(),

@@ -10,6 +10,7 @@ use Foundry\Mandate\Payments\StripePayment as StripePaymentWrapper;
 use Foundry\Payment\Mappers\StripePayment as StripePaymentMapper;
 use Foundry\Payment\Payable;
 use Foundry\Payment\PaymentResult;
+use Foundry\Services\PaymentProvider;
 use Illuminate\Http\Request;
 use Stripe\Customer;
 use Stripe\Exception\CardException;
@@ -22,7 +23,7 @@ class StripePaymentService extends PaymentService
     /**
      * Provider identifier.
      */
-    public const PROVIDER = 'stripe';
+    public const PROVIDER = PaymentProvider::STRIPE;
 
     /**
      * Validate setup request parameters for Stripe.
@@ -138,12 +139,9 @@ class StripePaymentService extends PaymentService
             throw new \Exception('No payment method found for Stripe charging.');
         }
 
-        $customer = $this->getOrCreateCustomer(
-            $this->getUserId(),
-            self::PROVIDER
-        );
+        $customer = $this->getOrCreateStripeCustomer();
 
-        if (! $customer->provider_id) {
+        if (! $customer->id) {
             throw new \Exception('No Stripe customer ID found.');
         }
 
@@ -153,7 +151,7 @@ class StripePaymentService extends PaymentService
         $chargeParams = array_merge([
             'amount' => $amountInCents,
             'currency' => $currency,
-            'customer' => $customer->provider_id,
+            'customer' => $customer->id,
             'payment_method' => $pmId,
             'off_session' => true,
             'confirm' => true,
@@ -167,22 +165,15 @@ class StripePaymentService extends PaymentService
             $stripe = Foundry::stripe();
             $paymentIntent = $stripe->paymentIntents->create($chargeParams);
 
-            $paymentMethodModel = \Foundry\Models\PaymentMethod::byProvider(self::PROVIDER);
-            $paymentMapper = new StripePaymentMapper($paymentIntent, $paymentMethodModel);
-            $wrapper = new StripePaymentWrapper($paymentIntent->toArray());
-
             if ($paymentIntent->status === 'requires_action') {
+                $wrapper = new StripePaymentWrapper($paymentIntent->toArray());
                 throw new PaymentIncomplete($wrapper);
             }
 
             return PaymentResult::success(
-                paymentData: $paymentMapper,
+                paymentData: new StripePaymentMapper($paymentIntent),
                 transactionId: $paymentIntent->id,
-                status: $paymentIntent->status,
-                metadata: [
-                    'wrapper' => $wrapper,
-                    'payment_intent' => $paymentIntent->toArray(),
-                ]
+                status: $paymentIntent->status
             );
         } catch (CardException $e) {
             if ($e->getStripeCode() === 'authentication_required') {

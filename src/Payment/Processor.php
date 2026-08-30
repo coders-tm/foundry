@@ -3,7 +3,6 @@
 namespace Foundry\Payment;
 
 use Foundry\Contracts\PaymentProcessorInterface;
-use Foundry\Models\PaymentMethod;
 use Foundry\Payment\Processors\AlipayProcessor;
 use Foundry\Payment\Processors\FlutterwaveProcessor;
 use Foundry\Payment\Processors\KlarnaProcessor;
@@ -16,6 +15,7 @@ use Foundry\Payment\Processors\RazorpayProcessor;
 use Foundry\Payment\Processors\StripeProcessor;
 use Foundry\Payment\Processors\WalletProcessor;
 use Foundry\Payment\Processors\XenditProcessor;
+use Foundry\Services\PaymentProvider;
 use Illuminate\Http\Request;
 
 class Processor
@@ -26,18 +26,18 @@ class Processor
     public static function make(string $provider): PaymentProcessorInterface
     {
         return match ($provider) {
-            'stripe' => new StripeProcessor,
-            'razorpay' => new RazorpayProcessor,
-            'paypal' => new PaypalProcessor,
-            'klarna' => new KlarnaProcessor,
-            'manual' => new ManualProcessor,
-            'wallet' => new WalletProcessor,
-            'mercadopago' => new MercadoPagoProcessor,
-            'xendit' => new XenditProcessor,
-            'paystack' => new PaystackProcessor,
-            'flutterwave' => new FlutterwaveProcessor,
-            'alipay' => new AlipayProcessor,
-            'paddle' => new PaddleProcessor,
+            PaymentProvider::STRIPE => new StripeProcessor,
+            PaymentProvider::RAZORPAY => new RazorpayProcessor,
+            PaymentProvider::PAYPAL => new PaypalProcessor,
+            PaymentProvider::KLARNA => new KlarnaProcessor,
+            PaymentProvider::MANUAL => new ManualProcessor,
+            PaymentProvider::WALLET => new WalletProcessor,
+            PaymentProvider::MERCADOPAGO => new MercadoPagoProcessor,
+            PaymentProvider::XENDIT => new XenditProcessor,
+            PaymentProvider::PAYSTACK => new PaystackProcessor,
+            PaymentProvider::FLUTTERWAVE => new FlutterwaveProcessor,
+            PaymentProvider::ALIPAY => new AlipayProcessor,
+            PaymentProvider::PADDLE => new PaddleProcessor,
             default => throw new \InvalidArgumentException("Unsupported payment provider: {$provider}")
         };
     }
@@ -48,18 +48,18 @@ class Processor
     public static function getSupportedProviders(): array
     {
         return [
-            'stripe',
-            'razorpay',
-            'paypal',
-            'klarna',
-            'manual',
-            'wallet',
-            'mercadopago',
-            'xendit',
-            'paystack',
-            'flutterwave',
-            'alipay',
-            'paddle',
+            PaymentProvider::STRIPE,
+            PaymentProvider::RAZORPAY,
+            PaymentProvider::PAYPAL,
+            PaymentProvider::KLARNA,
+            PaymentProvider::MANUAL,
+            PaymentProvider::WALLET,
+            PaymentProvider::MERCADOPAGO,
+            PaymentProvider::XENDIT,
+            PaymentProvider::PAYSTACK,
+            PaymentProvider::FLUTTERWAVE,
+            PaymentProvider::ALIPAY,
+            PaymentProvider::PADDLE,
         ];
     }
 
@@ -83,9 +83,7 @@ class Processor
         }
 
         try {
-            $paymentMethod = PaymentMethod::byProvider($provider);
             $processor = self::make($provider);
-            $processor->setPaymentMethod($paymentMethod);
 
             return $processor->handleSuccessCallback($request);
         } catch (\Throwable $e) {
@@ -107,9 +105,7 @@ class Processor
         }
 
         try {
-            $paymentMethod = PaymentMethod::byProvider($provider);
             $processor = self::make($provider);
-            $processor->setPaymentMethod($paymentMethod);
 
             return $processor->handleCancelCallback($request);
         } catch (\Throwable $e) {

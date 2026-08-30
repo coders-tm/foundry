@@ -10,7 +10,6 @@ use Foundry\Models\Order;
 use Foundry\Models\Order\Customer;
 use Foundry\Models\Order\TaxLine;
 use Foundry\Models\Payment;
-use Foundry\Models\PaymentMethod;
 use Foundry\Models\Subscription;
 use Foundry\Models\Subscription\Plan;
 use Foundry\Models\User;
@@ -89,11 +88,10 @@ class OrderControllerTest extends FeatureTestCase
     public function test_store_marks_as_paid_if_payment_method_provided(): void
     {
         $user = User::factory()->create();
-        PaymentMethod::factory()->manual()->create(['id' => 'cash']);
         $data = [
             'customer_id' => $user->id,
             'status' => OrderStatus::PENDING->value,
-            'payment_method' => 'cash',
+            'payment_method' => 'manual',
             'line_items' => [
                 ['title' => 'Product 1', 'price' => 100, 'quantity' => 1],
             ],
@@ -247,7 +245,6 @@ class OrderControllerTest extends FeatureTestCase
     public function test_refund_processes_refund(): void
     {
         $user = User::factory()->create();
-        $paymentMethod = PaymentMethod::factory()->manual()->create();
         $item = Order::factory()->create([
             'customer_id' => $user->id,
             'payment_status' => PaymentStatus::PAID,
@@ -263,7 +260,7 @@ class OrderControllerTest extends FeatureTestCase
             'status' => Payment::STATUS_COMPLETED,
             'processed_at' => now(),
             'currency' => 'USD',
-            'payment_method_id' => $paymentMethod->id,
+            'provider' => 'manual',
         ]);
 
         $this->actingAs($this->admin, 'admin')
@@ -277,7 +274,6 @@ class OrderControllerTest extends FeatureTestCase
     {
         $user = User::factory()->create();
         $plan = Plan::factory()->create(['price' => 19.99, 'trial_days' => 0]);
-        $paymentMethod = PaymentMethod::factory()->create(['provider' => 'cash']);
 
         // Create a subscription with an invoice via the admin route
         $this->actingAs($this->admin, 'admin')
@@ -287,7 +283,7 @@ class OrderControllerTest extends FeatureTestCase
                 'starts_at' => now()->toDateTimeString(),
                 'generate_invoice' => true,
                 'mark_as_paid' => true,
-                'payment_method' => $paymentMethod->id,
+                'payment_method' => 'manual',
             ])
             ->assertSessionHasNoErrors()
             ->assertRedirect();

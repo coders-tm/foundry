@@ -8,6 +8,7 @@ use Foundry\Models\PaymentMethod;
 use Foundry\Models\Subscription;
 use Foundry\Models\Subscription\Feature;
 use Foundry\Models\Subscription\Plan;
+use Foundry\Services\PaymentProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Workbench\App\Models\Admin;
@@ -182,7 +183,7 @@ class UserControllerTest extends FeatureTestCase
         $paymentMethod = PaymentMethod::create([
             'name' => 'test-payment',
             'label' => 'Test Payment Method',
-            'provider' => 'stripe',
+            'provider' => PaymentProvider::STRIPE,
             'active' => true,
         ]);
 
@@ -285,7 +286,7 @@ class UserControllerTest extends FeatureTestCase
         $paymentMethod = PaymentMethod::create([
             'name' => 'test-payment-coupon',
             'label' => 'Test Payment Method',
-            'provider' => 'stripe',
+            'provider' => PaymentProvider::STRIPE,
             'active' => true,
         ]);
 

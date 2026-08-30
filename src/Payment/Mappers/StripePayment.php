@@ -4,7 +4,7 @@ namespace Foundry\Payment\Mappers;
 
 use DateTime;
 use Foundry\Models\Payment;
-use Foundry\Models\PaymentMethod;
+use Foundry\Services\PaymentProvider;
 use Stripe\Charge;
 use Stripe\PaymentIntent;
 
@@ -14,12 +14,12 @@ class StripePayment extends AbstractPayment
      * Create from Stripe PaymentIntent or Charge object
      *
      * @param  PaymentIntent|Charge|object  $response  Stripe SDK response object
-     * @param  PaymentMethod  $paymentMethod  Payment method (required)
+     * @param  mixed  $paymentMethod  Payment method (optional)
      */
-    public function __construct($response, PaymentMethod $paymentMethod)
+    public function __construct($response)
     {
         // Set payment method
-        $this->paymentMethod = $paymentMethod;
+        $this->paymentMethod = PaymentProvider::STRIPE;
 
         // Extract basic info
         $this->transactionId = $response->id;

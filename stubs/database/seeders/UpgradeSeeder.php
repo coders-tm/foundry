@@ -22,7 +22,6 @@ class UpgradeSeeder extends Seeder
             ModuleSeeder::class,
             SettingsSeeder::class,
             NotificationSeeder::class,
-            PaymentMethodSeeder::class,
         ]);
     }
 }

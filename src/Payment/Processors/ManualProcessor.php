@@ -3,9 +3,9 @@
 namespace Foundry\Payment\Processors;
 
 use Foundry\Contracts\PaymentProcessorInterface;
-use Foundry\Models\PaymentMethod;
 use Foundry\Payment\Payable;
 use Foundry\Payment\PaymentResult;
+use Foundry\Services\PaymentProvider;
 use Illuminate\Http\Request;
 
 class ManualProcessor extends AbstractPaymentProcessor implements PaymentProcessorInterface
@@ -14,7 +14,7 @@ class ManualProcessor extends AbstractPaymentProcessor implements PaymentProcess
 
     public function getProvider(): string
     {
-        return PaymentMethod::MANUAL;
+        return PaymentProvider::MANUAL;
     }
 
     public function supportedCurrencies(): array

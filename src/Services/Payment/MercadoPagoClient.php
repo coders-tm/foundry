@@ -23,7 +23,7 @@ class MercadoPagoClient
      */
     public function __construct(array $options = [])
     {
-        $accessToken = $options['access_token'] ?? config('mercadopago.access_token');
+        $accessToken = $options['access_token'] ?? config('foundry.payment_providers.mercadopago.access_token');
         if (! $accessToken) {
             throw new \InvalidArgumentException('MercadoPago access_token is required.');
         }

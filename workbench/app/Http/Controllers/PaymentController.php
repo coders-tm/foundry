@@ -5,9 +5,9 @@ namespace Workbench\App\Http\Controllers;
 use Foundry\Foundry;
 use Foundry\Models\Order;
 use Foundry\Models\Payment;
-use Foundry\Models\PaymentMethod;
 use Foundry\Payment\Payable;
 use Foundry\Payment\Processor;
+use Foundry\Services\PaymentProvider;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -31,14 +31,10 @@ class PaymentController extends Controller
         $orderData = $order->toArray();
 
         // Get supported payment methods for the currency
-        $paymentMethods = PaymentMethod::enabled()
-            ->orderBy('order')
-            ->get()
-            ->pluck('provider')
-            ->values();
+        $paymentMethods = PaymentProvider::enabled();
 
         return response()->json(array_merge($orderData, [
-            'payment_methods' => $paymentMethods,
+            'payment_methods' => array_keys($paymentMethods),
         ]));
     }
 
@@ -50,12 +46,18 @@ class PaymentController extends Controller
     {
         $request->validate([
             'token' => 'required|string|exists:'.Foundry::$orderModel.',id',
-            'provider' => 'required|string|exists:'.PaymentMethod::class.',id',
+            'provider' => 'required|string',
         ]);
 
         try {
             $order = Foundry::$orderModel::where('id', $request->token)->firstOrFail();
-            $paymentMethod = PaymentMethod::findOrFail($request->provider);
+
+            if (! PaymentProvider::has($request->provider)) {
+                return response()->json([
+                    'message' => 'Payment provider not found or disabled',
+                    'provider' => $request->provider,
+                ], 422);
+            }
 
             // Check if order is already paid
             if ($order->payment_status === 'paid') {
@@ -65,7 +67,7 @@ class PaymentController extends Controller
                 ], 422);
             }
 
-            $provider = $paymentMethod->integration_via ?? $paymentMethod->provider;
+            $provider = $request->provider;
 
             // Check if provider is supported
             if (! Processor::isSupported($provider)) {
@@ -77,9 +79,6 @@ class PaymentController extends Controller
 
             // Create processor using factory
             $processor = Processor::make($provider);
-
-            // Set the payment method on the processor
-            $processor->setPaymentMethod($paymentMethod);
 
             // Create Payable from order
             $payable = Payable::fromOrder($order);
@@ -100,14 +99,21 @@ class PaymentController extends Controller
     {
         $request->validate([
             'token' => 'required|string|exists:'.Foundry::$orderModel.',id',
-            'provider' => 'required|string|exists:'.PaymentMethod::class.',id',
+            'provider' => 'required|string',
         ]);
 
         try {
             /** @var Order $order */
             $order = Foundry::$orderModel::where('id', $request->token)->firstOrFail();
-            $paymentMethod = PaymentMethod::findOrFail($request->provider);
-            $provider = $paymentMethod->integration_via ?? $paymentMethod->provider;
+
+            if (! PaymentProvider::has($request->provider)) {
+                return response()->json([
+                    'message' => 'Payment provider not found or disabled',
+                    'provider' => $request->provider,
+                ], 422);
+            }
+
+            $provider = $request->provider;
 
             // Check if order is already paid
             if ($order->payment_status === 'paid') {
@@ -129,9 +135,6 @@ class PaymentController extends Controller
 
             // Create processor using factory
             $processor = Processor::make($provider);
-
-            // Set the payment method on the processor
-            $processor->setPaymentMethod($paymentMethod);
 
             // Create Payable from order
             $payable = Payable::fromOrder($order);

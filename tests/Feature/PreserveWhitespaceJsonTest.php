@@ -2,7 +2,6 @@
 
 namespace Foundry\Tests\Feature;
 
-use Coderstm\PageBuilder\Models\Page;
 use Foundry\Casts\PreserveWhitespaceJson;
 use Foundry\Tests\TestCase;
 use Illuminate\Database\Eloquent\Model;
@@ -18,7 +17,7 @@ class PreserveWhitespaceJsonTest extends TestCase
     {
         parent::setUp();
         $this->cast = new PreserveWhitespaceJson;
-        $this->model = new Page;
+        $this->model = new class extends Model {};
     }
 
     #[Test]

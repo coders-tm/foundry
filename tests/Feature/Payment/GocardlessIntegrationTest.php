@@ -3,7 +3,7 @@
 namespace Tests\Feature\Payment;
 
 use Foundry\Foundry;
-use Foundry\Models\PaymentMethod;
+use Foundry\Services\PaymentProvider;
 use Foundry\Tests\Feature\FeatureTestCase;
 use GoCardlessPro\Client;
 use Illuminate\Foundation\Testing\WithFaker;
@@ -12,8 +12,6 @@ use PHPUnit\Framework\Attributes\Test;
 class GocardlessIntegrationTest extends FeatureTestCase
 {
     use WithFaker;
-
-    protected PaymentMethod $paymentMethod;
 
     protected function setUp(): void
     {
@@ -24,27 +22,16 @@ class GocardlessIntegrationTest extends FeatureTestCase
             $this->markTestSkipped('GoCardless credentials not configured. Set GOCARDLESS_ACCESS_TOKEN in phpunit.xml');
         }
 
-        // Get GoCardless payment method created by seeder (don't filter by enabled status)
-        $paymentMethod = PaymentMethod::byProvider(PaymentMethod::GOCARDLESS);
-
-        if (! $paymentMethod) {
-            $this->markTestSkipped('GoCardless payment method not found. Run seeders first.');
-        }
-
-        // Enable the payment method for testing
-        $paymentMethod->update(['active' => true, 'test_mode' => true]);
-        PaymentMethod::updateProviderCache(PaymentMethod::GOCARDLESS);
-
-        $this->paymentMethod = $paymentMethod;
+        config(['foundry.payment_providers.gocardless.enabled' => true]);
     }
 
     #[Test]
-    public function it_retrieves_gocardless_via_static_method()
+    public function it_retrieves_gocardless_provider_config()
     {
-        $gocardless = PaymentMethod::gocardless();
+        $gocardless = PaymentProvider::find(PaymentProvider::GOCARDLESS);
 
         $this->assertNotNull($gocardless);
-        $this->assertEquals($this->paymentMethod->id, $gocardless->id);
+        $this->assertEquals(PaymentProvider::GOCARDLESS, $gocardless['provider']);
     }
 
     #[Test]
@@ -56,42 +43,9 @@ class GocardlessIntegrationTest extends FeatureTestCase
     }
 
     #[Test]
-    public function it_handles_gocardless_payment_methods_array()
-    {
-        $this->assertIsArray($this->paymentMethod->methods);
-
-        // Methods can be objects or strings
-        $methodKeys = collect($this->paymentMethod->methods)->map(function ($method) {
-            return is_array($method) ? $method['key'] : $method;
-        })->toArray();
-
-        $this->assertContains('direct_debit', $methodKeys);
-    }
-
-    #[Test]
-    public function it_updates_cache_when_gocardless_credentials_change()
-    {
-        // Update access token
-        $newToken = 'sandbox_'.$this->faker->sha256();
-
-        $this->paymentMethod->update([
-            'credentials' => collect([
-                ['key' => 'ACCESS_TOKEN', 'value' => $newToken, 'publish' => false],
-                ['key' => 'WEBHOOK_SECRET', 'value' => 'new-webhook-secret', 'publish' => false],
-            ]),
-        ]);
-
-        // Reload the model to get fresh data
-        $this->paymentMethod->refresh();
-
-        // Cache should be updated automatically via model observer
-        $this->assertEquals($newToken, config('gocardless.access_token'));
-    }
-
-    #[Test]
     public function it_supports_multiple_country_payment_schemes()
     {
-        $schemes = config('gocardless.schemes');
+        $schemes = config('foundry.payment_providers.gocardless.schemes');
 
         // UK - BACS Direct Debit
         $this->assertEquals('bacs', $schemes['GB']);
@@ -119,12 +73,9 @@ class GocardlessIntegrationTest extends FeatureTestCase
     #[Test]
     public function it_validates_access_token_format()
     {
-        $token = $this->paymentMethod->getConfigs()['ACCESS_TOKEN'];
+        $token = config('foundry.payment_providers.gocardless.access_token');
 
-        // Sandbox tokens should start with 'sandbox_'
-        if ($this->paymentMethod->test_mode) {
-            $this->assertStringStartsWith('sandbox_', $token);
-        }
+        $provider = PaymentProvider::find(PaymentProvider::GOCARDLESS);
 
         // Token should be a non-empty string
         $this->assertNotEmpty($token);

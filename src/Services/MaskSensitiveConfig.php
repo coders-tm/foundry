@@ -111,6 +111,24 @@ class MaskSensitiveConfig extends BladeCompiler
         'stripe.secret',
         'stripe.webhook.secret',
 
+        // Sensitive payment provider keys from config/foundry.php
+        'foundry.payment_providers.stripe.secret',
+        'foundry.payment_providers.stripe.webhook_secret',
+        'foundry.payment_providers.paypal.client_secret',
+        'foundry.payment_providers.gocardless.access_token',
+        'foundry.payment_providers.gocardless.webhook_secret',
+        'foundry.payment_providers.razorpay.key_secret',
+        'foundry.payment_providers.klarna.api_secret',
+        'foundry.payment_providers.mercadopago.access_token',
+        'foundry.payment_providers.paystack.secret_key',
+        'foundry.payment_providers.xendit.secret_key',
+        'foundry.payment_providers.flutterwave.secret_key',
+        'foundry.payment_providers.flutterwave.encryption_key',
+        'foundry.payment_providers.alipay.private_key',
+        'foundry.payment_providers.paddle.api_key',
+        'foundry.payment_providers.paddle.client_token',
+        'foundry.payment_providers.paddle.webhook_secret',
+
         // Add other sensitive keys you want to mask
     ];
 

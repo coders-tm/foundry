@@ -3,7 +3,7 @@
 namespace Foundry\Database\Factories;
 
 use Foundry\Models\Payment;
-use Foundry\Models\PaymentMethod;
+use Foundry\Services\PaymentProvider;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class PaymentFactory extends Factory
@@ -13,7 +13,7 @@ class PaymentFactory extends Factory
     public function definition(): array
     {
         return [
-            'payment_method_id' => PaymentMethod::factory(),
+            'provider' => PaymentProvider::STRIPE,
             'transaction_id' => 'txn_'.$this->faker->unique()->regexify('[A-Z0-9]{24}'),
             'amount' => $this->faker->randomFloat(2, 10, 1000),
             'status' => Payment::STATUS_COMPLETED,

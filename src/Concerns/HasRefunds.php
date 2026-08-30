@@ -5,9 +5,9 @@ namespace Foundry\Concerns;
 use Foundry\Events\RefundProcessed;
 use Foundry\Exceptions\RefundException;
 use Foundry\Models\Payment;
-use Foundry\Models\PaymentMethod;
 use Foundry\Models\Refund;
 use Foundry\Payment\Processor;
+use Foundry\Services\PaymentProvider;
 use Illuminate\Support\Facades\DB;
 
 trait HasRefunds
@@ -54,7 +54,7 @@ trait HasRefunds
 
             try {
                 // Determine if payment is wallet
-                $isWallet = $payment->paymentMethod?->provider === PaymentMethod::WALLET;
+                $isWallet = $payment->provider === PaymentProvider::WALLET;
 
                 if ($isWallet) {
                     // Refund this specific wallet payment to wallet
@@ -207,21 +207,20 @@ trait HasRefunds
             throw new \Exception('Refund amount exceeds order refundable amount.');
         }
 
-        // Get the payment method and processor
-        $paymentMethod = $payment->paymentMethod;
+        // Get the payment provider name
+        $provider = $payment->provider;
 
-        if (! $paymentMethod) {
-            throw new \Exception('Payment method not found for this payment.');
+        if (! $provider) {
+            throw new \Exception('Payment provider not found for this payment.');
         }
 
         // Create processor instance
-        $processor = Processor::make($paymentMethod->provider);
-        $processor->setPaymentMethod($paymentMethod);
+        $processor = Processor::make($provider);
 
         // Check if processor supports refund
         if (! $processor->supportsRefund()) {
             throw new RefundException(
-                "Refunds are not supported for the {$paymentMethod->provider} payment method. ".
+                "Refunds are not supported for the {$provider} payment method. ".
                     "Use 'Refund to Wallet' option to credit the customer's wallet balance.",
                 ['error_type' => 'not_supported']
             );

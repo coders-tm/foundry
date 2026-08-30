@@ -23,7 +23,7 @@ return new class extends Migration
             $table->string('paymentable_type')->nullable();
             $table->uuid('paymentable_id')->nullable();
 
-            $table->uuid('payment_method_id')->index()->nullable();
+            $table->string('provider')->index()->nullable();
             $table->string('transaction_id')->index()->nullable();
             $table->string('currency', 3)->default('USD');
             $table->double('amount', 20, 2)->default(0.00);
@@ -37,8 +37,6 @@ return new class extends Migration
             $table->json('metadata')->nullable();
             $table->timestamps();
             $table->softDeletes();
-
-            $table->foreign('payment_method_id')->references('id')->on('payment_methods')->cascadeOnDelete();
 
             $table->index(['paymentable_type', 'paymentable_id']);
         });

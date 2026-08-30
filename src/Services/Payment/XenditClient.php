@@ -33,7 +33,7 @@ class XenditClient
      */
     public function __construct(array $options = [])
     {
-        $secretKey = $options['secret_key'] ?? config('xendit.secret_key');
+        $secretKey = $options['secret_key'] ?? config('foundry.payment_providers.xendit.secret_key');
         if (! $secretKey) {
             throw new \InvalidArgumentException('Xendit secret_key is required.');
         }

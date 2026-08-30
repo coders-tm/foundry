@@ -2,10 +2,9 @@
 
 namespace Foundry\Mandate\Models;
 
-use Foundry\Models\PaymentMethod as PaymentProvider;
+use \Foundry\Services\PaymentProvider;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * PaymentMethod model for storing user payment method references.
@@ -55,12 +54,10 @@ class PaymentMethod extends Model
     }
 
     /**
-     * Get the payment provider gateway associated with this payment method.
-     *
-     * @return BelongsTo
+     * Get the provider configuration array for this payment method.
      */
-    public function gateway()
+    public function getGatewayAttribute(): ?array
     {
-        return $this->belongsTo(PaymentProvider::class, 'provider', 'provider');
+        return PaymentProvider::find($this->provider);
     }
 }

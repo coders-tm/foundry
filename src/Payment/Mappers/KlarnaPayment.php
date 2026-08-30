@@ -4,7 +4,7 @@ namespace Foundry\Payment\Mappers;
 
 use DateTime;
 use Foundry\Models\Payment;
-use Foundry\Models\PaymentMethod;
+use Foundry\Services\PaymentProvider;
 
 class KlarnaPayment extends AbstractPayment
 {
@@ -12,9 +12,8 @@ class KlarnaPayment extends AbstractPayment
      * Create from Klarna session or order response
      *
      * @param  object|array  $response  Klarna session or order response
-     * @param  PaymentMethod  $paymentMethod  Payment method (required)
      */
-    public function __construct($response, PaymentMethod $paymentMethod)
+    public function __construct($response)
     {
         // Convert to array if object
         if (is_object($response)) {
@@ -22,7 +21,7 @@ class KlarnaPayment extends AbstractPayment
         }
 
         // Set payment method
-        $this->paymentMethod = $paymentMethod;
+        $this->paymentMethod = PaymentProvider::KLARNA;
 
         // Determine transaction ID (session_id or order_id)
         $this->transactionId = $response['order_id'] ?? $response['session_id'] ?? uniqid('klarna_');

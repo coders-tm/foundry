@@ -7,8 +7,8 @@ use Foundry\Facades\Currency;
 use Foundry\Foundry;
 use Foundry\Models\ExchangeRate;
 use Foundry\Models\Order;
-use Foundry\Models\PaymentMethod;
 use Foundry\Models\User;
+use Foundry\Services\PaymentProvider;
 use Foundry\Tests\Feature\FeatureTestCase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Support\Facades\Config;
@@ -18,7 +18,7 @@ class MultiCurrencyPaymentTest extends FeatureTestCase
 {
     use WithFaker;
 
-    protected PaymentMethod $paymentMethod;
+    protected string $paymentMethod = PaymentProvider::STRIPE;
 
     protected Order $order;
 
@@ -30,30 +30,8 @@ class MultiCurrencyPaymentTest extends FeatureTestCase
         Config::set('app.currency', 'USD');
         Currency::set('USD', 1.0);
 
-        // Get or Create Stripe payment method
-        $this->paymentMethod = PaymentMethod::byProvider(PaymentMethod::STRIPE);
-
-        if (! $this->paymentMethod) {
-            $this->paymentMethod = PaymentMethod::create([
-                'name' => 'Stripe',
-                'provider' => PaymentMethod::STRIPE,
-                'active' => true,
-                'credentials' => [
-                    ['key' => 'API_KEY', 'value' => 'pk_test_123'],
-                    ['key' => 'API_SECRET', 'value' => 'sk_test_123'],
-                ],
-                'test_mode' => true,
-            ]);
-        }
-
-        // Configure payment method for testing
-        $this->paymentMethod->update([
-            'active' => true,
-        ]);
-        PaymentMethod::updateProviderCache(PaymentMethod::STRIPE);
-
         // Ensure Stripe is enabled in config
-        Config::set('stripe.enabled', true);
+        Config::set('foundry.payment_providers.stripe.enabled', true);
 
         // Create a test order
         $user = User::factory()->create();
@@ -134,8 +112,8 @@ class MultiCurrencyPaymentTest extends FeatureTestCase
         $this->mockStripeClient($stripeMock);
 
         // 3. Call Controller
-        $methodId = $this->paymentMethod->id;
-        $response = $this->postJson(route('payment.setup-intent', ['provider' => $methodId]), [
+        $response = $this->postJson(route('payment.setup-intent'), [
+            'provider' => PaymentProvider::STRIPE,
             'token' => $this->order->id,
         ]);
 
@@ -200,9 +178,8 @@ class MultiCurrencyPaymentTest extends FeatureTestCase
         $this->mockStripeClient($stripeMock);
 
         // 3. Call Controller confirmPayment
-        $methodId = $this->paymentMethod->id;
         $response = $this->postJson(route('payment.confirm'), [
-            'provider' => $methodId,
+            'provider' => PaymentProvider::STRIPE,
             'token' => $this->order->id,
             'payment_intent_id' => 'pi_confirm_test',
         ]);
@@ -273,8 +250,8 @@ class MultiCurrencyPaymentTest extends FeatureTestCase
         $this->mockStripeClient($stripeMock);
 
         // 3. Call Controller
-        $methodId = $this->paymentMethod->id;
-        $response = $this->postJson(route('payment.setup-intent', ['provider' => $methodId]), [
+        $response = $this->postJson(route('payment.setup-intent'), [
+            'provider' => PaymentProvider::STRIPE,
             'token' => $this->order->id,
         ]);
 
@@ -322,9 +299,8 @@ class MultiCurrencyPaymentTest extends FeatureTestCase
         $this->mockStripeClient($stripeMock);
 
         // 3. Call Controller
-        $methodId = $this->paymentMethod->id;
         $response = $this->postJson(route('payment.setup-intent'), [
-            'provider' => $methodId,
+            'provider' => PaymentProvider::STRIPE,
             'token' => $this->order->id,
         ]);
 

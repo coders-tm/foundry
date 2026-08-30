@@ -16,7 +16,7 @@ class BaseTestCase extends OrchestraTestCase
 
     protected function getEnvironmentSetUp($app)
     {
-        $apiKey = config('stripe.secret');
+        $apiKey = config('foundry.payment_providers.stripe.secret');
 
         if ($apiKey && ! Str::startsWith($apiKey, 'sk_test_')) {
             throw new InvalidArgumentException('Tests may not be run with a production Stripe key.');

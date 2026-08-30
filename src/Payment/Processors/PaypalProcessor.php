@@ -5,11 +5,11 @@ namespace Foundry\Payment\Processors;
 use Foundry\Contracts\PaymentProcessorInterface;
 use Foundry\Foundry;
 use Foundry\Models\Payment;
-use Foundry\Models\PaymentMethod;
 use Foundry\Payment\Mappers\PayPalPayment;
 use Foundry\Payment\Payable;
 use Foundry\Payment\PaymentResult;
 use Foundry\Payment\RefundResult;
+use Foundry\Services\PaymentProvider;
 use Illuminate\Http\Request;
 
 class PaypalProcessor extends AbstractPaymentProcessor implements PaymentProcessorInterface
@@ -44,7 +44,7 @@ class PaypalProcessor extends AbstractPaymentProcessor implements PaymentProcess
 
     public function getProvider(): string
     {
-        return PaymentMethod::PAYPAL;
+        return PaymentProvider::PAYPAL;
     }
 
     public function supportedCurrencies(): array
@@ -175,7 +175,7 @@ class PaypalProcessor extends AbstractPaymentProcessor implements PaymentProcess
                 );
             }
 
-            $paymentData = new PayPalPayment($capture, $this->paymentMethod);
+            $paymentData = new PayPalPayment($capture);
 
             return PaymentResult::success(
                 paymentData: $paymentData,

@@ -10,6 +10,7 @@ use Foundry\Mandate\Services\PaypalPaymentService;
 use Foundry\Mandate\Services\StripePaymentService;
 use Foundry\Payment\Payable;
 use Foundry\Payment\PaymentResult;
+use Foundry\Services\PaymentProvider;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 
@@ -88,9 +89,9 @@ class PaymentGatewayBuilder
     public function build(): PaymentService
     {
         return match ($this->provider) {
-            'stripe' => new StripePaymentService($this->user, $this->paymentMethod),
-            'paypal' => new PaypalPaymentService($this->user, $this->paymentMethod),
-            'gocardless' => new GoCardlessPaymentService($this->user, $this->paymentMethod),
+            PaymentProvider::STRIPE => new StripePaymentService($this->user, $this->paymentMethod),
+            PaymentProvider::PAYPAL => new PaypalPaymentService($this->user, $this->paymentMethod),
+            PaymentProvider::GOCARDLESS => new GoCardlessPaymentService($this->user, $this->paymentMethod),
             default => throw new \InvalidArgumentException("Unsupported payment provider: {$this->provider}"),
         };
     }
@@ -155,7 +156,11 @@ class PaymentGatewayBuilder
      */
     public static function getSupportedProviders(): array
     {
-        return ['stripe', 'paypal', 'gocardless'];
+        return [
+            PaymentProvider::STRIPE,
+            PaymentProvider::PAYPAL,
+            PaymentProvider::GOCARDLESS,
+        ];
     }
 
     /**

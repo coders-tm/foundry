@@ -358,7 +358,7 @@ class Order extends Model implements Currencyable
      */
     public function markAsPaidUsingWallet(array $transaction = [])
     {
-        return $this->markAsPaid(PaymentMethod::walletId(), $transaction);
+        return $this->markAsPaid('wallet', $transaction);
     }
 
     /**
@@ -433,10 +433,10 @@ class Order extends Model implements Currencyable
         if ($payment instanceof PaymentInterface) {
             $this->createPayment($payment, $transaction);
         } elseif ($payment) {
-            // Robustly handle if an object/array was passed instead of just an ID/slug
-            $paymentMethodId = is_array($payment) ? ($payment['id'] ?? null) : $payment;
+            // Robustly handle if an object/array was passed instead of just a provider slug
+            $provider = is_array($payment) ? ($payment['provider'] ?? $payment['id'] ?? null) : $payment;
 
-            if ($paymentMethodId) {
+            if ($provider) {
                 $transactionAmount = $transaction['amount'] ?? $this->grand_total;
 
                 // Guard against under-payment: reject if paid amount does not match grand_total
@@ -447,7 +447,7 @@ class Order extends Model implements Currencyable
                 }
 
                 $this->createPayment([
-                    'payment_method_id' => $paymentMethodId,
+                    'provider' => $provider,
                     'transaction_id' => $transaction['id'] ?? null,
                     'amount' => $transactionAmount,
                     'status' => $paymentStatus,

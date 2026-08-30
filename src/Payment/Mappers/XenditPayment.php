@@ -4,7 +4,7 @@ namespace Foundry\Payment\Mappers;
 
 use DateTime;
 use Foundry\Models\Payment;
-use Foundry\Models\PaymentMethod;
+use Foundry\Services\PaymentProvider;
 
 class XenditPayment extends AbstractPayment
 {
@@ -12,9 +12,8 @@ class XenditPayment extends AbstractPayment
      * Create from Xendit invoice or payment response
      *
      * @param  object|array  $response  Xendit invoice, payment, or payment request response
-     * @param  PaymentMethod  $paymentMethod  Payment method (required)
      */
-    public function __construct($response, PaymentMethod $paymentMethod)
+    public function __construct($response)
     {
         // Convert to array if object
         if (is_object($response)) {
@@ -22,7 +21,7 @@ class XenditPayment extends AbstractPayment
         }
 
         // Set payment method
-        $this->paymentMethod = $paymentMethod;
+        $this->paymentMethod = PaymentProvider::XENDIT;
 
         // Prefer transaction_id over id when available
         $this->transactionId = $response['transaction_id'] ?? $response['id'] ?? uniqid('xendit_');

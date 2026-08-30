@@ -6,12 +6,12 @@ use Flutterwave\Service\Transactions;
 use Foundry\Contracts\PaymentProcessorInterface;
 use Foundry\Foundry;
 use Foundry\Models\Payment;
-use Foundry\Models\PaymentMethod;
 use Foundry\Payment\CallbackResult;
 use Foundry\Payment\Mappers\FlutterwavePayment;
 use Foundry\Payment\Payable;
 use Foundry\Payment\PaymentResult;
 use Foundry\Payment\RefundResult;
+use Foundry\Services\PaymentProvider;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -21,7 +21,7 @@ class FlutterwaveProcessor extends AbstractPaymentProcessor implements PaymentPr
 
     public function getProvider(): string
     {
-        return PaymentMethod::FLUTTERWAVE;
+        return PaymentProvider::FLUTTERWAVE;
     }
 
     public function supportedCurrencies(): array
@@ -80,7 +80,7 @@ class FlutterwaveProcessor extends AbstractPaymentProcessor implements PaymentPr
             }
 
             // Update Payment
-            $paymentData = new FlutterwavePayment($data, $this->paymentMethod);
+            $paymentData = new FlutterwavePayment($data);
             $payment->update($paymentData->toArray());
 
             return CallbackResult::success(
@@ -140,7 +140,7 @@ class FlutterwaveProcessor extends AbstractPaymentProcessor implements PaymentPr
             $payment = Payment::create([
                 'paymentable_type' => $payable->isOrder() ? Foundry::$orderModel : get_class($payable->getSource()),
                 'paymentable_id' => $payable->getSourceId(),
-                'payment_method_id' => $this->getPaymentMethodId(),
+                'provider' => $this->getProvider(),
                 'transaction_id' => 'FLW_'.$payable->getReferenceId().'_'.time(), // Pending Ref
                 'amount' => $amount, // Base amount
                 'status' => Payment::STATUS_PENDING,
@@ -171,7 +171,7 @@ class FlutterwaveProcessor extends AbstractPaymentProcessor implements PaymentPr
                 ],
                 'meta' => array_merge(
                     $payable->getMetadata(),
-                    ['payment_method_id' => $this->paymentMethod->id]
+                    ['provider' => $this->getProvider()]
                 ),
             ];
 

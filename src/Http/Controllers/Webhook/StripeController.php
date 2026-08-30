@@ -20,7 +20,7 @@ class StripeController extends Controller
      */
     public function __construct()
     {
-        if (config('stripe.webhook.secret')) {
+        if (config('foundry.payment_providers.stripe.webhook_secret')) {
             $this->middleware(VerifyStripeWebhookSignature::class);
         }
     }

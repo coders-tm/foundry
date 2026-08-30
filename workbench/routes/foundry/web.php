@@ -3,11 +3,9 @@
 use Illuminate\Support\Facades\Route;
 use Workbench\App\Http\Controllers\Admin\WalletController as AdminWalletController;
 use Workbench\App\Http\Controllers\AdminController;
-use Workbench\App\Http\Controllers as App;
 use Workbench\App\Http\Controllers as Foundry;
 use Workbench\App\Http\Controllers\Auth;
 use Workbench\App\Http\Controllers\OrderController;
-use Workbench\App\Http\Controllers\Payment;
 use Workbench\App\Http\Controllers\Subscription;
 use Workbench\App\Http\Controllers\SupportTicketController;
 use Workbench\App\Http\Controllers\User\WalletController;
@@ -108,16 +106,6 @@ Route::middleware(['auth:admin'])->group(function () {
     Route::post('logs/{log}/reply', [Foundry\LogController::class, 'reply'])->name('logs.reply');
     Route::resource('logs', Foundry\LogController::class)->only(['show', 'update', 'destroy']);
 
-    // App Payment Methods
-    Route::group([
-        'controller' => Foundry\PaymentMethodController::class,
-        'as' => 'payment-methods.',
-        'prefix' => 'payment-methods',
-    ], function () {
-        Route::post('{payment_method}/disable', 'disable')->name('disable');
-        Route::post('{payment_method}/enable', 'enable')->name('enable');
-    });
-    Route::resource('payment-methods', Foundry\PaymentMethodController::class)->only(['index', 'store', 'show', 'update']);
 });
 
 // Shared authenticated routes (accessible to both users and admins)

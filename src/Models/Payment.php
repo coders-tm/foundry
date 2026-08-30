@@ -6,6 +6,7 @@ use Foundry\Concerns\Core;
 use Foundry\Database\Factories\PaymentFactory;
 use Foundry\Enum\PaymentStatus;
 use Foundry\Foundry;
+use \Foundry\Services\PaymentProvider;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -19,7 +20,7 @@ class Payment extends Model
         'uuid',
         'paymentable_type',
         'paymentable_id',
-        'payment_method_id',
+        'provider',
         'transaction_id',
         'amount',
         'capturable',
@@ -46,10 +47,6 @@ class Payment extends Model
         'processed_at' => 'datetime',
         'metadata' => 'array',
         'status' => PaymentStatus::class,
-    ];
-
-    protected $with = [
-        'paymentMethod',
     ];
 
     /**
@@ -104,9 +101,9 @@ class Payment extends Model
         return $this->morphTo();
     }
 
-    public function paymentMethod()
+    public function getProviderConfigAttribute(): ?array
     {
-        return $this->belongsTo(PaymentMethod::class);
+        return PaymentProvider::find($this->provider);
     }
 
     /**
@@ -267,7 +264,7 @@ class Payment extends Model
     protected function gatewayPaymentMethod(): Attribute
     {
         return Attribute::make(get: function () {
-            return $this->metadata['payment_method'] ?? $this->paymentMethod?->name ?? 'Unknown';
+            return $this->metadata['payment_method'] ?? config('foundry.payment_providers.'.$this->provider.'.label', ucfirst($this->provider ?? 'Unknown'));
         });
     }
 
@@ -283,9 +280,9 @@ class Payment extends Model
 
             // Payment method details (grouped)
             'payment_method' => [
-                'name' => $this->gateway_payment_method, // "Visa •••• 4242" or PaymentMethod name
-                'provider' => $this->paymentMethod?->provider ?? 'Unknown',
-                'provider_name' => $this->paymentMethod?->name ?? 'Unknown',
+                'name' => $this->gateway_payment_method, // "Visa •••• 4242" or provider name
+                'provider' => $this->provider ?? 'Unknown',
+                'provider_name' => config('foundry.payment_providers.'.$this->provider.'.label', ucfirst($this->provider ?? 'Unknown')),
                 'type' => $this->metadata['payment_method_type'] ?? null,
                 'card_brand' => $this->metadata['card_brand'] ?? null,
                 'last_four' => $this->metadata['last_four'] ?? null,
@@ -316,7 +313,7 @@ class Payment extends Model
             'date' => optional($this->created_at)->format('M d, Y'),
 
             // Currency
-            'currency' => $this->currency ?? config('stripe.currency', 'USD'),
+            'currency' => $this->currency ?? config('app.currency', 'USD'),
 
             // Additional information
             'note' => $this->note,

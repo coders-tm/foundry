@@ -5,11 +5,11 @@ namespace Foundry\Payment\Processors;
 use Foundry\Contracts\PaymentProcessorInterface;
 use Foundry\Models\Order;
 use Foundry\Models\Payment;
-use Foundry\Models\PaymentMethod;
 use Foundry\Models\Subscription;
 use Foundry\Payment\Payable;
 use Foundry\Payment\PaymentResult;
 use Foundry\Payment\RefundResult;
+use Foundry\Services\PaymentProvider;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
@@ -19,7 +19,7 @@ class WalletProcessor extends AbstractPaymentProcessor implements PaymentProcess
 
     public function getProvider(): string
     {
-        return PaymentMethod::WALLET;
+        return PaymentProvider::WALLET;
     }
 
     public function supportedCurrencies(): array

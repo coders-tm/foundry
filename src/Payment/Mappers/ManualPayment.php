@@ -4,8 +4,7 @@ namespace Foundry\Payment\Mappers;
 
 use DateTime;
 use Foundry\Models\Payment;
-use Foundry\Models\PaymentMethod;
-use Illuminate\Support\Str;
+use Foundry\Services\PaymentProvider;
 
 class ManualPayment extends AbstractPayment
 {
@@ -13,21 +12,21 @@ class ManualPayment extends AbstractPayment
      * Create from manual payment data
      *
      * @param  array  $response  Manual payment data including reference_number, payment_type, etc.
-     * @param  PaymentMethod  $paymentMethod  Payment method (required)
+     * @param  mixed  $paymentMethod  Payment method
      */
-    public function __construct(array $response, PaymentMethod $paymentMethod)
+    public function __construct(array $response)
     {
         // Set payment method
-        $this->paymentMethod = $paymentMethod;
+        $this->paymentMethod = PaymentProvider::MANUAL;
 
-        $this->transactionId = $response['transaction_id'] ?? $response['reference_number'] ?? 'MANUAL_'.Str::upper(Str::random(10));
+        $this->transactionId = $response['transaction_id'] ?? uniqid('manual_');
 
         // Store amount in BASE currency
-        $this->amount = $response['amount'] ?? 0;
-        $this->currency = $response['currency'] ?? config('app.currency', 'USD');
+        $this->amount = (float) ($response['amount'] ?? 0);
+        $this->currency = strtoupper($response['currency'] ?? config('app.currency', 'USD'));
 
-        $this->status = $response['status'] ?? Payment::STATUS_PENDING;
-        $this->note = $response['note'] ?? null;
+        $this->status = Payment::STATUS_COMPLETED;
+        $this->note = $response['note'] ?? 'Manual Payment';
         $this->processedAt = new DateTime;
         $this->metadata = $this->extractMetadata($response);
     }
@@ -38,7 +37,7 @@ class ManualPayment extends AbstractPayment
      */
     public static function withReference(
         string $referenceNumber,
-        ?PaymentMethod $paymentMethod = null,
+        mixed $paymentMethod = null,
         ?string $note = null,
         array $additionalData = []
     ): self {

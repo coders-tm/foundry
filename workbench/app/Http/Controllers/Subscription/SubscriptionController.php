@@ -9,7 +9,6 @@ use Foundry\Events\SubscriptionResume;
 use Foundry\Events\SubscriptionUpgraded;
 use Foundry\Foundry;
 use Foundry\Models\Coupon;
-use Foundry\Models\PaymentMethod;
 use Foundry\Models\Redeem;
 use Foundry\Models\Subscription;
 use Foundry\Models\Subscription\Plan;

@@ -4,10 +4,10 @@ namespace Foundry\Mandate\Services;
 
 use Foundry\Foundry;
 use Foundry\Mandate\Models\PaymentMethod;
-use Foundry\Mandate\Payments\GoCardlessPayment as GoCardlessPaymentWrapper;
 use Foundry\Mandate\Responses\RedirectResponse;
 use Foundry\Payment\Payable;
 use Foundry\Payment\PaymentResult;
+use Foundry\Services\PaymentProvider;
 use Illuminate\Http\Request;
 
 /**
@@ -18,7 +18,7 @@ class GoCardlessPaymentService extends PaymentService
     /**
      * Provider identifier.
      */
-    public const PROVIDER = 'gocardless';
+    public const PROVIDER = PaymentProvider::GOCARDLESS;
 
     /**
      * Handle GoCardless redirect flow callback.
@@ -201,22 +201,11 @@ class GoCardlessPaymentService extends PaymentService
             ], $options);
 
             $payment = $client->payments()->create(['params' => $params]);
-            $wrapper = new GoCardlessPaymentWrapper([
-                'id' => $payment->id,
-                'amount' => $payment->amount,
-                'currency' => $payment->currency,
-                'status' => $payment->status,
-                'created_at' => $payment->created_at,
-            ]);
 
             return PaymentResult::success(
                 paymentData: null,
                 transactionId: $payment->id,
-                status: $payment->status,
-                metadata: [
-                    'wrapper' => $wrapper,
-                    'payment' => (array) $payment,
-                ]
+                status: $payment->status
             );
         } catch (\Exception $e) {
             logger()->error('GoCardless charge failed', [

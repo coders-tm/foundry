@@ -5,11 +5,10 @@ namespace Foundry\Mandate\Services;
 use Exception;
 use Foundry\Foundry;
 use Foundry\Mandate\Models\PaymentMethod as PaymentMethodModel;
-use Foundry\Mandate\Payments\PaypalPayment as PaypalPaymentWrapper;
-use Foundry\Models\PaymentMethod;
 use Foundry\Payment\Mappers\PayPalPayment as PaypalPaymentMapper;
 use Foundry\Payment\Payable;
 use Foundry\Payment\PaymentResult;
+use Foundry\Services\PaymentProvider;
 
 /**
  * PayPal payment service implementation.
@@ -19,7 +18,7 @@ class PaypalPaymentService extends PaymentService
     /**
      * Provider identifier.
      */
-    public const PROVIDER = 'paypal';
+    public const PROVIDER = PaymentProvider::PAYPAL;
 
     /**
      * Set up a saved PayPal Vault ID or billing agreement.
@@ -133,18 +132,10 @@ class PaypalPaymentService extends PaymentService
                 throw new Exception('PayPal charge failed: '.json_encode($response));
             }
 
-            $paymentMethodModel = PaymentMethod::byProvider(self::PROVIDER);
-            $paymentMapper = new PaypalPaymentMapper($response, $paymentMethodModel);
-            $wrapper = new PaypalPaymentWrapper($response);
-
             return PaymentResult::success(
-                paymentData: $paymentMapper,
+                paymentData: new PaypalPaymentMapper($response),
                 transactionId: $response['id'],
-                status: $response['status'] ?? 'COMPLETED',
-                metadata: [
-                    'wrapper' => $wrapper,
-                    'response' => $response,
-                ]
+                status: $response['status'] ?? 'COMPLETED'
             );
         } catch (Exception $e) {
             logger()->error('PayPal charge failed', [

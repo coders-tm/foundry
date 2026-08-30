@@ -4,22 +4,15 @@ namespace Foundry\Payment\Processors;
 
 use Foundry\Contracts\PaymentProcessorInterface;
 use Foundry\Models\Payment;
-use Foundry\Models\PaymentMethod;
 use Foundry\Payment\CallbackResult;
 use Foundry\Payment\Payable;
 use Foundry\Payment\RefundResult;
+use Foundry\Services\PaymentProvider;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
 abstract class AbstractPaymentProcessor implements PaymentProcessorInterface
 {
-    /**
-     * The payment method instance
-     *
-     * @var PaymentMethod|null
-     */
-    protected $paymentMethod = null;
-
     /**
      * Get the payment provider name (must be implemented by child classes)
      */
@@ -95,29 +88,19 @@ abstract class AbstractPaymentProcessor implements PaymentProcessorInterface
     }
 
     /**
-     * Set the payment method for this processor
+     * Get the payment provider slug/name for this processor
      */
-    public function setPaymentMethod(PaymentMethod $paymentMethod): PaymentProcessorInterface
+    public function getPaymentMethod(): mixed
     {
-        $this->paymentMethod = $paymentMethod;
-
-        return $this;
+        return $this->getProvider();
     }
 
     /**
-     * Get the payment method for this processor
+     * Get the payment provider configuration array from registry
      */
-    public function getPaymentMethod(): ?PaymentMethod
+    public function getConfig(): ?array
     {
-        return $this->paymentMethod;
-    }
-
-    /**
-     * Get the payment method ID for this processor
-     */
-    public function getPaymentMethodId(): string|int|null
-    {
-        return $this->paymentMethod ? $this->paymentMethod->id : null;
+        return PaymentProvider::find($this->getProvider());
     }
 
     /**

@@ -4,10 +4,10 @@ namespace Foundry\Payment\Processors;
 
 use Foundry\Contracts\PaymentProcessorInterface;
 use Foundry\Foundry;
-use Foundry\Models\PaymentMethod;
 use Foundry\Payment\Mappers\MercadoPagoPayment;
 use Foundry\Payment\Payable;
 use Foundry\Payment\PaymentResult;
+use Foundry\Services\PaymentProvider;
 use Illuminate\Http\Request;
 
 class MercadoPagoProcessor extends AbstractPaymentProcessor implements PaymentProcessorInterface
@@ -16,7 +16,7 @@ class MercadoPagoProcessor extends AbstractPaymentProcessor implements PaymentPr
 
     public function getProvider(): string
     {
-        return PaymentMethod::MERCADOPAGO;
+        return PaymentProvider::MERCADOPAGO;
     }
 
     public function supportedCurrencies(): array
@@ -97,7 +97,7 @@ class MercadoPagoProcessor extends AbstractPaymentProcessor implements PaymentPr
                 PaymentResult::failed("Payment not approved. Status: {$payment->status}");
             }
 
-            $paymentData = new MercadoPagoPayment($payment, $this->paymentMethod);
+            $paymentData = new MercadoPagoPayment($payment);
 
             return PaymentResult::success(
                 paymentData: $paymentData,

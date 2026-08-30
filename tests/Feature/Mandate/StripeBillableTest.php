@@ -13,6 +13,7 @@ use Foundry\Models\Subscription;
 use Foundry\Models\Subscription\Plan;
 use Foundry\Payment\Payable;
 use Foundry\Payment\PaymentResult;
+use Foundry\Services\PaymentProvider;
 use Foundry\Tests\TestCase;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -22,7 +23,7 @@ class StripeBillableTest extends TestCase
     {
         parent::setUp();
 
-        if (empty(config('stripe.secret'))) {
+        if (empty(config('foundry.payment_providers.stripe.secret'))) {
             $this->markTestSkipped('Stripe API keys not configured.');
         }
     }
@@ -49,20 +50,20 @@ class StripeBillableTest extends TestCase
     #[Test]
     public function test_setup_stripe_auto_renewal()
     {
-        $subscription = Subscription::factory()->create(['provider' => 'stripe']);
+        $subscription = Subscription::factory()->create(['provider' => PaymentProvider::STRIPE]);
 
         $manager = new BillerManager($subscription->user, 'pm_card_visa');
-        $manager->setProvider('stripe');
+        $manager->setProvider(PaymentProvider::STRIPE);
         $result = $manager->setup();
 
         $this->assertDatabaseHas('payment_provider_customers', [
             'user_id' => $subscription->user_id,
-            'provider' => 'stripe',
+            'provider' => PaymentProvider::STRIPE,
         ]);
 
         $this->assertDatabaseHas('users_payment_methods', [
             'user_id' => $subscription->user_id,
-            'provider' => 'stripe',
+            'provider' => PaymentProvider::STRIPE,
         ]);
     }
 
@@ -74,12 +75,13 @@ class StripeBillableTest extends TestCase
     {
         $plan = Plan::factory()->create(['price' => 10.00]);
         $subscription = Subscription::factory()->create([
-            'provider' => 'stripe',
+            'provider' => PaymentProvider::STRIPE,
             'plan_id' => $plan->id,
             'auto_renewal_enabled' => true,
         ]);
 
         $order = Order::factory()->create([
+            'customer_id' => $subscription->user_id,
             'orderable_id' => $subscription->id,
             'orderable_type' => Subscription::class,
             'grand_total' => 10.00,
@@ -87,7 +89,7 @@ class StripeBillableTest extends TestCase
 
         // First setup customer and payment method
         $manager = new BillerManager($subscription->user, 'pm_card_visa');
-        $manager->setProvider('stripe');
+        $manager->setProvider(PaymentProvider::STRIPE);
         $manager->setup();
 
         // Now charge a Payable instance
@@ -108,19 +110,20 @@ class StripeBillableTest extends TestCase
     {
         $plan = Plan::factory()->create(['price' => 10.00]);
         $subscription = Subscription::factory()->create([
-            'provider' => 'stripe',
+            'provider' => PaymentProvider::STRIPE,
             'plan_id' => $plan->id,
             'auto_renewal_enabled' => true,
         ]);
 
         $order = Order::factory()->create([
+            'customer_id' => $subscription->user_id,
             'orderable_id' => $subscription->id,
             'orderable_type' => Subscription::class,
             'grand_total' => 10.00,
         ]);
 
         $manager = new BillerManager($subscription->user, 'pm_card_threeDSecure2Required');
-        $manager->setProvider('stripe');
+        $manager->setProvider(PaymentProvider::STRIPE);
         $manager->setup();
 
         try {
@@ -141,16 +144,16 @@ class StripeBillableTest extends TestCase
     public function test_remove_stripe_auto_renewal()
     {
         $subscription = Subscription::factory()->create([
-            'provider' => 'stripe',
+            'provider' => PaymentProvider::STRIPE,
             'auto_renewal_enabled' => true,
         ]);
 
         $manager = new BillerManager($subscription->user, 'pm_card_visa');
-        $manager->setProvider('stripe');
+        $manager->setProvider(PaymentProvider::STRIPE);
         $manager->setup();
 
         $manager = new BillerManager($subscription->user);
-        $manager->setProvider('stripe');
+        $manager->setProvider(PaymentProvider::STRIPE);
         $result = $manager->removePaymentMethod();
 
         $this->assertTrue($result);
@@ -164,19 +167,20 @@ class StripeBillableTest extends TestCase
     {
         $plan = Plan::factory()->create(['price' => 10.00]);
         $subscription = Subscription::factory()->create([
-            'provider' => 'stripe',
+            'provider' => PaymentProvider::STRIPE,
             'plan_id' => $plan->id,
             'auto_renewal_enabled' => true,
         ]);
 
         $order = Order::factory()->create([
+            'customer_id' => $subscription->user_id,
             'orderable_id' => $subscription->id,
             'orderable_type' => Subscription::class,
             'grand_total' => 10.00,
         ]);
 
         $manager = new BillerManager($subscription->user, 'pm_card_visa');
-        $manager->setProvider('stripe');
+        $manager->setProvider(PaymentProvider::STRIPE);
         $manager->setup();
 
         $event = new SubscriptionRenewed($subscription);

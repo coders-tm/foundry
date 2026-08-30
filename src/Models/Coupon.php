@@ -74,7 +74,7 @@ class Coupon extends Model
     protected function currency(): Attribute
     {
         return Attribute::make(
-            set: fn () => config('stripe.currency'),
+            set: fn () => config('app.currency', 'USD'),
         );
     }
 

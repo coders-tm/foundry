@@ -4,7 +4,7 @@ namespace Foundry\Payment\Mappers;
 
 use DateTime;
 use Foundry\Models\Payment;
-use Foundry\Models\PaymentMethod;
+use Foundry\Services\PaymentProvider;
 
 class PayPalPayment extends AbstractPayment
 {
@@ -12,9 +12,8 @@ class PayPalPayment extends AbstractPayment
      * Create from PayPal Order/Capture object or array
      *
      * @param  object|array  $response  PayPal order/capture response
-     * @param  PaymentMethod  $paymentMethod  Payment method (required)
      */
-    public function __construct($response, PaymentMethod $paymentMethod)
+    public function __construct($response)
     {
         // Convert array to object for consistent access (handles deep nesting)
         if (is_array($response)) {
@@ -22,7 +21,7 @@ class PayPalPayment extends AbstractPayment
         }
 
         // Set payment method
-        $this->paymentMethod = $paymentMethod;
+        $this->paymentMethod = PaymentProvider::PAYPAL;
 
         // Extract transaction ID
         if (isset($response->purchase_units[0]->payments->captures[0]->id)) {

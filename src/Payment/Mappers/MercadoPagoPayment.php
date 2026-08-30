@@ -4,7 +4,7 @@ namespace Foundry\Payment\Mappers;
 
 use DateTime;
 use Foundry\Models\Payment;
-use Foundry\Models\PaymentMethod;
+use Foundry\Services\PaymentProvider;
 
 class MercadoPagoPayment extends AbstractPayment
 {
@@ -12,17 +12,16 @@ class MercadoPagoPayment extends AbstractPayment
      * Create from MercadoPago payment or preference response
      *
      * @param  object|array  $response  MercadoPago payment or preference response
-     * @param  PaymentMethod  $paymentMethod  Payment method (required)
      */
-    public function __construct($response, PaymentMethod $paymentMethod)
+    public function __construct($response)
     {
         // Convert to array if object
         if (is_object($response)) {
-            $response = json_decode(json_encode($response), true);
+            $response = (array) $response;
         }
 
         // Set payment method
-        $this->paymentMethod = $paymentMethod;
+        $this->paymentMethod = PaymentProvider::MERCADOPAGO;
 
         $this->transactionId = $response['id'] ?? uniqid('mp_');
 

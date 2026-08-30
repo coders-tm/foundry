@@ -22,7 +22,6 @@ class DatabaseSeeder extends Seeder
             ModuleSeeder::class,
             GroupSeeder::class,
             NotificationSeeder::class,
-            PaymentMethodSeeder::class,
             PlanSeeder::class,
             TaxSeeder::class,
         ]);

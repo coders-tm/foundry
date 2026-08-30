@@ -2,13 +2,11 @@
 
 namespace Tests\Feature\Payment;
 
-use Foundry\Models\PaymentMethod;
-use Foundry\Models\Shop\Product;
-use Foundry\Models\Shop\Product\Variant;
 use Foundry\Payment\Mappers\FlutterwavePayment;
 use Foundry\Payment\Payable;
 use Foundry\Payment\Processor;
 use Foundry\Payment\Processors\FlutterwaveProcessor;
+use Foundry\Services\PaymentProvider;
 use Foundry\Tests\Feature\FeatureTestCase;
 use Illuminate\Foundation\Testing\WithFaker;
 use PHPUnit\Framework\Attributes\Test;
@@ -17,72 +15,24 @@ class FlutterwaveProcessorTest extends FeatureTestCase
 {
     use WithFaker;
 
-    protected PaymentMethod $paymentMethod;
-
-    protected Product $product;
-
-    protected Variant $variant;
-
     protected function setUp(): void
     {
         parent::setUp();
 
         // Skip all tests if Flutterwave credentials are not configured
-        if (! env('FLUTTERWAVE_CLIENT_ID') || ! env('FLUTTERWAVE_CLIENT_SECRET') || ! env('FLUTTERWAVE_ENCRYPTION_KEY')) {
-            $this->markTestSkipped('Flutterwave credentials not configured. Set FLUTTERWAVE_CLIENT_ID, FLUTTERWAVE_CLIENT_SECRET, and FLUTTERWAVE_ENCRYPTION_KEY in phpunit.xml');
+        if (! env('FLUTTERWAVE_CLIENT_SECRET')) {
+            $this->markTestSkipped('Flutterwave credentials not configured. Set FLUTTERWAVE_CLIENT_SECRET in phpunit.xml');
         }
-
-        // Get Flutterwave payment method created by seeder (don't filter by enabled status)
-        $paymentMethod = PaymentMethod::byProvider(PaymentMethod::FLUTTERWAVE);
-
-        if (! $paymentMethod) {
-            $this->markTestSkipped('Flutterwave payment method not found. Run seeders first.');
-        }
-
-        // Enable the payment method for testing
-        $paymentMethod->update(['active' => true, 'test_mode' => true]);
-
-        $this->paymentMethod = $paymentMethod;
-
-        // Create test product and variant
-        $this->product = Product::factory()->create([
-            'title' => 'Test Product for Flutterwave',
-            'has_variant' => true,
-        ]);
-
-        $this->variant = Variant::factory()->create([
-            'product_id' => $this->product->id,
-            'price' => 50.00,
-            'sku' => 'FLW-TEST-001',
-        ]);
     }
 
     #[Test]
     public function it_creates_flutterwave_payment_method_with_correct_configuration()
     {
-        $this->assertNotNull($this->paymentMethod);
-        $this->assertEquals('flutterwave', $this->paymentMethod->provider);
-        $this->assertTrue($this->paymentMethod->active);
+        $provider = PaymentProvider::find('flutterwave');
 
-        // Verify credentials are stored correctly (from env)
-        $configs = $this->paymentMethod->getConfigs();
-        $this->assertArrayHasKey('CLIENT_ID', $configs);
-        $this->assertArrayHasKey('CLIENT_SECRET', $configs);
-        $this->assertArrayHasKey('ENCRYPTION_KEY', $configs);
-        $this->assertNotEmpty($configs['CLIENT_ID']);
-        $this->assertNotEmpty($configs['CLIENT_SECRET']);
-        $this->assertNotEmpty($configs['ENCRYPTION_KEY']);
-    }
-
-    #[Test]
-    public function it_syncs_flutterwave_configuration_to_laravel_config()
-    {
-        // Configuration should be synced after updateProviderCache
-        $this->assertEquals($this->paymentMethod->id, config('flutterwave.id'));
-        $this->assertNotEmpty(config('flutterwave.public_key'));
-        $this->assertNotEmpty(config('flutterwave.secret_key'));
-        $this->assertNotEmpty(config('flutterwave.encryption_key'));
-        $this->assertTrue(config('flutterwave.enabled'));
+        $this->assertNotNull($provider);
+        $this->assertEquals('flutterwave', $provider['provider']);
+        $this->assertTrue($provider['active']);
     }
 
     #[Test]
@@ -98,63 +48,6 @@ class FlutterwaveProcessorTest extends FeatureTestCase
 
         $this->assertInstanceOf(FlutterwaveProcessor::class, $processor);
         $this->assertEquals('flutterwave', $processor->getProvider());
-    }
-
-    #[Test]
-    public function it_includes_flutterwave_in_public_payment_methods()
-    {
-        $publicMethods = PaymentMethod::toPublic();
-
-        $flutterwaveMethod = $publicMethods->firstWhere('provider', 'flutterwave');
-
-        $this->assertNotNull($flutterwaveMethod);
-        $this->assertEquals('Flutterwave', $flutterwaveMethod['name']);
-        $this->assertEquals('flutterwave', $flutterwaveMethod['provider']);
-        $this->assertArrayHasKey('CLIENT_ID', $flutterwaveMethod['credentials']);
-        $this->assertNotEmpty($flutterwaveMethod['credentials']['CLIENT_ID']);
-
-        // Secret and encryption keys should not be published
-        $this->assertArrayNotHasKey('CLIENT_SECRET', $flutterwaveMethod['credentials']);
-        $this->assertArrayNotHasKey('ENCRYPTION_KEY', $flutterwaveMethod['credentials']);
-    }
-
-    #[Test]
-    public function it_can_disable_and_enable_flutterwave_payment_method()
-    {
-        // Disable
-        $this->paymentMethod->update(['active' => false]);
-        PaymentMethod::updateProviderCache(PaymentMethod::FLUTTERWAVE);
-
-        $this->assertFalse(PaymentMethod::has('flutterwave'));
-        $this->assertNull(PaymentMethod::flutterwave());
-
-        // Enable
-        $this->paymentMethod->update(['active' => true]);
-        PaymentMethod::updateProviderCache(PaymentMethod::FLUTTERWAVE);
-
-        $this->assertTrue(PaymentMethod::has('flutterwave'));
-        $this->assertNotNull(PaymentMethod::flutterwave());
-    }
-
-    #[Test]
-    public function it_updates_cache_when_flutterwave_credentials_change()
-    {
-        // Update credentials
-        $newClientId = 'new-client-id-'.$this->faker->uuid();
-
-        $this->paymentMethod->update([
-            'credentials' => collect([
-                ['key' => 'CLIENT_ID', 'value' => $newClientId, 'publish' => true],
-                ['key' => 'CLIENT_SECRET', 'value' => 'new-secret', 'publish' => false],
-                ['key' => 'ENCRYPTION_KEY', 'value' => 'new-encryption-key', 'publish' => false],
-            ]),
-        ]);
-
-        // Reload the model to get fresh data
-        $this->paymentMethod->refresh();
-
-        // Cache should be updated automatically via model observer
-        $this->assertEquals($newClientId, config('flutterwave.public_key'));
     }
 
     #[Test]
@@ -182,8 +75,7 @@ class FlutterwaveProcessorTest extends FeatureTestCase
             'grand_total' => 10.00,
         ]);
         $payment = new FlutterwavePayment(
-            $transaction,
-            $this->paymentMethod
+            $transaction
         );
 
         $metadata = $payment->getMetadata();
@@ -215,8 +107,7 @@ class FlutterwaveProcessorTest extends FeatureTestCase
             'grand_total' => 5.00,
         ]);
         $payment = new FlutterwavePayment(
-            $transaction,
-            $this->paymentMethod
+            $transaction
         );
 
         $metadata = $payment->getMetadata();
@@ -243,8 +134,7 @@ class FlutterwaveProcessorTest extends FeatureTestCase
             'grand_total' => 20.00,
         ]);
         $payment = new FlutterwavePayment(
-            $transaction,
-            $this->paymentMethod
+            $transaction
         );
 
         $metadata = $payment->getMetadata();
@@ -274,8 +164,7 @@ class FlutterwaveProcessorTest extends FeatureTestCase
             'grand_total' => 50.00,
         ]);
         $payment = new FlutterwavePayment(
-            $transaction,
-            $this->paymentMethod
+            $transaction
         );
 
         $metadata = $payment->getMetadata();

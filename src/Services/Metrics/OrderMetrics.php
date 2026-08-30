@@ -565,19 +565,18 @@ class OrderMetrics extends MetricsCalculator
             $range = $this->getDateRange();
 
             return DB::table('payments')
-                ->join('payment_methods', 'payments.payment_method_id', '=', 'payment_methods.id')
                 ->join('orders', function ($join) {
                     $join->on('payments.paymentable_id', '=', 'orders.id')
                         ->where('payments.paymentable_type', (new Foundry::$orderModel)->getMorphClass());
                 })
                 ->select(
-                    'payment_methods.provider',
+                    'payments.provider',
                     DB::raw('COUNT(DISTINCT orders.id) as order_count'),
                     DB::raw('SUM(payments.amount) as total_amount')
                 )
                 ->where('payments.status', 'completed')
                 ->whereBetween('orders.created_at', [$range['start'], $range['end']])
-                ->groupBy('payment_methods.provider')
+                ->groupBy('payments.provider')
                 ->get()
                 ->toArray();
         });

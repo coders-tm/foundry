@@ -99,7 +99,6 @@ class SettingTest extends BaseTestCase
 
         Settings::syncConfig();
 
-        $this->assertEquals('EUR', config('stripe.currency'));
         $this->assertEquals('EUR', config('app.currency'));
     }
 

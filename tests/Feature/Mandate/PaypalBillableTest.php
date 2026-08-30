@@ -10,6 +10,7 @@ use Foundry\Models\Subscription;
 use Foundry\Models\Subscription\Plan;
 use Foundry\Payment\Payable;
 use Foundry\Payment\PaymentResult;
+use Foundry\Services\PaymentProvider;
 use Foundry\Tests\TestCase;
 use PHPUnit\Framework\Attributes\Test;
 use ReflectionProperty;
@@ -47,20 +48,20 @@ class PaypalBillableTest extends TestCase
     #[Test]
     public function test_setup_paypal_auto_renewal()
     {
-        $subscription = Subscription::factory()->create(['provider' => 'paypal']);
+        $subscription = Subscription::factory()->create(['provider' => PaymentProvider::PAYPAL]);
 
         $manager = new BillerManager($subscription->user, 'VAULT-ID-123');
-        $manager->setProvider('paypal');
+        $manager->setProvider(PaymentProvider::PAYPAL);
         $result = $manager->setup();
 
         $this->assertDatabaseHas('payment_provider_customers', [
             'user_id' => $subscription->user_id,
-            'provider' => 'paypal',
+            'provider' => PaymentProvider::PAYPAL,
         ]);
 
         $this->assertDatabaseHas('users_payment_methods', [
             'user_id' => $subscription->user_id,
-            'provider' => 'paypal',
+            'provider' => PaymentProvider::PAYPAL,
             'provider_id' => 'VAULT-ID-123',
         ]);
     }
@@ -72,23 +73,23 @@ class PaypalBillableTest extends TestCase
     public function test_remove_paypal_auto_renewal()
     {
         $subscription = Subscription::factory()->create([
-            'provider' => 'paypal',
+            'provider' => PaymentProvider::PAYPAL,
             'auto_renewal_enabled' => true,
         ]);
 
         $manager = new BillerManager($subscription->user, 'VAULT-ID-123');
-        $manager->setProvider('paypal');
+        $manager->setProvider(PaymentProvider::PAYPAL);
         $manager->setup();
 
         $manager = new BillerManager($subscription->user);
-        $manager->setProvider('paypal');
+        $manager->setProvider(PaymentProvider::PAYPAL);
         $result = $manager->removePaymentMethod();
 
         $this->assertTrue($result);
 
         $this->assertDatabaseMissing('users_payment_methods', [
             'user_id' => $subscription->user_id,
-            'provider' => 'paypal',
+            'provider' => PaymentProvider::PAYPAL,
         ]);
     }
 
@@ -100,7 +101,7 @@ class PaypalBillableTest extends TestCase
     {
         $plan = Plan::factory()->create(['price' => 25.00]);
         $subscription = Subscription::factory()->create([
-            'provider' => 'paypal',
+            'provider' => PaymentProvider::PAYPAL,
             'plan_id' => $plan->id,
             'auto_renewal_enabled' => true,
         ]);
@@ -112,7 +113,7 @@ class PaypalBillableTest extends TestCase
         ]);
 
         $manager = new BillerManager($subscription->user, 'VAULT-ID-123');
-        $manager->setProvider('paypal');
+        $manager->setProvider(PaymentProvider::PAYPAL);
         $manager->setup();
 
         $paypal = $this->mockPaypal();
@@ -162,7 +163,7 @@ class PaypalBillableTest extends TestCase
     {
         $plan = Plan::factory()->create(['price' => 25.00]);
         $subscription = Subscription::factory()->create([
-            'provider' => 'paypal',
+            'provider' => PaymentProvider::PAYPAL,
             'plan_id' => $plan->id,
             'auto_renewal_enabled' => true,
         ]);
@@ -174,7 +175,7 @@ class PaypalBillableTest extends TestCase
         ]);
 
         $manager = new BillerManager($subscription->user, 'VAULT-ID-123');
-        $manager->setProvider('paypal');
+        $manager->setProvider(PaymentProvider::PAYPAL);
         $manager->setup();
 
         $paypal = $this->mockPaypal();

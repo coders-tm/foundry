@@ -5,22 +5,22 @@ namespace Foundry\Payment\Processors;
 use Foundry\Contracts\PaymentProcessorInterface;
 use Foundry\Foundry;
 use Foundry\Models\Payment;
-use Foundry\Models\PaymentMethod;
 use Foundry\Payment\CallbackResult;
 use Foundry\Payment\Mappers\PaystackPayment;
 use Foundry\Payment\Payable;
 use Foundry\Payment\PaymentResult;
 use Foundry\Payment\RefundResult;
+use Foundry\Services\PaymentProvider;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class PaystackProcessor extends AbstractPaymentProcessor implements PaymentProcessorInterface
 {
-    private const SUPPORTED_CURRENCIES = ['NGN', 'GHS', 'ZAR', 'USD'];
+    private const SUPPORTED_CURRENCIES = ['NGN', 'GHS', 'ZAR', 'USD', 'KES'];
 
     public function getProvider(): string
     {
-        return PaymentMethod::PAYSTACK;
+        return PaymentProvider::PAYSTACK;
     }
 
     public function supportedCurrencies(): array
@@ -95,7 +95,7 @@ class PaystackProcessor extends AbstractPaymentProcessor implements PaymentProce
             }
 
             // Update Payment
-            $paymentData = new PaystackPayment($data, $this->paymentMethod);
+            $paymentData = new PaystackPayment($data);
             $payment->update($paymentData->toArray());
 
             return CallbackResult::success(
@@ -149,7 +149,7 @@ class PaystackProcessor extends AbstractPaymentProcessor implements PaymentProce
         $payment = Payment::create([
             'paymentable_type' => $payable->isOrder() ? Foundry::$orderModel : get_class($payable->getSource()),
             'paymentable_id' => $payable->getSourceId(),
-            'payment_method_id' => $this->getPaymentMethodId(),
+            'provider' => $this->getProvider(),
             'transaction_id' => 'PAYSTACK_'.$payable->getReferenceId().'_'.time(),
             'amount' => $amount,
             'status' => Payment::STATUS_PENDING,

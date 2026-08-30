@@ -332,7 +332,7 @@ if (! function_exists('format_amount')) {
 if (! function_exists('currency_symbol')) {
     function currency_symbol($currency = null)
     {
-        return Currencies::getSymbol($currency ?? config('stripe.currency'));
+        return Currencies::getSymbol($currency ?? config('app.currency', 'USD'));
     }
 }
 

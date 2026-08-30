@@ -16,6 +16,7 @@ use Foundry\Services\Currency;
 use Foundry\Services\GuardManager;
 use Foundry\Services\IpLocationResolver;
 use Foundry\Services\MaskSensitiveConfig;
+use Foundry\Services\PaymentProvider;
 use Foundry\Services\SettingsService;
 use Foundry\Services\StateLoader;
 use Illuminate\Auth\Middleware\Authenticate;
@@ -62,6 +63,11 @@ class FoundryServiceProvider extends ServiceProvider
         // Register Blog service and facade
         $this->app->singleton('blog', function ($app) {
             return new BlogService;
+        });
+
+        // Register PaymentProvider and facade
+        $this->app->singleton('payment.provider', function ($app) {
+            return new PaymentProvider;
         });
 
         $this->app->singleton(MaskSensitiveConfig::class, function ($app) {
@@ -197,11 +203,6 @@ class FoundryServiceProvider extends ServiceProvider
             $this->packagePath('config/foundry.php'),
             'foundry'
         );
-
-        $this->mergeConfigFrom(
-            $this->packagePath('config/stripe.php'),
-            'stripe'
-        );
     }
 
     /**
@@ -226,9 +227,6 @@ class FoundryServiceProvider extends ServiceProvider
         try {
             // Load settings
             Settings::load();
-
-            // Load payment methods config
-            Models\PaymentMethod::syncConfig();
         } catch (\Throwable $e) {
             report($e);
         }
@@ -275,7 +273,6 @@ class FoundryServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->publishes([
                 $this->packagePath('config/foundry.php') => $this->app->configPath('foundry.php'),
-                $this->packagePath('config/stripe.php') => $this->app->configPath('stripe.php'),
             ], 'foundry-config');
 
             $this->publishes([

@@ -38,5 +38,6 @@
     <!-- <env name="PAYPAL_CLIENT_SECRET" value="test_paypal_client_secret" /> -->
     <!-- <env name="RAZORPAY_API_KEY" value="test_razorpay_api_key" /> -->
     <!-- <env name="RAZORPAY_API_SECRET" value="test_razorpay_api_secret" /> -->
+    <!-- <env name="PADDLE_API_KEY" value="test_paddle_api_key" /> -->
   </php>
 </phpunit>

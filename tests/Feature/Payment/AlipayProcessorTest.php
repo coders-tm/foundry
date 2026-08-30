@@ -5,7 +5,6 @@ namespace Tests\Feature\Payment;
 use Foundry\Foundry;
 use Foundry\Models\ExchangeRate;
 use Foundry\Models\Payment;
-use Foundry\Models\PaymentMethod;
 use Foundry\Payment\Mappers\AlipayPayment;
 use Foundry\Payment\Payable;
 use Foundry\Payment\Processor;
@@ -20,29 +19,12 @@ class AlipayProcessorTest extends FeatureTestCase
 {
     use RefreshDatabase;
 
-    protected PaymentMethod $paymentMethod;
-
     protected function setUp(): void
     {
         parent::setUp();
 
         // Create CNY exchange rate
         ExchangeRate::create(['currency' => 'CNY', 'rate' => 7.0]);
-
-        // Create Alipay payment method
-        $this->paymentMethod = PaymentMethod::create([
-            'name' => 'Alipay',
-            'provider' => 'alipay',
-            'integration_via' => 'stripe',
-            'active' => true,
-        ]);
-
-        $this->paymentMethod->credentials = collect([
-            ['key' => 'API_KEY', 'value' => 'pk_test_123', 'publish' => true],
-            ['key' => 'API_SECRET', 'value' => 'sk_test_123', 'publish' => false],
-        ]);
-        $this->paymentMethod->save();
-        PaymentMethod::updateProviderCache(PaymentMethod::ALIPAY);
     }
 
     protected function mockAlipayGateway($mock)
@@ -95,7 +77,6 @@ class AlipayProcessorTest extends FeatureTestCase
     public function it_sets_up_alipay_payment_intent()
     {
         $processor = new AlipayProcessor;
-        $processor->setPaymentMethod($this->paymentMethod);
         $payable = $this->createMockPayable();
 
         $alipayMock = Mockery::mock('Yansongda\Pay\Gateways\Alipay');
@@ -132,7 +113,6 @@ class AlipayProcessorTest extends FeatureTestCase
     public function it_confirms_alipay_payment()
     {
         $processor = Processor::make('alipay');
-        $processor->setPaymentMethod($this->paymentMethod);
 
         $payable = Payable::make(['grand_total' => 100.00]);
         $request = new Request;
@@ -168,12 +148,11 @@ class AlipayProcessorTest extends FeatureTestCase
     public function it_handles_alipay_success_callback()
     {
         $processor = new AlipayProcessor;
-        $processor->setPaymentMethod($this->paymentMethod);
 
         $payment = Payment::create([
             'paymentable_type' => 'App\Models\Order',
             'paymentable_id' => 1,
-            'payment_method_id' => $this->paymentMethod->id,
+            'provider' => 'alipay',
             'transaction_id' => 'pending_123',
             'amount' => 100.00,
             'status' => 'pending',
@@ -208,12 +187,11 @@ class AlipayProcessorTest extends FeatureTestCase
     public function it_handles_alipay_cancel_callback()
     {
         $processor = new AlipayProcessor;
-        $processor->setPaymentMethod($this->paymentMethod);
 
         $payment = Payment::create([
             'paymentable_type' => 'App\Models\Order',
             'paymentable_id' => 1,
-            'payment_method_id' => $this->paymentMethod->id,
+            'provider' => 'alipay',
             'transaction_id' => 'pending_123',
             'amount' => 100.00,
             'status' => 'pending',

@@ -5,11 +5,11 @@ namespace Foundry\Payment\Processors;
 use Foundry\Contracts\PaymentProcessorInterface;
 use Foundry\Foundry;
 use Foundry\Models\Payment;
-use Foundry\Models\PaymentMethod;
 use Foundry\Payment\Mappers\StripePayment;
 use Foundry\Payment\Payable;
 use Foundry\Payment\PaymentResult;
 use Foundry\Payment\RefundResult;
+use Foundry\Services\PaymentProvider;
 use Illuminate\Http\Request;
 use Stripe\Exception\ApiErrorException;
 
@@ -155,7 +155,7 @@ class StripeProcessor extends AbstractPaymentProcessor implements PaymentProcess
 
     public function getProvider(): string
     {
-        return PaymentMethod::STRIPE;
+        return PaymentProvider::STRIPE;
     }
 
     public function supportedCurrencies(): array
@@ -215,7 +215,7 @@ class StripeProcessor extends AbstractPaymentProcessor implements PaymentProcess
             }
 
             // Use new constructor pattern with SDK object
-            $paymentData = new StripePayment($intent, $this->paymentMethod);
+            $paymentData = new StripePayment($intent);
 
             return PaymentResult::success(
                 paymentData: $paymentData,

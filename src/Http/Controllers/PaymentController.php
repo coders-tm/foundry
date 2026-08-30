@@ -4,9 +4,9 @@ namespace Foundry\Http\Controllers;
 
 use Foundry\Enum\PaymentStatus;
 use Foundry\Models\Order;
-use Foundry\Models\PaymentMethod;
 use Foundry\Payment\Payable;
 use Foundry\Payment\Processor;
+use \Foundry\Services\PaymentProvider;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -27,7 +27,7 @@ class PaymentController extends Controller
 
         $order->load(['line_items', 'tax_lines', 'discount', 'contact', 'customer']);
 
-        $paymentMethods = PaymentMethod::toPublic();
+        $paymentMethods = PaymentProvider::toPublic();
 
         return response()->json([
             'order' => $order,
@@ -52,7 +52,7 @@ class PaymentController extends Controller
     {
         $request->validate([
             'token' => 'required|string|exists:orders,id',
-            'provider' => 'required|string|exists:payment_methods,id',
+            'provider' => 'required|string',
             'line1' => 'nullable|string',
             'line2' => 'nullable|string',
             'city' => 'nullable|string',
@@ -63,7 +63,13 @@ class PaymentController extends Controller
 
         try {
             $order = Order::findOrFail($request->token);
-            $paymentMethod = PaymentMethod::findOrFail($request->provider);
+
+            if (! PaymentProvider::has($request->provider)) {
+                return response()->json([
+                    'message' => __('Payment provider not found or disabled'),
+                    'provider' => $request->provider,
+                ], 422);
+            }
 
             // Update billing address if provided
             $address = $request->only(['line1', 'line2', 'city', 'state', 'postal_code', 'country']);
@@ -81,7 +87,7 @@ class PaymentController extends Controller
                 ], 422);
             }
 
-            $provider = $paymentMethod->integration_via ?? $paymentMethod->provider;
+            $provider = $request->provider;
 
             if (! Processor::isSupported($provider)) {
                 return response()->json([
@@ -91,7 +97,6 @@ class PaymentController extends Controller
             }
 
             $processor = Processor::make($provider);
-            $processor->setPaymentMethod($paymentMethod);
             $payable = Payable::fromOrder($order);
 
             $paymentIntent = $processor->setupPaymentIntent($request, $payable);
@@ -113,13 +118,20 @@ class PaymentController extends Controller
     {
         $request->validate([
             'token' => 'required|string|exists:orders,id',
-            'provider' => 'required|string|exists:payment_methods,id',
+            'provider' => 'required|string',
         ]);
 
         try {
             $order = Order::findOrFail($request->token);
-            $paymentMethod = PaymentMethod::findOrFail($request->provider);
-            $provider = $paymentMethod->integration_via ?? $paymentMethod->provider;
+
+            if (! PaymentProvider::has($request->provider)) {
+                return response()->json([
+                    'message' => __('Payment provider not found or disabled'),
+                    'provider' => $request->provider,
+                ], 422);
+            }
+
+            $provider = $request->provider;
 
             if ($order->payment_status === 'paid') {
                 return response()->json([
@@ -138,7 +150,6 @@ class PaymentController extends Controller
             }
 
             $processor = Processor::make($provider);
-            $processor->setPaymentMethod($paymentMethod);
             $payable = Payable::fromOrder($order);
 
             $result = $processor->confirmPayment($request, $payable);

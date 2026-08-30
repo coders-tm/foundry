@@ -6,22 +6,22 @@ use Foundry\Contracts\PaymentProcessorInterface;
 use Foundry\Foundry;
 use Foundry\Models\ExchangeRate;
 use Foundry\Models\Payment;
-use Foundry\Models\PaymentMethod;
 use Foundry\Payment\Mappers\RazorpayPayment;
 use Foundry\Payment\Payable;
 use Foundry\Payment\PaymentResult;
 use Foundry\Payment\RefundResult;
+use Foundry\Services\PaymentProvider;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Razorpay\Api\Errors\Error;
 
 class RazorpayProcessor extends AbstractPaymentProcessor implements PaymentProcessorInterface
 {
-    private const SUPPORTED_CURRENCIES = ['INR', 'USD', 'EUR', 'GBP', 'SGD', 'AUD', 'CAD', 'MYR', 'HKD', 'AED', 'CNY', 'JPY', 'CHF', 'SEK', 'NOK', 'DKK', 'PLN', 'RUB', 'ZAR'];
+    private const SUPPORTED_CURRENCIES = ['INR', 'USD', 'EUR', 'GBP', 'SGD', 'AED'];
 
     public function getProvider(): string
     {
-        return PaymentMethod::RAZORPAY;
+        return PaymentProvider::RAZORPAY;
     }
 
     public function supportedCurrencies(): array
@@ -86,7 +86,7 @@ class RazorpayProcessor extends AbstractPaymentProcessor implements PaymentProce
                 return PaymentResult::failed('Payment not captured');
             }
 
-            $paymentData = new RazorpayPayment($payment_details, $this->paymentMethod);
+            $paymentData = new RazorpayPayment($payment_details);
 
             return PaymentResult::success(
                 paymentData: $paymentData,

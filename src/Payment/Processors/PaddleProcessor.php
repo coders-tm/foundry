@@ -5,16 +5,23 @@ namespace Foundry\Payment\Processors;
 use Foundry\Contracts\PaymentProcessorInterface;
 use Foundry\Foundry;
 use Foundry\Models\Payment;
-use Foundry\Models\PaymentMethod;
 use Foundry\Payment\Mappers\PaddlePayment;
 use Foundry\Payment\Payable;
 use Foundry\Payment\PaymentResult;
 use Foundry\Payment\RefundResult;
+use Foundry\Services\PaymentProvider;
 use Illuminate\Http\Request;
 use Paddle\SDK\Entities\Shared\Action;
+use Paddle\SDK\Entities\Shared\CurrencyCode;
+use Paddle\SDK\Entities\Shared\CustomData;
+use Paddle\SDK\Entities\Shared\Money;
+use Paddle\SDK\Entities\Shared\TaxCategory;
 use Paddle\SDK\Entities\Transaction;
 use Paddle\SDK\Resources\Adjustments\Operations\CreateAdjustment;
-use Paddle\SDK\ResponseParser;
+use Paddle\SDK\Resources\Transactions\Operations\Create\TransactionCreateItemWithPrice;
+use Paddle\SDK\Resources\Transactions\Operations\CreateTransaction;
+use Paddle\SDK\Resources\Transactions\Operations\Price\TransactionNonCatalogPriceWithProduct;
+use Paddle\SDK\Resources\Transactions\Operations\Price\TransactionNonCatalogProduct;
 
 class PaddleProcessor extends AbstractPaymentProcessor implements PaymentProcessorInterface
 {
@@ -26,7 +33,7 @@ class PaddleProcessor extends AbstractPaymentProcessor implements PaymentProcess
 
     public function getProvider(): string
     {
-        return PaymentMethod::PADDLE;
+        return PaymentProvider::PADDLE;
     }
 
     public function supportedCurrencies(): array
@@ -41,54 +48,56 @@ class PaddleProcessor extends AbstractPaymentProcessor implements PaymentProcess
 
         $paddle = Foundry::paddle();
 
+        $currencyCode = CurrencyCode::from(strtoupper($payable->getCurrency()));
         $items = [];
+
         foreach ($payable->getLineItems() as $item) {
-            $items[] = [
-                'price' => [
-                    'description' => $item['name'] ?? $item['title'] ?? 'Item',
-                    'unit_price' => [
-                        'amount' => (string) round($item['price'] * 100),
-                        'currency_code' => strtoupper($payable->getCurrency()),
-                    ],
-                    'product_id' => (string) ($item['id'] ?? 'default_product'),
-                ],
-                'quantity' => (int) ($item['quantity'] ?? 1),
-            ];
+            $description = $item['name'] ?? $item['title'] ?? 'Item';
+            $amountString = (string) round(($item['price'] ?? 0) * 100);
+
+            $money = new Money($amountString, $currencyCode);
+            $product = new TransactionNonCatalogProduct($description, TaxCategory::Standard());
+            $nonCatalogPrice = new TransactionNonCatalogPriceWithProduct($description, $money, $product);
+
+            $items[] = new TransactionCreateItemWithPrice(
+                price: $nonCatalogPrice,
+                quantity: (int) ($item['quantity'] ?? 1)
+            );
         }
 
         if (empty($items)) {
-            $items[] = [
-                'price' => [
-                    'description' => $payable->getDescription() ?: 'Order Payment',
-                    'unit_price' => [
-                        'amount' => (string) round($payable->getGatewayAmount() * 100),
-                        'currency_code' => strtoupper($payable->getCurrency()),
-                    ],
-                    'product_id' => 'custom_order',
-                ],
-                'quantity' => 1,
-            ];
+            $description = $payable->getDescription() ?: 'Order Payment';
+            $amountString = (string) round($payable->getGatewayAmount() * 100);
+
+            $money = new Money($amountString, $currencyCode);
+            $product = new TransactionNonCatalogProduct($description, TaxCategory::Standard());
+            $nonCatalogPrice = new TransactionNonCatalogPriceWithProduct($description, $money, $product);
+
+            $items[] = new TransactionCreateItemWithPrice(
+                price: $nonCatalogPrice,
+                quantity: 1
+            );
         }
 
-        $params = [
-            'items' => $items,
-            'currency_code' => strtoupper($payable->getCurrency()),
-            'custom_data' => array_merge($payable->getMetadata(), [
-                'reference_id' => $payable->getReferenceId(),
-                'customer_email' => $payable->getCustomerEmail(),
-            ]),
-        ];
+        $customData = new CustomData(array_merge($payable->getMetadata(), [
+            'reference_id' => $payable->getReferenceId(),
+            'customer_email' => $payable->getCustomerEmail(),
+        ]));
 
-        $rawResponse = $paddle->postRaw('/transactions', $params);
-        $parser = new ResponseParser($rawResponse);
-        $transactionData = $parser->getData();
+        $createTransaction = new CreateTransaction(
+            items: $items,
+            customData: $customData,
+            currencyCode: $currencyCode
+        );
+
+        $transaction = $paddle->transactions->create($createTransaction);
 
         return [
-            'transaction_id' => $transactionData['id'] ?? '',
+            'transaction_id' => $transaction->id ?? '',
             'amount' => $payable->getGrandTotal(),
             'currency' => strtoupper($payable->getCurrency()),
-            'checkout_url' => $transactionData['checkout']['url'] ?? null,
-            'status' => $transactionData['status'] ?? 'draft',
+            'checkout_url' => $transaction->checkout->url ?? null,
+            'status' => strtolower($transaction->status->getValue() ?? 'draft'),
         ];
     }
 
@@ -107,7 +116,7 @@ class PaddleProcessor extends AbstractPaymentProcessor implements PaymentProcess
                 return PaymentResult::failed("Payment not completed. Status: {$status}");
             }
 
-            $paymentData = new PaddlePayment($transaction, $this->paymentMethod);
+            $paymentData = new PaddlePayment($transaction);
             $transactionId = $transaction instanceof Transaction ? $transaction->id : ($transaction['id'] ?? $request->transaction_id);
 
             return PaymentResult::success(

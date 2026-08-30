@@ -4,10 +4,10 @@ namespace Foundry\Payment\Processors;
 
 use Foundry\Contracts\PaymentProcessorInterface;
 use Foundry\Foundry;
-use Foundry\Models\PaymentMethod;
 use Foundry\Payment\Mappers\KlarnaPayment;
 use Foundry\Payment\Payable;
 use Foundry\Payment\PaymentResult;
+use Foundry\Services\PaymentProvider;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -51,7 +51,7 @@ class KlarnaProcessor extends AbstractPaymentProcessor implements PaymentProcess
 
     public function getProvider(): string
     {
-        return PaymentMethod::KLARNA;
+        return PaymentProvider::KLARNA;
     }
 
     public function supportedCurrencies(): array
@@ -123,7 +123,7 @@ class KlarnaProcessor extends AbstractPaymentProcessor implements PaymentProcess
                 if (isset($session['order_id']) && ! empty($session['order_id'])) {
                     // Return success with existing order
                     $klarnaOrder = ['order_id' => $session['order_id'], 'fraud_status' => 'ACCEPTED'];
-                    $paymentData = new KlarnaPayment($klarnaOrder, $this->paymentMethod);
+                    $paymentData = new KlarnaPayment($klarnaOrder);
 
                     return PaymentResult::success(
                         paymentData: $paymentData,
@@ -141,7 +141,7 @@ class KlarnaProcessor extends AbstractPaymentProcessor implements PaymentProcess
                 PaymentResult::failed('Klarna order creation failed - no order ID returned');
             }
 
-            $paymentData = new KlarnaPayment($klarnaOrder, $this->paymentMethod);
+            $paymentData = new KlarnaPayment($klarnaOrder);
 
             return PaymentResult::success(
                 paymentData: $paymentData,
@@ -159,7 +159,7 @@ class KlarnaProcessor extends AbstractPaymentProcessor implements PaymentProcess
 
                     if (isset($session['order_id']) && ! empty($session['order_id'])) {
                         $klarnaOrder = ['order_id' => $session['order_id'], 'fraud_status' => 'ACCEPTED'];
-                        $paymentData = new KlarnaPayment($klarnaOrder, $this->paymentMethod);
+                        $paymentData = new KlarnaPayment($klarnaOrder);
 
                         return PaymentResult::success(
                             paymentData: $paymentData,
@@ -196,7 +196,7 @@ class KlarnaProcessor extends AbstractPaymentProcessor implements PaymentProcess
             'fraud_status' => 'ACCEPTED',
         ];
 
-        $paymentData = new KlarnaPayment($klarnaOrder, $this->paymentMethod);
+        $paymentData = new KlarnaPayment($klarnaOrder);
 
         return PaymentResult::success(
             paymentData: $paymentData,

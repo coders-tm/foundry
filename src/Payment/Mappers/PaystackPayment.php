@@ -4,7 +4,7 @@ namespace Foundry\Payment\Mappers;
 
 use DateTime;
 use Foundry\Models\Payment;
-use Foundry\Models\PaymentMethod;
+use Foundry\Services\PaymentProvider;
 
 class PaystackPayment extends AbstractPayment
 {
@@ -12,17 +12,16 @@ class PaystackPayment extends AbstractPayment
      * Create from Paystack transaction or response
      *
      * @param  object|array  $response  Paystack transaction or payment response
-     * @param  PaymentMethod  $paymentMethod  Payment method (required)
      */
-    public function __construct($response, PaymentMethod $paymentMethod)
+    public function __construct($response)
     {
         // Convert to array if object
         if (is_object($response)) {
-            $response = json_decode(json_encode($response), true);
+            $response = (array) $response;
         }
 
         // Set payment method
-        $this->paymentMethod = $paymentMethod;
+        $this->paymentMethod = PaymentProvider::PAYSTACK;
 
         $transactionData = $response['data'] ?? $response;
         $this->transactionId = $transactionData['reference'] ?? uniqid('paystack_');

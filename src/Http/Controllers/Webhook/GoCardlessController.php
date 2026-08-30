@@ -11,6 +11,7 @@ use Foundry\Foundry;
 use Foundry\Models\Order;
 use Foundry\Models\Payment as ModelsPayment;
 use Foundry\Models\Subscription;
+use Foundry\Services\PaymentProvider;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Log;
@@ -76,7 +77,7 @@ class GoCardlessController extends Controller
         }
 
         // Get webhook secret from config
-        $webhookSecret = config('gocardless.webhook_secret');
+        $webhookSecret = config('foundry.payment_providers.gocardless.webhook_secret');
 
         if (empty($webhookSecret)) {
             return false;
@@ -169,7 +170,9 @@ class GoCardlessController extends Controller
      */
     protected function isPaymentAlreadyProcessed(string $paymentId): bool
     {
-        return ModelsPayment::where('payment_method_id', config('gocardless.id'))
+        $providerId = config('foundry.payment_providers.gocardless.provider', PaymentProvider::GOCARDLESS);
+
+        return ModelsPayment::where('payment_method_id', $providerId)
             ->where('transaction_id', $paymentId)
             ->exists();
     }
@@ -192,6 +195,8 @@ class GoCardlessController extends Controller
         }
 
         try {
+            $providerId = config('foundry.payment_providers.gocardless.provider', PaymentProvider::GOCARDLESS);
+
             // Get the payment details from GoCardless
             $payment = Foundry::gocardless()->payments()->get($paymentId);
             $mandateId = $payment->links->mandate ?? null;
@@ -199,7 +204,7 @@ class GoCardlessController extends Controller
             // Process order if exists
             if ($order = $this->findOrder($orderId)) {
                 // Update order payment status
-                $order->markAsPaid(config('gocardless.id'), [
+                $order->markAsPaid($providerId, [
                     'id' => $payment->id,
                     'amount' => $payment->amount / 100,
                     'status' => $payment->status,
@@ -221,11 +226,11 @@ class GoCardlessController extends Controller
 
                 // Handle based on subscription payment state
                 if ($subscription->hasIncompletePayment()) {
-                    $subscription->pay(config('gocardless.id'), $paymentData);
+                    $subscription->pay($providerId, $paymentData);
                 } else {
                     $subscription->renew();
                     $subscription = $subscription->refresh(['latestInvoice']);
-                    $subscription->pay(config('gocardless.id'), $paymentData);
+                    $subscription->pay($providerId, $paymentData);
                 }
             }
         } catch (\Throwable $e) {
@@ -256,6 +261,8 @@ class GoCardlessController extends Controller
         }
 
         try {
+            $providerId = config('foundry.payment_providers.gocardless.provider', PaymentProvider::GOCARDLESS);
+
             // Get the payment details from GoCardless
             $payment = Foundry::gocardless()->payments()->get($paymentId);
             $mandateId = $payment->links->mandate ?? null;
@@ -268,7 +275,7 @@ class GoCardlessController extends Controller
 
             // Process order if exists
             if ($order = $this->findOrder($orderId)) {
-                $order->markAsPaymentFailed(config('gocardless.id'), $paymentData);
+                $order->markAsPaymentFailed($providerId, $paymentData);
             }
             // Update subscription if exists
             elseif ($mandateId && ($subscription = $this->findSubscriptionByMandateId($mandateId))) {
@@ -287,7 +294,7 @@ class GoCardlessController extends Controller
                 $subscription = $subscription->refresh(['latestInvoice']);
 
                 if ($order = $subscription->latestInvoice) {
-                    $order->markAsPaymentFailed(config('gocardless.id'), [
+                    $order->markAsPaymentFailed($providerId, [
                         'id' => $payment->id,
                         'amount' => $payment->amount / 100,
                         'status' => $payment->status,

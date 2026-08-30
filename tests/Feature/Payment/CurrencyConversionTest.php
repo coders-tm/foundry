@@ -6,7 +6,6 @@ use Foundry\Facades\Currency;
 use Foundry\Foundry;
 use Foundry\Models\ExchangeRate;
 use Foundry\Models\Payment;
-use Foundry\Models\PaymentMethod;
 use Foundry\Payment\Mappers\FlutterwavePayment;
 use Foundry\Payment\Mappers\KlarnaPayment;
 use Foundry\Payment\Mappers\ManualPayment;
@@ -14,6 +13,7 @@ use Foundry\Payment\Mappers\MercadoPagoPayment;
 use Foundry\Payment\Mappers\PaystackPayment;
 use Foundry\Payment\Mappers\XenditPayment;
 use Foundry\Payment\Payable;
+use Foundry\Services\PaymentProvider;
 use Foundry\Tests\Feature\FeatureTestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
@@ -26,8 +26,6 @@ use Workbench\App\Models\Order;
 class CurrencyConversionTest extends FeatureTestCase
 {
     use RefreshDatabase, WithFaker;
-
-    protected PaymentMethod $paymentMethod;
 
     protected Order $order;
 
@@ -111,6 +109,7 @@ class CurrencyConversionTest extends FeatureTestCase
     public function it_stores_payment_in_base_currency_when_paid_in_foreign_currency()
     {
         // 1. Set User Currency to EUR (Supported)
+        Config::set('foundry.payment_providers.paypal.enabled', true);
         // Exchange Rate: 1 USD = 0.9 EUR
         ExchangeRate::updateOrCreate(['currency' => 'EUR'], ['rate' => 0.9]);
 
@@ -123,19 +122,6 @@ class CurrencyConversionTest extends FeatureTestCase
         // Assert user currency is EUR
         Currency::resolve(['country_code' => 'DE']);
         $this->assertEquals('EUR', Currency::code());
-
-        // Create Paypal Payment Method
-        $paymentMethod = PaymentMethod::create([
-            'name' => 'Paypal',
-            'provider' => 'paypal',
-            'active' => true,
-            'credentials' => [
-                ['key' => 'CLIENT_ID', 'value' => 'test_id'],
-                ['key' => 'CLIENT_SECRET', 'value' => 'test_secret'],
-            ],
-            'test_mode' => true,
-        ]);
-        PaymentMethod::updateProviderCache('paypal');
 
         // Update Order with Billing Address
         $this->order->update([
@@ -192,9 +178,8 @@ class CurrencyConversionTest extends FeatureTestCase
         $this->mockPaypalClient($paypalMock);
 
         // 3. Call confirmPayment
-        // Note: The route param is {provider}, which uses 'paypal'
-        $methodId = PaymentMethod::where('provider', 'paypal')->value('id');
-        $response = $this->postJson(route('payment.confirm', ['provider' => $methodId]), [
+        $response = $this->postJson(route('payment.confirm'), [
+            'provider' => PaymentProvider::PAYPAL,
             'token' => $this->order->id,
             'paypal_order_id' => $paypalOrderId,
             'payer_id' => 'PAYER-123',
@@ -243,18 +228,8 @@ class CurrencyConversionTest extends FeatureTestCase
         Currency::resolve(['country_code' => 'DE']);
         $this->assertEquals('EUR', Currency::code());
 
-        // Create Stripe Payment Method
-        $paymentMethod = PaymentMethod::create([
-            'name' => 'Stripe',
-            'provider' => 'stripe',
-            'active' => true,
-            'credentials' => [
-                ['key' => 'API_KEY', 'value' => 'pk_test_123'],
-                ['key' => 'API_SECRET', 'value' => 'sk_test_123'],
-            ],
-            'test_mode' => true,
-        ]);
-        PaymentMethod::updateProviderCache('stripe');
+        // Enable paypal in config
+        Config::set('foundry.payment_providers.paypal.enabled', true);
 
         // Update Order with Billing Address
         $this->order->update([
@@ -300,8 +275,8 @@ class CurrencyConversionTest extends FeatureTestCase
         $this->mockStripeClient($stripeMock);
 
         // 3. Call confirmPayment
-        $methodId = PaymentMethod::where('provider', 'stripe')->value('id');
-        $response = $this->postJson(route('payment.confirm', ['provider' => $methodId]), [
+        $response = $this->postJson(route('payment.confirm'), [
+            'provider' => PaymentProvider::STRIPE,
             'token' => $this->order->id,
             'payment_intent_id' => 'pi_eur_confirm_test',
         ]);
@@ -347,18 +322,8 @@ class CurrencyConversionTest extends FeatureTestCase
         Currency::resolve(['country_code' => 'IN']);
         $this->assertEquals('INR', Currency::code());
 
-        // Create Razorpay Payment Method
-        $paymentMethod = PaymentMethod::create([
-            'name' => 'Razorpay',
-            'provider' => 'razorpay',
-            'active' => true,
-            'credentials' => [
-                ['key' => 'API_KEY', 'value' => 'rzp_test_123'],
-                ['key' => 'API_SECRET', 'value' => 'rzp_secret_123'],
-            ],
-            'test_mode' => true,
-        ]);
-        PaymentMethod::updateProviderCache('razorpay');
+        // Enable razorpay in config
+        Config::set('foundry.payment_providers.razorpay.enabled', true);
 
         // Update Order with Billing Address
         $this->order->update([
@@ -395,9 +360,6 @@ class CurrencyConversionTest extends FeatureTestCase
             'created_at' => time(),
         ];
 
-        // Need to wrap response in ArrayAccess object because RazorpayPayment mapper expects object/array access
-        // Actually, Razorpay SDK returns an Entity which implements ArrayAccess. array is fine.
-
         $paymentServiceMock->shouldReceive('fetch')
             ->with('pay_inr_123')
             ->once()
@@ -406,8 +368,8 @@ class CurrencyConversionTest extends FeatureTestCase
         $this->mockRazorpayClient($razorpayMock);
 
         // 3. Call confirmPayment
-        $methodId = PaymentMethod::where('provider', 'razorpay')->value('id');
-        $response = $this->postJson(route('payment.confirm', ['provider' => $methodId]), [
+        $response = $this->postJson(route('payment.confirm'), [
+            'provider' => PaymentProvider::RAZORPAY,
             'token' => $this->order->id,
             'payment_id' => 'pay_inr_123',
             'order_id' => 'order_rzp_123',
@@ -484,17 +446,7 @@ class CurrencyConversionTest extends FeatureTestCase
 
         foreach ($mappers as $mapperClass => $mockResponse) {
             // Instantiate Mapper
-            $paymentMethod = PaymentMethod::factory()->create([
-                'provider' => 'flutterwave',
-                'credentials' => [
-                    ['key' => 'CLIENT_ID', 'value' => 'test_id'],
-                    ['key' => 'CLIENT_SECRET', 'value' => 'test_secret'],
-                    ['key' => 'ENCRYPTION_KEY', 'value' => 'test_key'],
-                ],
-            ]);
-
-            // Mappers do not take Payable as argument, and they store Foreign Currency
-            $mapper = new $mapperClass($mockResponse, $paymentMethod);
+            $mapper = new $mapperClass($mockResponse, 'flutterwave');
 
             // Assertions
             // 1. Amount should be in FOREIGN currency (80.00)

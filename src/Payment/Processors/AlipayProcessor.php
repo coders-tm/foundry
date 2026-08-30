@@ -5,21 +5,21 @@ namespace Foundry\Payment\Processors;
 use Foundry\Contracts\PaymentProcessorInterface;
 use Foundry\Foundry;
 use Foundry\Models\Payment;
-use Foundry\Models\PaymentMethod;
 use Foundry\Payment\CallbackResult;
 use Foundry\Payment\Mappers\AlipayPayment;
 use Foundry\Payment\Payable;
 use Foundry\Payment\PaymentResult;
 use Foundry\Payment\RefundResult;
+use Foundry\Services\PaymentProvider;
 use Illuminate\Http\Request;
 
 class AlipayProcessor extends AbstractPaymentProcessor implements PaymentProcessorInterface
 {
-    private const SUPPORTED_CURRENCIES = ['CNY'];
+    private const SUPPORTED_CURRENCIES = ['USD', 'CNY', 'EUR', 'GBP', 'HKD', 'JPY', 'AUD', 'CAD', 'SGD'];
 
     public function getProvider(): string
     {
-        return PaymentMethod::ALIPAY;
+        return PaymentProvider::ALIPAY;
     }
 
     public function supportedCurrencies(): array
@@ -41,7 +41,7 @@ class AlipayProcessor extends AbstractPaymentProcessor implements PaymentProcess
         $payment = Payment::create([
             'paymentable_type' => $payable->isOrder() ? Foundry::$orderModel : get_class($payable->getSource()),
             'paymentable_id' => $payable->getSourceId(),
-            'payment_method_id' => $this->getPaymentMethodId(),
+            'provider' => $this->getProvider(),
             'transaction_id' => 'pending_'.uniqid(),
             'amount' => $payable->getGrandTotal(),
             'status' => Payment::STATUS_PENDING,
@@ -95,7 +95,7 @@ class AlipayProcessor extends AbstractPaymentProcessor implements PaymentProcess
             $alipay = Foundry::alipay();
             $response = $alipay->verify();
 
-            $paymentData = new AlipayPayment($response, $this->paymentMethod);
+            $paymentData = new AlipayPayment($response);
             $transactionId = is_object($response) ? ($response->trade_no ?? $response->out_trade_no) : ($response['trade_no'] ?? $response['out_trade_no'] ?? null);
 
             return PaymentResult::success(
@@ -164,7 +164,7 @@ class AlipayProcessor extends AbstractPaymentProcessor implements PaymentProcess
             $alipay = Foundry::alipay();
             $response = $alipay->verify();
 
-            $paymentData = new AlipayPayment($response, $this->paymentMethod);
+            $paymentData = new AlipayPayment($response);
             $payment->update($paymentData->toArray());
 
             return CallbackResult::success(

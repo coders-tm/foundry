@@ -4,7 +4,7 @@ namespace Foundry\Payment\Mappers;
 
 use DateTime;
 use Foundry\Models\Payment;
-use Foundry\Models\PaymentMethod;
+use Foundry\Services\PaymentProvider;
 
 class RazorpayPayment extends AbstractPayment
 {
@@ -12,12 +12,11 @@ class RazorpayPayment extends AbstractPayment
      * Create from Razorpay Payment or Order object
      *
      * @param  object  $response  Razorpay payment/order response object
-     * @param  PaymentMethod  $paymentMethod  Payment method (required)
      */
-    public function __construct($response, PaymentMethod $paymentMethod)
+    public function __construct($response)
     {
         // Set payment method
-        $this->paymentMethod = $paymentMethod;
+        $this->paymentMethod = PaymentProvider::RAZORPAY;
 
         $this->transactionId = $response->id ?? uniqid('rzp_');
 

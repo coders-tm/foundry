@@ -5,7 +5,6 @@ namespace Foundry\Contracts;
 use Foundry\Exceptions\PaymentException;
 use Foundry\Exceptions\RefundException;
 use Foundry\Models\Payment;
-use Foundry\Models\PaymentMethod;
 use Foundry\Payment\CallbackResult;
 use Foundry\Payment\Payable;
 use Foundry\Payment\PaymentResult;
@@ -56,14 +55,9 @@ interface PaymentProcessorInterface
     public function validateCurrency(Payable $payable): void;
 
     /**
-     * Set the payment method for this processor
+     * Get the payment provider identifier or configuration for this processor
      */
-    public function setPaymentMethod(PaymentMethod $paymentMethod): PaymentProcessorInterface;
-
-    /**
-     * Get the payment method for this processor
-     */
-    public function getPaymentMethod(): ?PaymentMethod;
+    public function getPaymentMethod(): mixed;
 
     /**
      * Process a refund for a payment.

@@ -5,7 +5,6 @@ namespace Foundry\Actions\Subscription;
 use Carbon\Carbon;
 use Foundry\Contracts\SubscriptionStatus;
 use Foundry\Events\SubscriptionExpired;
-use Foundry\Models\PaymentMethod;
 use Foundry\Models\Subscription;
 use Foundry\Notifications\SubscriptionExpiredNotification;
 use Foundry\Services\Period;
@@ -196,16 +195,12 @@ class RenewSubscription
         );
 
         // Mark invoice as paid via wallet
-        $walletPaymentMethod = PaymentMethod::where('provider', PaymentMethod::WALLET)->first();
-
-        if ($walletPaymentMethod) {
-            $invoice->markAsPaid($walletPaymentMethod->id, [
-                'id' => $transaction->id,
-                'amount' => $amount,
-                'status' => 'succeeded',
-                'note' => 'Paid from wallet balance',
-                'wallet_transaction_id' => $transaction->id,
-            ]);
-        }
+        $invoice->markAsPaid('wallet', [
+            'id' => $transaction->id,
+            'amount' => $amount,
+            'status' => 'succeeded',
+            'note' => 'Paid from wallet balance',
+            'wallet_transaction_id' => $transaction->id,
+        ]);
     }
 }

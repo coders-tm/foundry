@@ -6,11 +6,11 @@ use Foundry\Contracts\PaymentProcessorInterface;
 use Foundry\Foundry;
 use Foundry\Models\ExchangeRate;
 use Foundry\Models\Payment;
-use Foundry\Models\PaymentMethod;
 use Foundry\Payment\CallbackResult;
 use Foundry\Payment\Mappers\XenditPayment;
 use Foundry\Payment\Payable;
 use Foundry\Payment\PaymentResult;
+use Foundry\Services\PaymentProvider;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Xendit\Invoice\Invoice;
@@ -21,7 +21,7 @@ class XenditProcessor extends AbstractPaymentProcessor implements PaymentProcess
 
     public function getProvider(): string
     {
-        return PaymentMethod::XENDIT;
+        return PaymentProvider::XENDIT;
     }
 
     public function supportedCurrencies(): array
@@ -102,7 +102,7 @@ class XenditProcessor extends AbstractPaymentProcessor implements PaymentProcess
             }
 
             // Update payment record using mapper
-            $paymentData = new XenditPayment($invoice, $this->paymentMethod);
+            $paymentData = new XenditPayment($invoice);
             $payment->update($paymentData->toArray());
 
             return CallbackResult::success(
@@ -184,7 +184,7 @@ class XenditProcessor extends AbstractPaymentProcessor implements PaymentProcess
             $payment = Payment::create([
                 'paymentable_type' => $payable->isOrder() ? Foundry::$orderModel : get_class($payable->getSource()),
                 'paymentable_id' => $payable->getSourceId(),
-                'payment_method_id' => $this->getPaymentMethodId(),
+                'provider' => $this->getProvider(),
                 'transaction_id' => 'pending_'.uniqid(), // Placeholder until we get the invoice ID
                 'amount' => $payable->getGrandTotal(),
                 'status' => Payment::STATUS_PENDING,

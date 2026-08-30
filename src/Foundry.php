@@ -400,8 +400,8 @@ class Foundry
             return static::$gocardlessClient;
         }
 
-        $environment = $options['environment'] ?? config('gocardless.environment', 'sandbox');
-        $accessToken = $options['access_token'] ?? config('gocardless.access_token');
+        $environment = $options['environment'] ?? config('foundry.payment_providers.gocardless.environment', 'sandbox');
+        $accessToken = $options['access_token'] ?? config('foundry.payment_providers.gocardless.access_token');
 
         $clientOptions = array_merge([
             'environment' => $environment,
@@ -422,10 +422,11 @@ class Foundry
             return static::$paypalClient;
         }
 
-        $options = array_merge(config('paypal'), $options);
+        $paypalConfig = config('foundry.payment_providers.paypal', []);
+        $options = array_merge($paypalConfig, $options);
 
         $provider = new PayPal;
-        $provider->setApiCredentials(config('paypal'));
+        $provider->setApiCredentials($options);
         $provider->getAccessToken();
 
         return static::$paypalClient = $provider;
@@ -442,8 +443,8 @@ class Foundry
             return static::$razorpayClient;
         }
 
-        $keyId = $options['key_id'] ?? config('razorpay.key_id');
-        $keySecret = $options['key_secret'] ?? config('razorpay.key_secret');
+        $keyId = $options['key_id'] ?? config('foundry.payment_providers.razorpay.key_id');
+        $keySecret = $options['key_secret'] ?? config('foundry.payment_providers.razorpay.key_secret');
 
         return static::$razorpayClient = new Api($keyId, $keySecret);
     }
@@ -466,8 +467,10 @@ class Foundry
             return static::$stripeClient;
         }
 
+        $secret = $options['api_key'] ?? config('foundry.payment_providers.stripe.secret');
+
         $config = array_merge([
-            'api_key' => $options['api_key'] ?? config('stripe.secret'),
+            'api_key' => $secret,
             'stripe_version' => StripeApiVersion::CURRENT,
         ], $options);
 
@@ -479,9 +482,9 @@ class Foundry
      */
     public static function formatAmount(int $amount, ?string $currency = null, ?string $locale = null, array $options = []): string
     {
-        $money = new Money($amount, new Currency(strtoupper($currency ?? config('stripe.currency', 'USD'))));
+        $money = new Money($amount, new Currency(strtoupper($currency ?? config('foundry.payment_providers.stripe.currency', config('app.currency', 'USD')))));
 
-        $locale = $locale ?? config('stripe.currency_locale', config('app.locale', 'en'));
+        $locale = $locale ?? config('foundry.payment_providers.stripe.currency_locale', config('app.locale', 'en'));
 
         $numberFormatter = new NumberFormatter($locale, NumberFormatter::CURRENCY);
 
@@ -553,7 +556,7 @@ class Foundry
         if (static::$paystackClient) {
             return static::$paystackClient;
         }
-        $secretKey = $options['secret_key'] ?? config('paystack.secret_key');
+        $secretKey = $options['secret_key'] ?? config('foundry.payment_providers.paystack.secret_key');
         if ($secretKey) {
             return static::$paystackClient = new Paystack($secretKey);
         }
@@ -601,10 +604,11 @@ class Foundry
             return static::$flutterwaveClient;
         }
 
-        $publicKey = $options['public_key'] ?? config('flutterwave.public_key');
-        $secretKey = $options['secret_key'] ?? config('flutterwave.secret_key');
-        $encryptionKey = $options['encryption_key'] ?? config('flutterwave.encryption_key');
-        $environment = $options['environment'] ?? config('flutterwave.environment', 'sandbox');
+        $fwConfig = config('foundry.payment_providers.flutterwave') ?? [];
+        $publicKey = $options['public_key'] ?? $fwConfig['public_key'] ?? null;
+        $secretKey = $options['secret_key'] ?? $fwConfig['secret_key'] ?? null;
+        $encryptionKey = $options['encryption_key'] ?? $fwConfig['encryption_key'] ?? null;
+        $environment = $options['environment'] ?? $fwConfig['environment'] ?? 'sandbox';
 
         if ($secretKey) {
             // Set environment variables that the SDK expects
@@ -696,17 +700,17 @@ class Foundry
             return static::$alipayClient;
         }
 
-        $config = config('alipay');
+        $config = config('foundry.payment_providers.alipay') ?? [];
 
         if ($config && ! empty($config['app_id'])) {
             Pay::config([
                 'alipay' => [
                     'default' => [
                         'app_id' => $config['app_id'],
-                        'ali_public_key' => $config['ali_public_key'],
+                        'public_key' => $config['public_key'],
                         'private_key' => $config['private_key'],
-                        'notify_url' => $config['webhook_url'],
-                        'mode' => $config['mode'] === 'sandbox' ? Pay::MODE_SANDBOX : Pay::MODE_NORMAL,
+                        'notify_url' => $config['webhook_url'] ?? $config['notify_url'] ?? null,
+                        'mode' => ($config['mode'] ?? '') === 'sandbox' ? Pay::MODE_SANDBOX : Pay::MODE_NORMAL,
                     ],
                 ],
                 'logger' => [
