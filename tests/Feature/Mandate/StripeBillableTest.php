@@ -29,7 +29,7 @@ class StripeBillableTest extends TestCase
     }
 
     /**
-     * Test retrieving auto-renewal status for a user.
+     * Test retrieving payment methods for a user.
      */
     #[Test]
     public function test_get_auto_renewal_status()
@@ -37,11 +37,10 @@ class StripeBillableTest extends TestCase
         $subscription = Subscription::factory()->create();
 
         $manager = new BillerManager($subscription->user);
-        $status = $manager->paymentMethodStatus();
+        $methods = $manager->paymentMethods();
 
-        $this->assertIsArray($status);
-        $this->assertArrayHasKey('enabled', $status);
-        $this->assertFalse($status['enabled']);
+        $this->assertInstanceOf(\Illuminate\Database\Eloquent\Collection::class, $methods);
+        $this->assertTrue($methods->isEmpty());
     }
 
     /**

@@ -6,7 +6,7 @@ use Foundry\Concerns\Core;
 use Foundry\Database\Factories\PaymentFactory;
 use Foundry\Enum\PaymentStatus;
 use Foundry\Foundry;
-use \Foundry\Services\PaymentProvider;
+use Foundry\Services\PaymentProvider;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;

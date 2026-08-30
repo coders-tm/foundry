@@ -2,6 +2,7 @@
 
 namespace Foundry\Services;
 
+use Foundry\Mandate\PaymentGatewayBuilder;
 use Illuminate\Support\Collection;
 
 class PaymentProvider
@@ -102,6 +103,27 @@ class PaymentProvider
     }
 
     /**
+     * Resolve public key for a provider configuration array based on config keys.
+     */
+    public static function getPublicKey(array $item): ?string
+    {
+        $provider = $item['provider'] ?? null;
+
+        return match ($provider) {
+            self::STRIPE => $item['key'] ?? null,
+            self::PAYPAL => $item['client_id'] ?? null,
+            self::RAZORPAY => $item['key_id'] ?? null,
+            self::PADDLE => $item['client_token'] ?? null,
+            self::ALIPAY => $item['app_id'] ?? null,
+            self::MERCADOPAGO,
+            self::PAYSTACK,
+            self::XENDIT,
+            self::FLUTTERWAVE => $item['public_key'] ?? null,
+            default => $item['public_key'] ?? $item['client_id'] ?? null,
+        };
+    }
+
+    /**
      * Get providers for public checkout rendering.
      */
     public static function toPublic(): Collection
@@ -114,9 +136,7 @@ class PaymentProvider
                     return [];
                 }
 
-                $key = $item['key'] ?? $item['public_key'] ?? $item['client_id'] ?? null;
-                $publicKey = $item['public_key'] ?? $item['key'] ?? null;
-                $clientId = $item['client_id'] ?? null;
+                $publicKey = static::getPublicKey($item);
 
                 return [
                     'id' => $item['provider'] ?? null,
@@ -128,10 +148,22 @@ class PaymentProvider
                     'additional_details' => $item['additional_details'] ?? null,
                     'methods' => $item['methods'] ?? [],
                     'transaction_fee' => $item['transaction_fee'] ?? null,
-                    'key' => $key,
                     'public_key' => $publicKey,
-                    'client_id' => $clientId,
                 ];
             });
+    }
+
+    /**
+     * Get mandate-capable payment providers for public rendering.
+     */
+    public static function toPublicMandateable(): Collection
+    {
+        return static::toPublic()
+            ->filter(function ($item) {
+                $provider = $item['provider'] ?? null;
+
+                return $provider && PaymentGatewayBuilder::isSupported($provider);
+            })
+            ->values();
     }
 }

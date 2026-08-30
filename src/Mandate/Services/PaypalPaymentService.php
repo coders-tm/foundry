@@ -21,12 +21,58 @@ class PaypalPaymentService extends PaymentService
     public const PROVIDER = PaymentProvider::PAYPAL;
 
     /**
-     * Set up a saved PayPal Vault ID or billing agreement.
-     *
+     * Handle PayPal agreement redirect callback.
      *
      * @throws Exception
      */
-    public function setup(): ?PaymentMethodModel
+    public function handleCallback(Request $request): ?PaymentMethodModel
+    {
+        if ($request->input('error') === 'cancelled') {
+            throw new Exception('PayPal mandate registration was cancelled.');
+        }
+
+        $baToken = $request->query('ba_token') ?? $request->input('ba_token');
+        if (! $baToken) {
+            throw new Exception('Agreement token not found in callback request.');
+        }
+
+        $paypal = Foundry::paypal();
+        $confirmResponse = $paypal->executeBillingAgreement($baToken);
+
+        if (isset($confirmResponse['error']) || ! isset($confirmResponse['id'])) {
+            $errorMsg = $confirmResponse['error']['message'] ?? $confirmResponse['message'] ?? 'PayPal confirmation failed';
+            throw new Exception($errorMsg);
+        }
+
+        $agreementId = $confirmResponse['id'];
+
+        $pm = $this->createOrUpdatePaymentMethod(
+            $this->getUserId(),
+            self::PROVIDER,
+            $agreementId,
+            [
+                'status' => 'active',
+                'type' => 'paypal',
+                'email' => $confirmResponse['payer']['payer_info']['email'] ?? null,
+                'first_name' => $confirmResponse['payer']['payer_info']['first_name'] ?? null,
+                'last_name' => $confirmResponse['payer']['payer_info']['last_name'] ?? null,
+                'payer_id' => $confirmResponse['payer']['payer_info']['payer_id'] ?? null,
+            ]
+        );
+
+        $pm->markAsDefault();
+
+        return $pm;
+    }
+
+    /**
+     * Set up a saved PayPal Vault ID or billing agreement.
+     *
+     * @return PaymentMethodModel|RedirectResponse|null
+     *
+     * @throws Exception
+     */
+    public function setup(): mixed
     {
         if (! $this->getUserId()) {
             throw new Exception('User model key is required for PayPal setup.');
@@ -52,7 +98,44 @@ class PaypalPaymentService extends PaymentService
             return $pm;
         }
 
-        return $this->getPaymentMethod($this->getUserId(), self::PROVIDER);
+        $paypal = Foundry::paypal();
+
+        $sessionToken = $this->getUserId().'-'.str()->random(16);
+        $callbackUrl = \Illuminate\Support\Facades\Route::has('billable.callback')
+            ? route('billable.callback', ['provider' => self::PROVIDER])
+            : url('/billable/'.self::PROVIDER.'/callback');
+        $cancelUrl = $callbackUrl.(str_contains($callbackUrl, '?') ? '&' : '?').'error=cancelled';
+
+        $response = $paypal->createBillingAgreementToken([
+            'description' => 'Automatic Subscription Billing for '.config('app.name'),
+            'payer' => [
+                'payment_method' => 'PAYPAL',
+            ],
+            'plan' => [
+                'type' => 'MERCHANT_INITIATED_BILLING',
+                'merchant_preferences' => [
+                    'return_url' => $callbackUrl,
+                    'cancel_url' => $cancelUrl,
+                    'accepted_pymt_type' => 'INSTANT',
+                    'skip_shipping_address' => true,
+                ],
+            ],
+        ]);
+
+        if (isset($response['error']) || ! isset($response['token_id'])) {
+            $errorMsg = $response['error']['message'] ?? $response['message'] ?? 'PayPal token generation failed';
+            throw new Exception($errorMsg);
+        }
+
+        $baToken = $response['token_id'];
+
+        $gatewayUrl = ($paypal->mode ?? 'sandbox') === 'sandbox' ? 'https://www.sandbox.paypal.com' : 'https://www.paypal.com';
+        $redirectUrl = "{$gatewayUrl}/agreements/approve?ba_token={$baToken}";
+
+        return new \Foundry\Mandate\Responses\RedirectResponse($redirectUrl, [
+            'token_id' => $baToken,
+            'checkout_url' => $redirectUrl,
+        ]);
     }
 
     /**

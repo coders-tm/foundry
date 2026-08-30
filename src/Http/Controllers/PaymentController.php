@@ -6,7 +6,7 @@ use Foundry\Enum\PaymentStatus;
 use Foundry\Models\Order;
 use Foundry\Payment\Payable;
 use Foundry\Payment\Processor;
-use \Foundry\Services\PaymentProvider;
+use Foundry\Services\PaymentProvider;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;

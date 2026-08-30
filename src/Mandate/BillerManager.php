@@ -2,7 +2,6 @@
 
 namespace Foundry\Mandate;
 
-use Foundry\Mandate\Models\Customer as CustomerModel;
 use Foundry\Mandate\Models\PaymentMethod as PaymentMethodModel;
 use Foundry\Mandate\Responses\RedirectResponse;
 use Foundry\Mandate\Services\PaymentService;
@@ -241,22 +240,13 @@ class BillerManager
     }
 
     /**
-     * Get the status of the owner's saved payment methods.
+     * Get all saved payment methods for the owner.
      *
-     * @return array<string, mixed>
+     * @return \Illuminate\Database\Eloquent\Collection<int, PaymentMethodModel>
      */
-    public function paymentMethodStatus(): array
+    public function paymentMethods(): \Illuminate\Database\Eloquent\Collection
     {
-        $ownerId = $this->owner->getKey();
-        $paymentMethod = PaymentMethodModel::where('user_id', $ownerId)->first();
-        $customer = CustomerModel::where('user_id', $ownerId)->first();
-
-        return [
-            'enabled' => $paymentMethod !== null,
-            'provider' => $paymentMethod?->provider,
-            'payment_method' => $paymentMethod?->toArray(),
-            'customer' => $customer?->toArray(),
-        ];
+        return $this->owner->paymentMethods;
     }
 
     /**

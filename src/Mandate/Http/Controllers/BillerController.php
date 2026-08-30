@@ -100,12 +100,12 @@ class BillerController extends Controller
     }
 
     /**
-     * Get the status of the authenticated user's payment methods.
+     * Get all saved payment methods and status of the authenticated user.
      */
     public function status(Request $request): JsonResponse
     {
         return response()->json(
-            $request->user()->paymentMethodStatus()
+            $request->user()->paymentMethods()
         );
     }
 }

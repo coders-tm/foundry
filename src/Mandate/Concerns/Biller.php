@@ -7,6 +7,7 @@ use Foundry\Mandate\Models\PaymentMethod;
 use Foundry\Mandate\Responses\RedirectResponse;
 use Foundry\Payment\Payable;
 use Foundry\Payment\PaymentResult;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\Request;
 
 /**
@@ -31,13 +32,11 @@ trait Biller
     }
 
     /**
-     * Get the status of the model's saved payment methods.
-     *
-     * @return array<string, mixed>
+     * Get the payment methods relation for the billable model.
      */
-    public function paymentMethodStatus(): array
+    public function paymentMethods(): HasMany
     {
-        return $this->billable()->paymentMethodStatus();
+        return $this->hasMany(PaymentMethod::class, 'user_id');
     }
 
     /**

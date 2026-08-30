@@ -2,7 +2,7 @@
 
 namespace Foundry\Mandate\Models;
 
-use \Foundry\Services\PaymentProvider;
+use Foundry\Services\PaymentProvider;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 

@@ -12,12 +12,12 @@ use Foundry\Payment\Payable;
 use Foundry\Payment\PaymentResult;
 use Foundry\Services\PaymentProvider;
 use Foundry\Tests\TestCase;
-use PHPUnit\Framework\Attributes\Test;
 use Paddle\SDK\Client as PaddleSdkClient;
 use Paddle\SDK\Entities\Shared\CurrencyCode;
 use Paddle\SDK\Entities\Shared\TransactionStatus;
 use Paddle\SDK\Entities\Transaction;
 use Paddle\SDK\Resources\Transactions\TransactionsClient;
+use PHPUnit\Framework\Attributes\Test;
 
 class PaddleBillableTest extends TestCase
 {
