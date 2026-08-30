@@ -2,126 +2,214 @@
 
 namespace Foundry\Http\Controllers;
 
-use Foundry\Foundry;
+use Foundry\Enum\PaymentStatus;
 use Foundry\Models\Order;
 use Foundry\Models\PaymentMethod;
 use Foundry\Payment\Payable;
 use Foundry\Payment\Processor;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Log;
+
 
 class PaymentController extends Controller
 {
     /**
-     * Unified Setup Payment Intent for Orders
-     * Handles payment setup for order payments using the factory pattern
+     * Display the payment page.
      */
-    public function setupPaymentIntent(Request $request)
+    public function index(Request $request, Order $order): JsonResponse
+    {
+        if ($order->payment_status === PaymentStatus::PAID) {
+            return response()->json([
+                'order' => $order->loadMissing('payments'),
+            ]);
+        }
+
+        $order->load(['line_items', 'tax_lines', 'discount', 'contact', 'customer']);
+
+        $paymentMethods = PaymentMethod::toPublic();
+
+        return response()->json([
+            'order' => $order,
+            'token' => $order->id,
+            'paymentMethods' => $paymentMethods,
+            'customerData' => $order->customer?->load('address') ?? $order->contact,
+        ]);
+    }
+
+    /**
+     * Download invoice PDF for the specified order.
+     */
+    public function downloadInvoice(Order $order)
+    {
+        return $order->download();
+    }
+
+    /**
+     * Setup payment intent for the order.
+     */
+    public function setupPaymentIntent(Request $request): JsonResponse
     {
         $request->validate([
-            'token' => 'required|string|exists:'.Foundry::$orderModel.',id',
-            'provider' => 'required|integer|exists:'.PaymentMethod::class.',id',
+            'token' => 'required|string|exists:orders,id',
+            'provider' => 'required|string|exists:payment_methods,id',
+            'line1' => 'nullable|string',
+            'line2' => 'nullable|string',
+            'city' => 'nullable|string',
+            'state' => 'nullable|string',
+            'postal_code' => 'nullable|string',
+            'country' => 'nullable|string',
         ]);
 
         try {
-            $order = Foundry::$orderModel::where('id', $request->token)->firstOrFail();
+            $order = Order::findOrFail($request->token);
             $paymentMethod = PaymentMethod::findOrFail($request->provider);
 
-            // Check if order is already paid
+            // Update billing address if provided
+            $address = $request->only(['line1', 'line2', 'city', 'state', 'postal_code', 'country']);
+            if (! empty(array_filter($address))) {
+                $order->fill(['billing_address' => $address])->saveQuietly();
+                if ($user = $request->user()) {
+                    $user->updateOrCreateAddress($address);
+                }
+            }
+
             if ($order->payment_status === 'paid') {
                 return response()->json([
-                    'message' => 'This order has already been paid',
+                    'message' => __('This order has already been paid'),
                     'order_number' => "#{$order->number}",
                 ], 422);
             }
 
             $provider = $paymentMethod->integration_via ?? $paymentMethod->provider;
 
-            // Check if provider is supported
             if (! Processor::isSupported($provider)) {
                 return response()->json([
-                    'message' => 'Payment method not supported',
+                    'message' => __('Payment method not supported'),
                     'provider' => $provider,
                 ], 422);
             }
 
-            // Create processor using factory
             $processor = Processor::make($provider);
-
-            // Set the payment method on the processor
             $processor->setPaymentMethod($paymentMethod);
-
-            // Create Payable from order
             $payable = Payable::fromOrder($order);
 
             $paymentIntent = $processor->setupPaymentIntent($request, $payable);
 
             return response()->json($paymentIntent);
         } catch (\Throwable $e) {
+            Log::error('Payment setup error: '.$e->getMessage(), [
+                'token' => $request->token,
+                'provider' => $request->provider,
+            ]);
             throw $e;
         }
     }
 
     /**
-     * Unified Confirm Payment for Orders
-     * Handles payment confirmation for order payments using the factory pattern
+     * Confirm payment for the order.
      */
-    public function confirmPayment(Request $request)
+    public function confirmPayment(Request $request): JsonResponse
     {
         $request->validate([
-            'token' => 'required|string|exists:'.Foundry::$orderModel.',id',
-            'provider' => 'required|integer|exists:'.PaymentMethod::class.',id',
+            'token' => 'required|string|exists:orders,id',
+            'provider' => 'required|string|exists:payment_methods,id',
         ]);
 
         try {
-            /** @var Order $order */
-            $order = Foundry::$orderModel::where('id', $request->token)->firstOrFail();
+            $order = Order::findOrFail($request->token);
             $paymentMethod = PaymentMethod::findOrFail($request->provider);
             $provider = $paymentMethod->integration_via ?? $paymentMethod->provider;
 
-            // Check if order is already paid
             if ($order->payment_status === 'paid') {
                 return response()->json([
                     'success' => true,
-                    'message' => 'This order has already been paid',
+                    'message' => __('This order has already been paid'),
                     'order_number' => "#{$order->number}",
                     'order_id' => $order->id,
                 ]);
             }
 
-            // Check if provider is supported
             if (! Processor::isSupported($provider)) {
                 return response()->json([
-                    'message' => 'Payment method not supported',
+                    'message' => __('Payment method not supported'),
                     'provider' => $provider,
                 ], 422);
             }
 
-            // Create processor using factory
             $processor = Processor::make($provider);
-
-            // Set the payment method on the processor
             $processor->setPaymentMethod($paymentMethod);
-
-            // Create Payable from order
             $payable = Payable::fromOrder($order);
 
-            // Confirm payment and get payment result
             $result = $processor->confirmPayment($request, $payable);
 
-            // Mark order as paid with payment data (if available)
             if ($paymentData = $result->getPaymentData()) {
                 $order->markAsPaid($paymentData, ['amount' => $order->grand_total]);
             }
 
             return response()->json([
                 'success' => true,
-                'order_id' => $order->key,
+                'order_id' => $order->id,
                 'transaction_id' => $result->getTransactionId(),
                 'status' => $result->getStatus() ?? 'success',
             ]);
         } catch (\Throwable $e) {
+            Log::error('Payment confirmation error: '.$e->getMessage(), [
+                'token' => $request->token,
+                'provider' => $request->provider,
+            ]);
             throw $e;
+        }
+    }
+
+    /**
+     * Handle success callback from payment providers.
+     */
+    public function handleSuccess(Request $request, string $provider)
+    {
+        $redirectUrl = route('dashboard');
+
+        try {
+            $result = Processor::handleSuccessCallback($provider, $request);
+            $payment = $result->payment;
+
+            if ($order = $payment->paymentable) {
+                $redirectUrl = route('payment.index', $order->id);
+
+                if ($order->payment_status !== 'paid') {
+                    $order->markAsPaid();
+                }
+            }
+
+            return redirect($redirectUrl)->with($result->getMessageType(), $result->getMessage());
+        } catch (\Throwable $e) {
+            Log::error("Order payment success handler error for provider {$provider}: ".$e->getMessage());
+
+            return redirect($redirectUrl)->with('info', __('Payment may have been completed. Please check your order status.'));
+        }
+    }
+
+    /**
+     * Handle cancel callback from payment providers.
+     */
+    public function handleCancel(Request $request, string $provider)
+    {
+        $redirectUrl = route('dashboard');
+
+        try {
+            $result = Processor::handleCancelCallback($provider, $request);
+            $payment = $result->payment;
+
+            if ($order = $payment->paymentable) {
+                $redirectUrl = route('payment.index', $order->id);
+            }
+
+            return redirect($redirectUrl)->with($result->getMessageType(), $result->getMessage());
+        } catch (\Throwable $e) {
+            Log::error("Order payment cancel handler error for provider {$provider}: ".$e->getMessage());
+
+            return redirect($redirectUrl)->with('info', __('Payment process was interrupted.'));
         }
     }
 }
