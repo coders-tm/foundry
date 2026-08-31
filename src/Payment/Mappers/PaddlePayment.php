@@ -27,7 +27,7 @@ class PaddlePayment extends AbstractPayment
             default => Payment::STATUS_FAILED,
         };
         $this->note = "Paddle Transaction: {$this->transactionId} (Status: {$this->status})";
-        $this->processedAt = $response->createdAt ?? new DateTime;
+        $this->processedAt = $response->createdAt ? DateTime::createFromImmutable($response->createdAt) : new DateTime;
         $this->metadata = $this->extractMetadata($response);
     }
 
@@ -47,8 +47,11 @@ class PaddlePayment extends AbstractPayment
                 if (isset($method->card)) {
                     $normalized['card_brand'] = ucfirst($method->card->type->getValue() ?? 'card');
                     $normalized['last_four'] = $method->card->last4;
-                } elseif (isset($method->paypal)) {
-                    $normalized['paypal_email'] = $method->paypal->email;
+                    $normalized['card_exp_month'] = $method->card->expiryMonth;
+                    $normalized['card_exp_year'] = $method->card->expiryYear;
+                    $normalized['cardholder_name'] = $method->card->cardholderName;
+                } elseif ($normalized['payment_method_type'] === 'paypal') {
+                    $normalized['paypal_email'] = $method->paypal->email ?? null;
                 }
             }
         }
