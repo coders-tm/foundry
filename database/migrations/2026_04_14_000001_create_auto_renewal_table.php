@@ -25,8 +25,8 @@ return new class extends Migration
 
             $table->timestamps();
 
-            // Ensure one active payment method per user per provider
-            $table->unique(['user_id', 'provider']);
+            // Unique index per user, provider, and provider_id
+            $table->unique(['user_id', 'provider', 'provider_id']);
         });
 
         Schema::create('payment_provider_customers', function (Blueprint $table) {

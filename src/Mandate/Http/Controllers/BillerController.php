@@ -96,9 +96,13 @@ class BillerController extends Controller
     {
         $request->validate([
             'provider' => 'nullable|string',
+            'payment_method' => 'nullable|string',
         ]);
 
-        $request->user()->removePaymentMethod($request->provider ?? null);
+        $request->user()->removePaymentMethod(
+            $request->payment_method ?? null,
+            $request->provider ?? null
+        );
 
         return response()->json([
             'message' => __('Payment method has been removed successfully.'),

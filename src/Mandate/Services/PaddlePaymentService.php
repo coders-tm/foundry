@@ -194,7 +194,8 @@ class PaddlePaymentService extends PaymentService
 
         $this->deletePaymentMethod(
             $this->getUserId(),
-            self::PROVIDER
+            self::PROVIDER,
+            $this->paymentMethod
         );
 
         return true;

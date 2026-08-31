@@ -56,12 +56,13 @@ trait Biller
     /**
      * Remove a saved payment method.
      *
+     * @param  PaymentMethod|string|null  $paymentMethod  The payment method ID or model instance
      * @param  string|null  $provider  Optional payment provider name
      * @return bool
      */
-    public function removePaymentMethod(?string $provider = null): mixed
+    public function removePaymentMethod(mixed $paymentMethod = null, ?string $provider = null): mixed
     {
-        return $this->billable($provider)->removePaymentMethod();
+        return $this->billable($provider)->removePaymentMethod($paymentMethod);
     }
 
     /**

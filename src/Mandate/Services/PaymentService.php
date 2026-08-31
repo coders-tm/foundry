@@ -95,9 +95,9 @@ abstract class PaymentService
             [
                 'user_id' => $userId,
                 'provider' => $provider,
+                'provider_id' => $providerId,
             ],
             [
-                'provider_id' => $providerId,
                 'options' => $options,
             ]
         );
@@ -108,12 +108,23 @@ abstract class PaymentService
      *
      * @param  string|int  $userId  The user model key
      * @param  string  $provider  The payment provider name
+     * @param  PaymentMethodModel|string|null  $paymentMethod  Optional payment method instance or provider ID
      */
-    protected function deletePaymentMethod($userId, string $provider): bool
+    protected function deletePaymentMethod($userId, string $provider, mixed $paymentMethod = null): bool
     {
-        return (bool) PaymentMethodModel::where('user_id', $userId)
-            ->where('provider', $provider)
-            ->delete();
+        $query = PaymentMethodModel::where('user_id', $userId)
+            ->where('provider', $provider);
+
+        if ($paymentMethod instanceof PaymentMethodModel) {
+            $query->where('id', $paymentMethod->id);
+        } elseif (is_string($paymentMethod) && ! empty($paymentMethod)) {
+            $query->where(function ($q) use ($paymentMethod) {
+                $q->where('id', $paymentMethod)
+                  ->orWhere('provider_id', $paymentMethod);
+            });
+        }
+
+        return (bool) $query->delete();
     }
 
     /**

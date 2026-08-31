@@ -68,6 +68,30 @@ class StripeBillableTest extends TestCase
     }
 
     /**
+     * Test storing multiple payment methods for the same provider.
+     */
+    #[Test]
+    public function test_user_can_store_multiple_payment_methods_per_provider()
+    {
+        $subscription = Subscription::factory()->create(['provider' => PaymentProvider::STRIPE]);
+
+        // Add first card
+        $manager1 = new BillerManager($subscription->user, 'pm_card_visa');
+        $manager1->setProvider(PaymentProvider::STRIPE);
+        $manager1->setup();
+
+        // Add second card
+        $manager2 = new BillerManager($subscription->user, 'pm_card_mastercard');
+        $manager2->setProvider(PaymentProvider::STRIPE);
+        $manager2->setup();
+
+        $paymentMethods = $subscription->user->paymentMethods;
+
+        $this->assertCount(2, $paymentMethods);
+        $this->assertTrue($paymentMethods->where('is_default', true)->first()->is_default);
+    }
+
+    /**
      * Test charging a Payable entity via Stripe off-session.
      */
     #[Test]

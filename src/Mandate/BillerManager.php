@@ -207,13 +207,16 @@ class BillerManager
     /**
      * Remove the owner's saved payment method.
      *
+     * @param  PaymentMethodModel|string|null  $paymentMethod  Optional payment method model or ID
      * @return bool
      *
      * @throws \Exception
      */
-    public function removePaymentMethod(): mixed
+    public function removePaymentMethod(mixed $paymentMethod = null): mixed
     {
-        return $this->getService()->remove();
+        $targetPm = $paymentMethod ?? $this->paymentMethod;
+
+        return $this->getService(paymentMethod: $targetPm)->remove();
     }
 
     /**

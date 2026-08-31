@@ -365,7 +365,8 @@
                         "X-CSRF-TOKEN": csrfToken
                     },
                     body: JSON.stringify({
-                        provider: provider
+                        provider: provider,
+                        payment_method: id
                     })
                 });
 
