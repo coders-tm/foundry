@@ -9,6 +9,7 @@ use Foundry\Services\Payment\KlarnaClient;
 use Foundry\Services\Payment\MercadoPagoClient;
 use Foundry\Services\Payment\PaddleClient;
 use Foundry\Services\Payment\PaypalClient;
+use Foundry\Services\Payment\PayuClient;
 use Foundry\Services\Payment\XenditClient;
 use GoCardlessPro\Client;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -162,6 +163,13 @@ class Foundry
      * @var Api
      */
     protected static $razorpayClient;
+
+    /**
+     * The cached PayuClient client instance.
+     *
+     * @var PayuClient
+     */
+    protected static $payuClient;
 
     /**
      * Determine if Foundry's migrations should be run.
@@ -765,5 +773,25 @@ class Foundry
         }
 
         return static::$paddleClient = PaddleClient::make($options);
+    }
+
+    /**
+     * Get the PayU client instance.
+     *
+     * @return PayuClient
+     */
+    public static function payu(array $options = [])
+    {
+        if (static::$payuClient) {
+            return static::$payuClient;
+        }
+
+        $options = array_merge(config('foundry.payment_providers.payu', []), $options);
+
+        if (empty($options['merchant_key']) || empty($options['merchant_salt'])) {
+            throw new \InvalidArgumentException('PayU credentials are not configured.');
+        }
+
+        return static::$payuClient = new PayuClient($options);
     }
 }

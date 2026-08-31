@@ -13,6 +13,8 @@ class PaymentProvider
 
     public const PAYPAL = 'paypal';
 
+    public const PAYU = 'payu';
+
     public const GOCARDLESS = 'gocardless';
 
     public const KLARNA = 'klarna';

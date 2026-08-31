@@ -5,6 +5,7 @@ namespace Foundry\Actions\Subscription;
 use Carbon\Carbon;
 use Foundry\Contracts\SubscriptionStatus;
 use Foundry\Events\SubscriptionExpired;
+use Foundry\Events\SubscriptionInvoiced;
 use Foundry\Models\Subscription;
 use Foundry\Notifications\SubscriptionExpiredNotification;
 use Foundry\Services\Period;
@@ -20,11 +21,6 @@ class RenewSubscription
     {
         $subscription->assertRenewable();
 
-        // Check if contract is completed
-        if ($subscription->total_cycles && $subscription->current_cycle >= $subscription->total_cycles) {
-            throw new \LogicException('Contract has reached its total cycles limit.');
-        }
-
         // Detach actions before renewing
         $subscription->detachActions();
 
@@ -37,14 +33,9 @@ class RenewSubscription
             // Update billing intervals and reset cycle counter for new plan
             $subscription->billing_interval = $subscription->nextPlan->interval->value;
             $subscription->billing_interval_count = $subscription->nextPlan->interval_count;
-            $subscription->total_cycles = $subscription->nextPlan->contract_cycles;
-            $subscription->current_cycle = 0; // Reset cycle counter when switching to next plan
             $subscription->next_plan = null;
             $subscription->is_downgrade = false;
         }
-
-        // Increment cycle counter (will be 1 if we just reset to 0)
-        $subscription->current_cycle = ($subscription->current_cycle ?? 0) + 1;
 
         // For contract plans with separate billing cycles, use billing interval for renewal
         // Otherwise use the plan's main interval
@@ -104,6 +95,12 @@ class RenewSubscription
         // Check if invoice is already paid (e.g. price 0)
         $isPaid = $invoice && $invoice->is_paid;
 
+        if (! $isPaid && $invoice && (float) $invoice->grand_total > 0) {
+            event(new SubscriptionInvoiced($subscription, $invoice));
+
+            $isPaid = $invoice->fresh()->is_paid;
+        }
+
         // Try to charge from wallet if balance is available
         if (! $isPaid && $invoice && config('foundry.wallet.auto_charge_on_renewal', true) && $subscription->user) {
             try {
@@ -144,9 +141,7 @@ class RenewSubscription
 
             // Notify Admins
             try {
-                if (function_exists('admin_notify')) {
-                    admin_notify(new \Foundry\Notifications\Admins\SubscriptionExpiredNotification($subscription));
-                }
+                admin_notify(new \Foundry\Notifications\Admins\SubscriptionExpiredNotification($subscription));
             } catch (\Throwable $e) {
                 logger()->error('Failed to send admin subscription expired notification', ['error' => $e->getMessage()]);
             }
@@ -159,11 +154,6 @@ class RenewSubscription
 
             // Dispatch event
             event(new SubscriptionExpired($subscription));
-        }
-
-        // Auto-cancel if contract is now complete
-        if ($subscription->total_cycles && $subscription->current_cycle >= $subscription->total_cycles) {
-            app(CancelSubscription::class)->cancelNow($subscription);
         }
 
         return $subscription;
