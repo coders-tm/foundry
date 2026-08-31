@@ -144,21 +144,6 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Mandate / Billable Routing Configuration
-    |--------------------------------------------------------------------------
-    |
-    | Configuration for callback and redirect routes used during off-session
-    | payment method / mandate setups (PayPal, GoCardless, etc.).
-    |
-    */
-
-    'mandate' => [
-        'callback_route' => 'payment-methods.callback',
-        'redirect_route' => 'payment-methods.index',
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
     | Payment Providers Configuration
     |--------------------------------------------------------------------------
     |

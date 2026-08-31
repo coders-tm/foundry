@@ -5,7 +5,6 @@ use Workbench\App\Http\Controllers\Admin\WalletController as AdminWalletControll
 use Workbench\App\Http\Controllers\AdminController;
 use Workbench\App\Http\Controllers as Foundry;
 use Workbench\App\Http\Controllers\Auth;
-use Workbench\App\Http\Controllers\BillerController;
 use Workbench\App\Http\Controllers\OrderController;
 use Workbench\App\Http\Controllers\Subscription;
 use Workbench\App\Http\Controllers\SupportTicketController;
@@ -181,15 +180,6 @@ Route::middleware(['auth:user'])->group(function () {
     ], function () {
         Route::get('balance', 'balance')->name('balance');
         Route::get('transactions', 'transactions')->name('transactions');
-    });
-
-    // Payment method mandate / billable routes
-    Route::prefix('payment-methods')->name('payment-methods.')->group(function () {
-        Route::get('/', [BillerController::class, 'index'])->name('index');
-        Route::post('/', [BillerController::class, 'create'])->name('create');
-        Route::match(['get', 'post'], 'callback/{provider}', [BillerController::class, 'callback'])->name('callback');
-        Route::post('confirm', [BillerController::class, 'confirm'])->name('confirm');
-        Route::delete('{payment_method}', [BillerController::class, 'destroy'])->name('destroy');
     });
 });
 

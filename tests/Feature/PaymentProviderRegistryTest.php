@@ -61,32 +61,4 @@ class PaymentProviderRegistryTest extends TestCase
         PaymentProvider::remove('custom_bank');
         $this->assertFalse(PaymentProvider::has('custom_bank'));
     }
-
-    #[Test]
-    public function it_can_filter_public_providers_to_only_mandateable_gateways()
-    {
-        PaymentProvider::add('stripe', [
-            'name' => 'Stripe',
-            'enabled' => true,
-            'order' => 1,
-            'key' => 'pk_stripe_123',
-        ]);
-
-        PaymentProvider::add('custom_unsupported', [
-            'name' => 'Custom One-Time',
-            'enabled' => true,
-            'order' => 2,
-        ]);
-
-        $publicProviders = PaymentProvider::toPublic();
-        $this->assertNotNull($publicProviders->firstWhere('provider', 'stripe'));
-        $this->assertNotNull($publicProviders->firstWhere('provider', 'custom_unsupported'));
-
-        $mandateableProviders = PaymentProvider::toPublicMandateable();
-        $this->assertNotNull($mandateableProviders->firstWhere('provider', 'stripe'));
-        $this->assertNull($mandateableProviders->firstWhere('provider', 'custom_unsupported'));
-
-        PaymentProvider::remove('stripe');
-        PaymentProvider::remove('custom_unsupported');
-    }
 }

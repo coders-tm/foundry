@@ -16,8 +16,6 @@ use Foundry\Listeners\SendSupportTicketConfirmation;
 use Foundry\Listeners\SendSupportTicketNotification;
 use Foundry\Listeners\SendSupportTicketReplyNotification;
 use Foundry\Listeners\Subscription\SendSubscriptionRenewNotification;
-use Foundry\Mandate\Listeners\ChargeRenewalPayment;
-use Foundry\Mandate\Listeners\StripeWebhookListener;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider;
@@ -46,10 +44,8 @@ class FoundryEventServiceProvider extends EventServiceProvider
         ],
         SubscriptionRenewed::class => [
             SendSubscriptionRenewNotification::class,
-            ChargeRenewalPayment::class,
         ],
         WebhookReceived::class => [
-            StripeWebhookListener::class,
         ],
         Login::class => [
             LoginListener::class,

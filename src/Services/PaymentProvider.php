@@ -2,7 +2,6 @@
 
 namespace Foundry\Services;
 
-use Foundry\Mandate\PaymentGatewayBuilder;
 use Illuminate\Support\Collection;
 
 class PaymentProvider
@@ -159,19 +158,5 @@ class PaymentProvider
                     'transaction_fee' => $item['transaction_fee'] ?? null,
                 ], static::getPublicKey($item));
             });
-    }
-
-    /**
-     * Get mandate-capable payment providers for public rendering.
-     */
-    public static function toPublicMandateable(): Collection
-    {
-        return static::toPublic()
-            ->filter(function ($item) {
-                $provider = $item['provider'] ?? null;
-
-                return $provider && PaymentGatewayBuilder::isSupported($provider);
-            })
-            ->values();
     }
 }
