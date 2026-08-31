@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Mandate;
 
-use Foundry\Foundry;
 use Foundry\Mandate\BillerManager;
 use Foundry\Mandate\Models\PaymentMethod as PaymentMethodModel;
 use Foundry\Models\Order;

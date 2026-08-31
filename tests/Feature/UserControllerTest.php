@@ -4,7 +4,6 @@ namespace Foundry\Tests\Feature;
 
 use Foundry\Models\Coupon;
 use Foundry\Models\File;
-use Foundry\Models\PaymentMethod;
 use Foundry\Models\Subscription;
 use Foundry\Models\Subscription\Feature;
 use Foundry\Models\Subscription\Plan;
@@ -179,14 +178,6 @@ class UserControllerTest extends FeatureTestCase
             'trial_days' => 0,
         ]);
 
-        // Create payment method directly instead of using factory
-        $paymentMethod = PaymentMethod::create([
-            'name' => 'test-payment',
-            'label' => 'Test Payment Method',
-            'provider' => PaymentProvider::STRIPE,
-            'active' => true,
-        ]);
-
         $userData = [
             'email' => 'subscriber@example.com',
             'first_name' => 'Jane',
@@ -194,7 +185,7 @@ class UserControllerTest extends FeatureTestCase
             'password' => 'password123',
             'password_confirmation' => 'password123',
             'plan' => $plan->id,
-            'payment_method' => $paymentMethod->id,
+            'payment_method' => PaymentProvider::STRIPE,
             'address' => [
                 'line1' => '456 Oak Ave',
                 'city' => 'Los Angeles',
@@ -282,14 +273,6 @@ class UserControllerTest extends FeatureTestCase
             'duration' => 'once',
         ]);
 
-        // Create payment method directly instead of using factory
-        $paymentMethod = PaymentMethod::create([
-            'name' => 'test-payment-coupon',
-            'label' => 'Test Payment Method',
-            'provider' => PaymentProvider::STRIPE,
-            'active' => true,
-        ]);
-
         $userData = [
             'email' => 'coupon@example.com',
             'first_name' => 'Coupon',
@@ -297,7 +280,7 @@ class UserControllerTest extends FeatureTestCase
             'password' => 'password123',
             'password_confirmation' => 'password123',
             'plan' => $plan->id,
-            'payment_method' => $paymentMethod->id,
+            'payment_method' => PaymentProvider::STRIPE,
             'promotion_code' => 'TESTCODE',
             'address' => [
                 'line1' => '789 Pine St',
@@ -621,8 +604,6 @@ class UserControllerTest extends FeatureTestCase
             'trial_days' => 0,
         ]);
 
-        $paymentMethod = PaymentMethod::factory()->active()->create();
-
         $user = User::factory()->create();
 
         $subscription = Subscription::factory()->create([
@@ -632,7 +613,7 @@ class UserControllerTest extends FeatureTestCase
         ]);
 
         $response = $this->postJson(route('users.mark-as-paid', $user->id), [
-            'payment_method' => $paymentMethod->id,
+            'payment_method' => PaymentProvider::STRIPE,
         ]);
 
         $response->assertStatus(200)

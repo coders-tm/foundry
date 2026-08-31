@@ -120,7 +120,7 @@ abstract class PaymentService
         } elseif (is_string($paymentMethod) && ! empty($paymentMethod)) {
             $query->where(function ($q) use ($paymentMethod) {
                 $q->where('id', $paymentMethod)
-                  ->orWhere('provider_id', $paymentMethod);
+                    ->orWhere('provider_id', $paymentMethod);
             });
         }
 

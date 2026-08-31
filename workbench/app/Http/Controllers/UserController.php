@@ -157,7 +157,7 @@ class UserController extends Controller
         // Add plan validation if plan is provided
         if ($request->filled('plan')) {
             $rules['plan'] = 'exists:plans,id';
-            $rules['payment_method'] = 'required|exists:payment_methods,id';
+            $rules['payment_method'] = 'required|string';
         }
 
         // Validate those rules
@@ -326,7 +326,7 @@ class UserController extends Controller
     public function markAsPaid(Request $request, User $user)
     {
         $request->validate([
-            'payment_method' => 'required|exists:payment_methods,id',
+            'payment_method' => 'required|string',
         ]);
 
         try {

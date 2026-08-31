@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Payment;
 
-use Foundry\Foundry;
 use Foundry\Models\Payment;
 use Foundry\Payment\Mappers\PaddlePayment;
 use Foundry\Payment\Payable;
