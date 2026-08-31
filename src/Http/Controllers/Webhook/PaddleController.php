@@ -5,8 +5,12 @@ namespace Foundry\Http\Controllers\Webhook;
 use Foundry\Events\Paddle\WebhookHandled;
 use Foundry\Events\Paddle\WebhookReceived;
 use Foundry\Http\Middleware\VerifyPaddleWebhookSignature;
+use Foundry\Mandate\Models\Customer as CustomerModel;
+use Foundry\Mandate\Models\PaymentMethod as PaymentMethodModel;
+use Foundry\Services\PaymentProvider;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -27,7 +31,6 @@ class PaddleController extends Controller
     /**
      * Handle a Paddle webhook call.
      *
-     * @param  Request  $request
      * @return Response
      */
     public function handleWebhook(Request $request)
@@ -54,6 +57,55 @@ class PaddleController extends Controller
         WebhookHandled::dispatch($payload);
 
         return $this->missingMethod($payload);
+    }
+
+    /**
+     * Handle subscription created event.
+     *
+     * Stores the Paddle subscription ID on the Customer model and PaymentMethod
+     * options when the subscription was created for mandate setup (off-session billing).
+     */
+    protected function handleSubscriptionCreated(array $payload): Response
+    {
+        $data = $payload['data'] ?? [];
+        $customData = $data['custom_data'] ?? [];
+
+        if (($customData['action'] ?? '') !== 'setup_mandate') {
+            return $this->successMethod();
+        }
+
+        $userId = $customData['user_id'] ?? null;
+        $subscriptionId = $data['id'] ?? null;
+
+        if (! $userId || ! $subscriptionId) {
+            return $this->successMethod();
+        }
+
+        try {
+            $customer = CustomerModel::where('user_id', $userId)
+                ->where('provider', PaymentProvider::PADDLE)
+                ->first();
+
+            if ($customer) {
+                $customer->setSubscriptionId($subscriptionId);
+                $customer->save();
+            }
+
+            PaymentMethodModel::where('user_id', $userId)
+                ->where('provider', PaymentProvider::PADDLE)
+                ->whereNull('options->subscription_id')
+                ->update([
+                    'options->subscription_id' => $subscriptionId,
+                ]);
+        } catch (\Throwable $e) {
+            Log::error('Error storing Paddle subscription ID from webhook', [
+                'user_id' => $userId,
+                'subscription_id' => $subscriptionId,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return $this->successMethod();
     }
 
     /**

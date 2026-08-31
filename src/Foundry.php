@@ -756,18 +756,14 @@ class Foundry
      */
     public static function paddle(array $options = [])
     {
+        if (app()->bound(PaddleSdkClient::class)) {
+            return app(PaddleSdkClient::class);
+        }
+
         if (static::$paddleClient) {
             return static::$paddleClient;
         }
 
         return static::$paddleClient = PaddleClient::make($options);
-    }
-
-    /**
-     * Set the cached Paddle client instance (useful for testing).
-     */
-    public static function setPaddleClient(?PaddleSdkClient $client): void
-    {
-        static::$paddleClient = $client;
     }
 }

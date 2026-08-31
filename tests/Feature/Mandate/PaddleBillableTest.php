@@ -4,7 +4,7 @@ namespace Tests\Feature\Mandate;
 
 use Foundry\Foundry;
 use Foundry\Mandate\BillerManager;
-use Foundry\Mandate\Exceptions\PaymentIncomplete;
+use Foundry\Mandate\Models\PaymentMethod as PaymentMethodModel;
 use Foundry\Models\Order;
 use Foundry\Models\Subscription;
 use Foundry\Models\Subscription\Plan;
@@ -13,18 +13,31 @@ use Foundry\Payment\PaymentResult;
 use Foundry\Services\PaymentProvider;
 use Foundry\Tests\TestCase;
 use Paddle\SDK\Client as PaddleSdkClient;
-use Paddle\SDK\Entities\Shared\CurrencyCode;
-use Paddle\SDK\Entities\Shared\TransactionStatus;
-use Paddle\SDK\Entities\Transaction;
+use Paddle\SDK\Entities\Subscription as PaddleSubscription;
+use Paddle\SDK\Entities\Transaction as PaddleTransaction;
+use Paddle\SDK\Resources\Subscriptions\SubscriptionsClient;
 use Paddle\SDK\Resources\Transactions\TransactionsClient;
 use PHPUnit\Framework\Attributes\Test;
 
 class PaddleBillableTest extends TestCase
 {
-    protected function tearDown(): void
-    {
-        Foundry::setPaddleClient(null);
-        parent::tearDown();
+    /**
+     * Create a Paddle payment method with a subscription_id for testing.
+     */
+    private function createPaddlePaymentMethodWithSubscription(
+        string $userId,
+        string $subscriptionId = 'sub_paddle_test_123',
+        string $providerId = 'pay_mtd_paddle_test'
+    ): PaymentMethodModel {
+        return PaymentMethodModel::create([
+            'user_id' => $userId,
+            'provider' => PaymentProvider::PADDLE,
+            'provider_id' => $providerId,
+            'options' => [
+                'subscription_id' => $subscriptionId,
+                'payment_method_type' => 'card',
+            ],
+        ]);
     }
 
     /**
@@ -35,7 +48,7 @@ class PaddleBillableTest extends TestCase
     {
         $subscription = Subscription::factory()->create(['provider' => PaymentProvider::PADDLE]);
 
-        $mockTransaction = $this->createMock(Transaction::class);
+        $mockTransaction = $this->createMock(PaddleTransaction::class);
         $mockTransaction->id = 'txn_paddle_setup_123';
 
         $mockTransactionsClient = $this->createMock(TransactionsClient::class);
@@ -47,7 +60,7 @@ class PaddleBillableTest extends TestCase
         $refProp = new \ReflectionProperty(PaddleSdkClient::class, 'transactions');
         $refProp->setValue($mockPaddleClient, $mockTransactionsClient);
 
-        Foundry::setPaddleClient($mockPaddleClient);
+        $this->app->instance(PaddleSdkClient::class, $mockPaddleClient);
 
         $manager = new BillerManager($subscription->user);
         $manager->setProvider(PaymentProvider::PADDLE);
@@ -133,26 +146,25 @@ class PaddleBillableTest extends TestCase
             'grand_total' => 20.00,
         ]);
 
-        $manager = new BillerManager($subscription->user, 'pm_paddle_123');
-        $manager->setProvider(PaymentProvider::PADDLE);
-        $manager->setup();
+        $this->createPaddlePaymentMethodWithSubscription(
+            $subscription->user_id,
+            'sub_paddle_test_123'
+        );
 
-        // Mock Paddle SDK client & transactions client
-        $mockTransaction = $this->createMock(Transaction::class);
-        $mockTransaction->id = 'txn_paddle_999';
-        $mockTransaction->status = TransactionStatus::Completed();
-        $mockTransaction->currencyCode = CurrencyCode::from('USD');
+        // Mock Paddle SDK subscriptions client for createOneTimeCharge
+        $mockPaddleSubscription = $this->createMock(PaddleSubscription::class);
+        $mockPaddleSubscription->id = 'sub_paddle_test_123';
 
-        $mockTransactionsClient = $this->createMock(TransactionsClient::class);
-        $mockTransactionsClient->expects($this->once())
-            ->method('create')
-            ->willReturn($mockTransaction);
+        $mockSubscriptionsClient = $this->createMock(SubscriptionsClient::class);
+        $mockSubscriptionsClient->expects($this->once())
+            ->method('createOneTimeCharge')
+            ->willReturn($mockPaddleSubscription);
 
         $mockPaddleClient = $this->createMock(PaddleSdkClient::class);
-        $refProp = new \ReflectionProperty(PaddleSdkClient::class, 'transactions');
-        $refProp->setValue($mockPaddleClient, $mockTransactionsClient);
+        $refProp = new \ReflectionProperty(PaddleSdkClient::class, 'subscriptions');
+        $refProp->setValue($mockPaddleClient, $mockSubscriptionsClient);
 
-        Foundry::setPaddleClient($mockPaddleClient);
+        $this->app->instance(PaddleSdkClient::class, $mockPaddleClient);
 
         $payable = Payable::fromOrder($order);
         $manager = new BillerManager($subscription->user);
@@ -160,15 +172,15 @@ class PaddleBillableTest extends TestCase
 
         $this->assertInstanceOf(PaymentResult::class, $result);
         $this->assertTrue($result->isSuccess());
-        $this->assertEquals('txn_paddle_999', $result->getTransactionId());
+        $this->assertEquals('sub_paddle_test_123', $result->getTransactionId());
         $this->assertEquals('succeeded', $result->getStatus());
     }
 
     /**
-     * Test Paddle charge requiring action.
+     * Test Paddle charge failure throws an exception.
      */
     #[Test]
-    public function test_charge_paddle_requires_action()
+    public function test_charge_paddle_failure()
     {
         $plan = Plan::factory()->create(['price' => 20.00]);
         $subscription = Subscription::factory()->create([
@@ -184,33 +196,27 @@ class PaddleBillableTest extends TestCase
             'grand_total' => 20.00,
         ]);
 
-        $manager = new BillerManager($subscription->user, 'pm_paddle_3ds');
-        $manager->setProvider(PaymentProvider::PADDLE);
-        $manager->setup();
+        $this->createPaddlePaymentMethodWithSubscription(
+            $subscription->user_id,
+            'sub_paddle_fail'
+        );
 
-        $mockTransaction = $this->createMock(Transaction::class);
-        $mockTransaction->id = 'txn_paddle_3ds';
-        $mockTransaction->status = TransactionStatus::from('requires_action');
-
-        $mockTransactionsClient = $this->createMock(TransactionsClient::class);
-        $mockTransactionsClient->expects($this->once())
-            ->method('create')
-            ->willReturn($mockTransaction);
+        $mockSubscriptionsClient = $this->createMock(SubscriptionsClient::class);
+        $mockSubscriptionsClient->expects($this->once())
+            ->method('createOneTimeCharge')
+            ->willThrowException(new \Exception('Payment failed'));
 
         $mockPaddleClient = $this->createMock(PaddleSdkClient::class);
-        $refProp = new \ReflectionProperty(PaddleSdkClient::class, 'transactions');
-        $refProp->setValue($mockPaddleClient, $mockTransactionsClient);
+        $refProp = new \ReflectionProperty(PaddleSdkClient::class, 'subscriptions');
+        $refProp->setValue($mockPaddleClient, $mockSubscriptionsClient);
 
-        Foundry::setPaddleClient($mockPaddleClient);
+        $this->app->instance(PaddleSdkClient::class, $mockPaddleClient);
 
-        try {
-            $payable = Payable::fromOrder($order);
-            $manager = new BillerManager($subscription->user);
-            $manager->charge($payable);
-            $this->fail('Expected PaymentIncomplete exception was not thrown.');
-        } catch (PaymentIncomplete $e) {
-            $this->assertInstanceOf(PaymentIncomplete::class, $e);
-            $this->assertEquals('requires_action', $e->payment()->status());
-        }
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Paddle charge failed: Payment failed');
+
+        $payable = Payable::fromOrder($order);
+        $manager = new BillerManager($subscription->user);
+        $manager->charge($payable);
     }
 }

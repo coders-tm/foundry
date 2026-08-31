@@ -60,4 +60,32 @@ class PaymentMethod extends Model
     {
         return PaymentProvider::find($this->provider);
     }
+
+    /**
+     * Get the Paddle subscription ID for off-session billing.
+     */
+    public function getSubscriptionId(): ?string
+    {
+        return $this->options['subscription_id'] ?? null;
+    }
+
+    /**
+     * Set the Paddle subscription ID for off-session billing.
+     */
+    public function setSubscriptionId(string $subscriptionId): static
+    {
+        $options = $this->options ?? [];
+        $options['subscription_id'] = $subscriptionId;
+        $this->options = $options;
+
+        return $this;
+    }
+
+    /**
+     * Get the payment method type (e.g. 'card', 'paypal').
+     */
+    public function getPaymentMethodType(): ?string
+    {
+        return $this->options['payment_method_type'] ?? null;
+    }
 }

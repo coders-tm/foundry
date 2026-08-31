@@ -3,19 +3,22 @@
 namespace Foundry\Mandate\Services;
 
 use Foundry\Foundry;
-use Foundry\Mandate\Exceptions\PaymentIncomplete;
 use Foundry\Mandate\Models\PaymentMethod as PaymentMethodModel;
-use Foundry\Mandate\Payments\PaddlePayment as PaddlePaymentWrapper;
-use Foundry\Payment\Mappers\PaddlePayment as PaddlePaymentMapper;
 use Foundry\Payment\Payable;
 use Foundry\Payment\PaymentResult;
 use Foundry\Services\PaymentProvider;
 use Illuminate\Http\Request;
 use Paddle\SDK\Entities\Shared\CurrencyCode;
 use Paddle\SDK\Entities\Shared\CustomData;
+use Paddle\SDK\Entities\Shared\Interval;
 use Paddle\SDK\Entities\Shared\Money;
 use Paddle\SDK\Entities\Shared\TaxCategory;
-use Paddle\SDK\Entities\Transaction;
+use Paddle\SDK\Entities\Shared\TimePeriod;
+use Paddle\SDK\Entities\Subscription\SubscriptionEffectiveFrom;
+use Paddle\SDK\Resources\Subscriptions\Operations\Charge\SubscriptionChargeItemWithPrice;
+use Paddle\SDK\Resources\Subscriptions\Operations\Charge\SubscriptionChargeNonCatalogPriceWithProduct;
+use Paddle\SDK\Resources\Subscriptions\Operations\Charge\SubscriptionChargeNonCatalogProduct;
+use Paddle\SDK\Resources\Subscriptions\Operations\CreateOneTimeCharge;
 use Paddle\SDK\Resources\Transactions\Operations\Create\TransactionCreateItemWithPrice;
 use Paddle\SDK\Resources\Transactions\Operations\CreateTransaction;
 use Paddle\SDK\Resources\Transactions\Operations\Price\TransactionNonCatalogPriceWithProduct;
@@ -57,31 +60,42 @@ class PaddlePaymentService extends PaymentService
 
         $cardBrand = 'paddle';
         $cardLastFour = '';
+        $subscriptionId = null;
+        $paymentMethodType = null;
 
         try {
-            if ($txnId && empty($pmId)) {
-                $paddle = Foundry::paddle();
-                $transaction = $paddle->transactions->get($txnId);
-                if ($transaction && isset($transaction->payments[0]->paymentMethodId)) {
+            $paddle = Foundry::paddle();
+            $transaction = $paddle->transactions->get($txnId);
+
+            if ($transaction) {
+                if (isset($transaction->payments[0]->paymentMethodId)) {
                     $pmId = $transaction->payments[0]->paymentMethodId;
+                }
+
+                $subscriptionId = $transaction->subscriptionId ?? null;
+
+                if (isset($transaction->payments[0]->methodDetails->type)) {
+                    $paymentMethodType = strtolower($transaction->payments[0]->methodDetails->type->getValue());
                 }
             }
         } catch (\Throwable $e) {
             logger()->warning('Could not fetch Paddle transaction details on confirm', ['error' => $e->getMessage()]);
         }
 
-        $finalPmId = (string) ($pmId ?: ($txnId ? 'pay_mtd_' . $txnId : 'pay_mtd_paddle_' . Math.random()));
+        $finalPmId = (string) ($pmId ?: ($txnId ? 'pay_mtd_'.$txnId : 'pay_mtd_paddle_'.mt_rand()));
 
         $pm = $this->createOrUpdatePaymentMethod(
             $this->getUserId(),
             self::PROVIDER,
             $finalPmId,
-            array_merge([
+            [
                 'payment_method_id' => $finalPmId,
                 'transaction_id' => $txnId,
+                'subscription_id' => $subscriptionId,
+                'payment_method_type' => $paymentMethodType,
                 'card_brand' => $cardBrand,
                 'card_last_four' => $cardLastFour,
-            ], $options)
+            ]
         );
 
         $pm->markAsDefault();
@@ -128,8 +142,13 @@ class PaddlePaymentService extends PaymentService
         $currencyCode = CurrencyCode::from($currencyCodeStr);
 
         $money = new Money('0', $currencyCode);
-        $product = new TransactionNonCatalogProduct('Subscription Mandate Setup', TaxCategory::Standard());
-        $nonCatalogPrice = new TransactionNonCatalogPriceWithProduct('Mandate Setup', $money, $product);
+        $product = new TransactionNonCatalogProduct('Mandate Setup', TaxCategory::Standard());
+        $nonCatalogPrice = new TransactionNonCatalogPriceWithProduct(
+            description: 'Mandate Setup',
+            unitPrice: $money,
+            product: $product,
+            billingCycle: new TimePeriod(Interval::Month(), 1),
+        );
 
         $items = [
             new TransactionCreateItemWithPrice(
@@ -194,105 +213,75 @@ class PaddlePaymentService extends PaymentService
             throw new \Exception('User model key is required for charging.');
         }
 
-        $pmRecord = $paymentMethod;
+        $pmRecord = $paymentMethod ?? $this->getPaymentMethod($this->getUserId(), self::PROVIDER);
+
         if (! $pmRecord) {
-            $pmRecord = $this->getPaymentMethod($this->getUserId(), self::PROVIDER);
-        }
-
-        $pmId = is_object($pmRecord) ? ($pmRecord->provider_id ?? null) : $pmRecord;
-
-        if (! $pmId) {
             throw new \Exception('No payment method found for Paddle charging.');
         }
 
-        $customer = $this->getOrCreateCustomer($this->getUserId(), self::PROVIDER);
+        $subscriptionId = is_object($pmRecord)
+            ? ($pmRecord->options['subscription_id'] ?? null)
+            : null;
+
+        if (! $subscriptionId) {
+            throw new \Exception('No subscription ID found on Paddle payment method. Payment method must be set up with a $0 subscription.');
+        }
+
+        return $this->chargeViaSubscription($payable, $subscriptionId, $options);
+    }
+
+    /**
+     * Charge a Payable entity via a Paddle subscription using createOneTimeCharge.
+     */
+    protected function chargeViaSubscription(Payable $payable, string $subscriptionId, array $options): PaymentResult
+    {
+        $paddle = Foundry::paddle();
+        $currencyCode = CurrencyCode::from(strtoupper($payable->getCurrency() ?: 'USD'));
+
+        $items = [];
+        foreach ($payable->getLineItems() as $item) {
+            $description = $item['name'] ?? $item['title'] ?? 'Item';
+            $amountString = (string) (int) round(($item['price'] ?? 0) * 100);
+            $money = new Money($amountString, $currencyCode);
+            $product = new SubscriptionChargeNonCatalogProduct($description, TaxCategory::Standard());
+            $price = new SubscriptionChargeNonCatalogPriceWithProduct($description, $money, $product);
+
+            $items[] = new SubscriptionChargeItemWithPrice(
+                price: $price,
+                quantity: (int) ($item['quantity'] ?? 1)
+            );
+        }
+
+        if (empty($items)) {
+            $description = $payable->getDescription() ?: 'Usage Charge';
+            $amountString = (string) (int) round($payable->getGatewayAmount() * 100);
+            $money = new Money($amountString, $currencyCode);
+            $product = new SubscriptionChargeNonCatalogProduct($description, TaxCategory::Standard());
+            $price = new SubscriptionChargeNonCatalogPriceWithProduct($description, $money, $product);
+            $items[] = new SubscriptionChargeItemWithPrice(price: $price, quantity: 1);
+        }
+
+        $charge = new CreateOneTimeCharge(
+            effectiveFrom: SubscriptionEffectiveFrom::Immediately(),
+            items: $items,
+        );
 
         try {
-            $paddle = Foundry::paddle();
+            $subscription = $paddle->subscriptions->createOneTimeCharge($subscriptionId, $charge);
 
-            $currencyCodeStr = strtoupper($payable->getCurrency() ?: 'USD');
-            $currencyCode = CurrencyCode::from($currencyCodeStr);
-            $items = [];
-
-            foreach ($payable->getLineItems() as $item) {
-                $description = $item['name'] ?? $item['title'] ?? 'Item';
-                $amountString = (string) round(($item['price'] ?? 0) * 100);
-
-                $money = new Money($amountString, $currencyCode);
-                $product = new TransactionNonCatalogProduct($description, TaxCategory::Standard());
-                $nonCatalogPrice = new TransactionNonCatalogPriceWithProduct($description, $money, $product);
-
-                $items[] = new TransactionCreateItemWithPrice(
-                    price: $nonCatalogPrice,
-                    quantity: (int) ($item['quantity'] ?? 1)
-                );
-            }
-
-            if (empty($items)) {
-                $description = $payable->getDescription() ?: 'Order Payment';
-                $amountString = (string) round($payable->getGatewayAmount() * 100);
-
-                $money = new Money($amountString, $currencyCode);
-                $product = new TransactionNonCatalogProduct($description, TaxCategory::Standard());
-                $nonCatalogPrice = new TransactionNonCatalogPriceWithProduct($description, $money, $product);
-
-                $items[] = new TransactionCreateItemWithPrice(
-                    price: $nonCatalogPrice,
-                    quantity: 1
-                );
-            }
-
-            $customData = new CustomData(array_merge($payable->getMetadata(), [
-                'user_id' => (string) $this->getUserId(),
-                'payment_method_id' => (string) $pmId,
-            ]));
-
-            $createTransaction = new CreateTransaction(
-                items: $items,
-                customData: $customData,
-                currencyCode: $currencyCode,
-                customerId: $customer->provider_id ?: null
+            return PaymentResult::success(
+                paymentData: null,
+                transactionId: $subscription->id,
+                status: 'succeeded'
             );
-
-            $transaction = $paddle->transactions->create($createTransaction);
-
-            $status = strtolower($transaction instanceof Transaction ? $transaction->status->getValue() : ($transaction['status'] ?? ''));
-
-            if (in_array($status, ['requires_action', 'requires_auth', 'authentication_required'])) {
-                $transactionArray = $transaction instanceof Transaction ? [
-                    'id' => $transaction->id,
-                    'amount' => (int) round($payable->getGatewayAmount() * 100),
-                    'currency' => $currencyCodeStr,
-                    'status' => 'requires_action',
-                ] : (array) $transaction;
-
-                $wrapper = new PaddlePaymentWrapper($transactionArray);
-                throw new PaymentIncomplete($wrapper);
-            }
-
-            if (in_array($status, ['completed', 'paid', 'ready', 'billed', 'succeeded'])) {
-                $transactionId = $transaction instanceof Transaction ? $transaction->id : ($transaction['id'] ?? 'txn_paddle');
-                $paymentMapper = $transaction instanceof Transaction
-                    ? new PaddlePaymentMapper($transaction)
-                    : null;
-
-                return PaymentResult::success(
-                    paymentData: $paymentMapper,
-                    transactionId: $transactionId,
-                    status: 'succeeded'
-                );
-            }
-
-            return PaymentResult::failed("Paddle charge failed with status: {$status}");
-        } catch (PaymentIncomplete $incompleteEx) {
-            throw $incompleteEx;
         } catch (\Throwable $e) {
-            logger()->error('Paddle charge error', [
+            logger()->error('Paddle subscription charge error', [
                 'user_id' => $this->getUserId(),
+                'subscription_id' => $subscriptionId,
                 'error' => $e->getMessage(),
             ]);
 
-            return PaymentResult::failed("Charge failed: {$e->getMessage()}");
+            throw new \Exception("Paddle charge failed: {$e->getMessage()}", 0, $e);
         }
     }
 }

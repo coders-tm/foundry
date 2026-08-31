@@ -1,11 +1,11 @@
 <?php
 
-use Workbench\App\Http\Controllers\BillerController;
 use Illuminate\Support\Facades\Route;
 use Workbench\App\Http\Controllers\Admin\WalletController as AdminWalletController;
 use Workbench\App\Http\Controllers\AdminController;
 use Workbench\App\Http\Controllers as Foundry;
 use Workbench\App\Http\Controllers\Auth;
+use Workbench\App\Http\Controllers\BillerController;
 use Workbench\App\Http\Controllers\OrderController;
 use Workbench\App\Http\Controllers\Subscription;
 use Workbench\App\Http\Controllers\SupportTicketController;

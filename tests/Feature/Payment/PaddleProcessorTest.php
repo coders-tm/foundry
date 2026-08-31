@@ -37,12 +37,6 @@ class PaddleProcessorTest extends TestCase
         }
     }
 
-    protected function tearDown(): void
-    {
-        Foundry::setPaddleClient(null);
-        parent::tearDown();
-    }
-
     protected function createMockPayable(): Payable
     {
         return Payable::make([
@@ -104,7 +98,7 @@ class PaddleProcessorTest extends TestCase
             $property = $reflection->getProperty('transactions');
             $property->setValue($paddleMock, $transactionsClientMock);
 
-            Foundry::setPaddleClient($paddleMock);
+            $this->app->instance(PaddleSdkClient::class, $paddleMock);
 
             $result = $processor->setupPaymentIntent(new Request, $payable);
 
@@ -153,7 +147,7 @@ class PaddleProcessorTest extends TestCase
         $property = $reflection->getProperty('transactions');
         $property->setValue($paddleMock, $transactionsClientMock);
 
-        Foundry::setPaddleClient($paddleMock);
+        $this->app->instance(PaddleSdkClient::class, $paddleMock);
 
         $processor = Processor::make(PaymentProvider::PADDLE);
 
@@ -186,7 +180,7 @@ class PaddleProcessorTest extends TestCase
         $property = $reflection->getProperty('adjustments');
         $property->setValue($paddleMock, $adjustmentsClientMock);
 
-        Foundry::setPaddleClient($paddleMock);
+        $this->app->instance(PaddleSdkClient::class, $paddleMock);
 
         $processor = new PaddleProcessor;
 

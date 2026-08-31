@@ -12,8 +12,6 @@ class VerifyPaddleWebhookSignature
     /**
      * Handle an incoming webhook request and verify signature using Paddle SDK / Secret.
      *
-     * @param  Request  $request
-     * @param  Closure  $next
      * @return mixed
      *
      * @throws AccessDeniedHttpException
