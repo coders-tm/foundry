@@ -37,7 +37,7 @@ class PaddlePaymentService extends PaymentService
     public function validate(Request $request): array
     {
         return $request->validate([
-            'payment_method' => 'required|string',
+            'payment_method' => 'nullable|string',
         ]);
     }
 
@@ -48,16 +48,40 @@ class PaddlePaymentService extends PaymentService
      */
     public function confirm(array $options): PaymentMethodModel
     {
-        $pmId = $options['payment_method'] ?? $options['payment_method_id'] ?? null;
-        if (! $pmId) {
-            throw new \InvalidArgumentException('Missing payment_method in options.');
+        $pmId = $options['payment_method_id'] ?? $options['payment_method'] ?? null;
+        $txnId = $options['transaction_id'] ?? null;
+
+        if (! $pmId && ! $txnId) {
+            throw new \InvalidArgumentException('Missing payment_method_id or transaction_id in options.');
         }
+
+        $cardBrand = 'paddle';
+        $cardLastFour = '';
+
+        try {
+            if ($txnId && empty($pmId)) {
+                $paddle = Foundry::paddle();
+                $transaction = $paddle->transactions->get($txnId);
+                if ($transaction && isset($transaction->payments[0]->paymentMethodId)) {
+                    $pmId = $transaction->payments[0]->paymentMethodId;
+                }
+            }
+        } catch (\Throwable $e) {
+            logger()->warning('Could not fetch Paddle transaction details on confirm', ['error' => $e->getMessage()]);
+        }
+
+        $finalPmId = (string) ($pmId ?: ($txnId ? 'pay_mtd_' . $txnId : 'pay_mtd_paddle_' . Math.random()));
 
         $pm = $this->createOrUpdatePaymentMethod(
             $this->getUserId(),
             self::PROVIDER,
-            $pmId,
-            $options
+            $finalPmId,
+            array_merge([
+                'payment_method_id' => $finalPmId,
+                'transaction_id' => $txnId,
+                'card_brand' => $cardBrand,
+                'card_last_four' => $cardLastFour,
+            ], $options)
         );
 
         $pm->markAsDefault();
@@ -68,15 +92,17 @@ class PaddlePaymentService extends PaymentService
     /**
      * Set up a saved Paddle payment method.
      *
+     * @return PaymentMethodModel|array|null
+     *
      * @throws \Exception
      */
-    public function setup(): ?PaymentMethodModel
+    public function setup(): mixed
     {
         if (! $this->getUserId()) {
             throw new \Exception('User model key is required for Paddle setup.');
         }
 
-        $this->getOrCreateCustomer(
+        $customer = $this->getOrCreateCustomer(
             $this->getUserId(),
             self::PROVIDER
         );
@@ -97,7 +123,43 @@ class PaddlePaymentService extends PaymentService
             return $pm;
         }
 
-        return $this->getPaymentMethod($this->getUserId(), self::PROVIDER);
+        $paddle = Foundry::paddle();
+        $currencyCodeStr = strtoupper(config('foundry.payment_providers.paddle.currency', config('app.currency', 'USD')));
+        $currencyCode = CurrencyCode::from($currencyCodeStr);
+
+        $money = new Money('0', $currencyCode);
+        $product = new TransactionNonCatalogProduct('Subscription Mandate Setup', TaxCategory::Standard());
+        $nonCatalogPrice = new TransactionNonCatalogPriceWithProduct('Mandate Setup', $money, $product);
+
+        $items = [
+            new TransactionCreateItemWithPrice(
+                price: $nonCatalogPrice,
+                quantity: 1
+            ),
+        ];
+
+        $customData = new CustomData([
+            'user_id' => (string) $this->getUserId(),
+            'action' => 'setup_mandate',
+        ]);
+
+        $createTransaction = new CreateTransaction(
+            items: $items,
+            customData: $customData,
+            currencyCode: $currencyCode,
+            customerId: $customer->provider_id ?: null
+        );
+
+        $transaction = $paddle->transactions->create($createTransaction);
+        $transactionId = $transaction->id ?? null;
+
+        return [
+            'action' => 'sdk',
+            'provider' => self::PROVIDER,
+            'transaction_id' => $transactionId,
+            'client_token' => config('foundry.payment_providers.paddle.client_token'),
+            'environment' => config('foundry.payment_providers.paddle.environment', 'sandbox'),
+        ];
     }
 
     /**

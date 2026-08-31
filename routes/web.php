@@ -8,3 +8,4 @@ Route::post('stripe/webhook', [Webhook\StripeController::class, 'handleWebhook']
 Route::post('paypal/webhook', [Webhook\PaypalController::class, 'handleWebhook'])->name('paypal.webhook');
 Route::post('razorpay/webhook', [Webhook\RazorpayController::class, 'handleWebhook'])->name('razorpay.webhook');
 Route::post('gocardless/webhook', [Webhook\GoCardlessController::class, 'handleWebhook'])->name('gocardless.webhook');
+Route::post('paddle/webhook', [Webhook\PaddleController::class, 'handleWebhook'])->name('paddle.webhook');

@@ -3,6 +3,7 @@
 *.bak
 *.zip
 /vendor
+.env
 
 composer.lock
 /phpunit.xml

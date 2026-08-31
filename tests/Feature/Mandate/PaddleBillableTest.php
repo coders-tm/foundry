@@ -28,26 +28,61 @@ class PaddleBillableTest extends TestCase
     }
 
     /**
-     * Test setup auto-renewal for Paddle provider.
+     * Test setup auto-renewal for Paddle provider returns SDK transaction setup data.
      */
     #[Test]
     public function test_setup_paddle_auto_renewal()
     {
         $subscription = Subscription::factory()->create(['provider' => PaymentProvider::PADDLE]);
 
-        $manager = new BillerManager($subscription->user, 'pm_paddle_123');
+        $mockTransaction = $this->createMock(Transaction::class);
+        $mockTransaction->id = 'txn_paddle_setup_123';
+
+        $mockTransactionsClient = $this->createMock(TransactionsClient::class);
+        $mockTransactionsClient->expects($this->once())
+            ->method('create')
+            ->willReturn($mockTransaction);
+
+        $mockPaddleClient = $this->createMock(PaddleSdkClient::class);
+        $refProp = new \ReflectionProperty(PaddleSdkClient::class, 'transactions');
+        $refProp->setValue($mockPaddleClient, $mockTransactionsClient);
+
+        Foundry::setPaddleClient($mockPaddleClient);
+
+        $manager = new BillerManager($subscription->user);
         $manager->setProvider(PaymentProvider::PADDLE);
         $result = $manager->setup();
+
+        $this->assertIsArray($result);
+        $this->assertEquals('sdk', $result['action']);
+        $this->assertEquals(PaymentProvider::PADDLE, $result['provider']);
+        $this->assertEquals('txn_paddle_setup_123', $result['transaction_id']);
 
         $this->assertDatabaseHas('payment_provider_customers', [
             'user_id' => $subscription->user_id,
             'provider' => PaymentProvider::PADDLE,
         ]);
+    }
+
+    /**
+     * Test confirm Paddle payment method mandate.
+     */
+    #[Test]
+    public function test_confirm_paddle_payment_method()
+    {
+        $subscription = Subscription::factory()->create(['provider' => PaymentProvider::PADDLE]);
+
+        $manager = new BillerManager($subscription->user);
+        $manager->setProvider(PaymentProvider::PADDLE);
+        $pm = $manager->confirm(PaymentProvider::PADDLE, [
+            'payment_method_id' => 'pay_mtd_paddle_test_123',
+            'transaction_id' => 'txn_paddle_setup_123',
+        ]);
 
         $this->assertDatabaseHas('users_payment_methods', [
             'user_id' => $subscription->user_id,
             'provider' => PaymentProvider::PADDLE,
-            'provider_id' => 'pm_paddle_123',
+            'provider_id' => 'pay_mtd_paddle_test_123',
         ]);
     }
 

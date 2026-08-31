@@ -73,7 +73,6 @@ class BillerController extends Controller
         $request->validate([
             'provider' => 'required|string',
             'options' => 'required|array',
-            'options.payment_method' => 'required|string',
         ]);
 
         try {

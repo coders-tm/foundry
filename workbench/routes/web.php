@@ -37,6 +37,10 @@ Route::group([
     });
 });
 
+Route::get('/', function () {
+    return redirect()->route('dashboard');
+})->middleware(['web']);
+
 Route::get('/login', function () {
     return view('auth.login');
 })->middleware(['web', 'guest:user'])->name('login');

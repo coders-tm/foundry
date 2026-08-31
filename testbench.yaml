@@ -18,8 +18,9 @@ seeders:
   - Workbench\Database\Seeders\DatabaseSeeder
 
 workbench:
-  start: "/"
-  user: "hello@coderstm.com"
+  start: "/dashboard"
+  user: "user@example.com"
+  guard: "user"
   install: true
   health: false
   discovers:
