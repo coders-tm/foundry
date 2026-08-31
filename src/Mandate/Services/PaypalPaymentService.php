@@ -9,6 +9,7 @@ use Foundry\Payment\Mappers\PayPalPayment as PaypalPaymentMapper;
 use Foundry\Payment\Payable;
 use Foundry\Payment\PaymentResult;
 use Foundry\Services\PaymentProvider;
+use Illuminate\Http\Request;
 
 /**
  * PayPal payment service implementation.
@@ -100,14 +101,11 @@ class PaypalPaymentService extends PaymentService
 
         $paypal = Foundry::paypal();
 
-        $sessionToken = $this->getUserId().'-'.str()->random(16);
-        $callbackUrl = \Illuminate\Support\Facades\Route::has('billable.callback')
-            ? route('billable.callback', ['provider' => self::PROVIDER])
-            : url('/billable/'.self::PROVIDER.'/callback');
-        $cancelUrl = $callbackUrl.(str_contains($callbackUrl, '?') ? '&' : '?').'error=cancelled';
+        $callbackUrl = route(config('foundry.mandate.callback_route', 'payment-methods.callback'), ['provider' => self::PROVIDER]);
+        $cancelUrl = route(config('foundry.mandate.callback_route', 'payment-methods.callback'), ['provider' => self::PROVIDER, 'error' => 'cancelled']);
 
         $response = $paypal->createBillingAgreementToken([
-            'description' => 'Automatic Subscription Billing for '.config('app.name'),
+            'description' => 'Automatic Billing for '.config('app.name'),
             'payer' => [
                 'payment_method' => 'PAYPAL',
             ],

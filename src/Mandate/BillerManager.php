@@ -7,6 +7,7 @@ use Foundry\Mandate\Responses\RedirectResponse;
 use Foundry\Mandate\Services\PaymentService;
 use Foundry\Payment\Payable;
 use Foundry\Payment\PaymentResult;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 
@@ -242,9 +243,9 @@ class BillerManager
     /**
      * Get all saved payment methods for the owner.
      *
-     * @return \Illuminate\Database\Eloquent\Collection<int, PaymentMethodModel>
+     * @return Collection<int, PaymentMethodModel>
      */
-    public function paymentMethods(): \Illuminate\Database\Eloquent\Collection
+    public function paymentMethods(): Collection
     {
         return $this->owner->paymentMethods;
     }

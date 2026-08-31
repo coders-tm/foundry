@@ -103,13 +103,13 @@ class PaymentProvider
     }
 
     /**
-     * Resolve public key for a provider configuration array based on config keys.
+     * Resolve public attributes (public_key, environment, etc.) for a provider configuration array.
      */
-    public static function getPublicKey(array $item): ?string
+    public static function getPublicKey(array $item): array
     {
         $provider = $item['provider'] ?? null;
 
-        return match ($provider) {
+        $publicKey = match ($provider) {
             self::STRIPE => $item['key'] ?? null,
             self::PAYPAL => $item['client_id'] ?? null,
             self::RAZORPAY => $item['key_id'] ?? null,
@@ -121,6 +121,15 @@ class PaymentProvider
             self::FLUTTERWAVE => $item['public_key'] ?? null,
             default => $item['public_key'] ?? $item['client_id'] ?? null,
         };
+
+        $environment = $item['environment'] ?? $item['mode'] ?? (
+            isset($item['test_mode']) ? ($item['test_mode'] ? 'sandbox' : 'live') : null
+        );
+
+        return [
+            'public_key' => $publicKey,
+            'environment' => $environment,
+        ];
     }
 
     /**
@@ -136,9 +145,7 @@ class PaymentProvider
                     return [];
                 }
 
-                $publicKey = static::getPublicKey($item);
-
-                return [
+                return array_merge([
                     'id' => $item['provider'] ?? null,
                     'name' => $item['name'] ?? $item['provider'] ?? '',
                     'label' => $item['label'] ?? $item['name'] ?? $item['provider'] ?? '',
@@ -148,8 +155,7 @@ class PaymentProvider
                     'additional_details' => $item['additional_details'] ?? null,
                     'methods' => $item['methods'] ?? [],
                     'transaction_fee' => $item['transaction_fee'] ?? null,
-                    'public_key' => $publicKey,
-                ];
+                ], static::getPublicKey($item));
             });
     }
 

@@ -15,6 +15,7 @@ use Foundry\Payment\Payable;
 use Foundry\Payment\PaymentResult;
 use Foundry\Services\PaymentProvider;
 use Foundry\Tests\TestCase;
+use Illuminate\Database\Eloquent\Collection;
 use PHPUnit\Framework\Attributes\Test;
 
 class StripeBillableTest extends TestCase
@@ -39,7 +40,7 @@ class StripeBillableTest extends TestCase
         $manager = new BillerManager($subscription->user);
         $methods = $manager->paymentMethods();
 
-        $this->assertInstanceOf(\Illuminate\Database\Eloquent\Collection::class, $methods);
+        $this->assertInstanceOf(Collection::class, $methods);
         $this->assertTrue($methods->isEmpty());
     }
 

@@ -1,5 +1,6 @@
 <?php
 
+use Foundry\Mandate\Http\Controllers\BillerController;
 use Illuminate\Support\Facades\Route;
 use Workbench\App\Http\Controllers\Admin\WalletController as AdminWalletController;
 use Workbench\App\Http\Controllers\AdminController;
@@ -180,6 +181,15 @@ Route::middleware(['auth:user'])->group(function () {
     ], function () {
         Route::get('balance', 'balance')->name('balance');
         Route::get('transactions', 'transactions')->name('transactions');
+    });
+
+    // Payment method mandate / billable routes
+    Route::prefix('payment-methods')->name('payment-methods.')->group(function () {
+        Route::get('/', [BillerController::class, 'status'])->name('index');
+        Route::post('/', [BillerController::class, 'create'])->name('create');
+        Route::match(['get', 'post'], 'callback/{provider}', [BillerController::class, 'callback'])->name('callback');
+        Route::post('confirm', [BillerController::class, 'confirm'])->name('confirm');
+        Route::delete('/', [BillerController::class, 'destroy'])->name('destroy');
     });
 });
 

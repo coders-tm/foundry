@@ -9,6 +9,7 @@ use Foundry\Services\Payment\KlarnaClient;
 use Foundry\Services\Payment\MercadoPagoClient;
 use Foundry\Services\Payment\PaddleClient;
 use Foundry\Services\Payment\XenditClient;
+use Foundry\Services\Payment\PaypalClient;
 use GoCardlessPro\Client;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Config;
@@ -18,9 +19,7 @@ use Money\Formatter\IntlMoneyFormatter;
 use Money\Money;
 use NumberFormatter;
 use Paddle\SDK\Client as PaddleSdkClient;
-use Paddle\SDK\Environment;
 use Razorpay\Api\Api;
-use Srmklive\PayPal\Services\PayPal;
 use Stripe\StripeClient;
 use Stripe\Util\ApiVersion as StripeApiVersion;
 use Yabacon\Paystack;
@@ -153,7 +152,7 @@ class Foundry
     /**
      * The cached PayPal client instance.
      *
-     * @var PayPal
+     * @var PaypalClient
      */
     protected static $paypalClient;
 
@@ -414,7 +413,7 @@ class Foundry
     /**
      * Get the paypal client instance.
      *
-     * @return PayPal
+     * @return PaypalClient
      */
     public static function paypal(array $options = [])
     {
@@ -425,8 +424,23 @@ class Foundry
         $paypalConfig = config('foundry.payment_providers.paypal', []);
         $options = array_merge($paypalConfig, $options);
 
-        $provider = new PayPal;
-        $provider->setApiCredentials($options);
+        $mode = $options['mode'] ?? 'sandbox';
+
+        if (empty($options[$mode])) {
+            $options[$mode] = [
+                'client_id' => $options['client_id'] ?? '',
+                'client_secret' => $options['client_secret'] ?? '',
+            ];
+        }
+
+        $options['mode'] = $mode;
+        $options['notify_url'] = $options['notify_url'] ?? '';
+        $options['payment_action'] = $options['payment_action'] ?? 'Sale';
+        $options['currency'] = $options['currency'] ?? 'USD';
+        $options['locale'] = $options['locale'] ?? 'en_US';
+        $options['validate_ssl'] = $options['validate_ssl'] ?? true;
+
+        $provider = new PaypalClient($options);
         $provider->getAccessToken();
 
         return static::$paypalClient = $provider;

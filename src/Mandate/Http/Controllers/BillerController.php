@@ -47,14 +47,21 @@ class BillerController extends Controller
      */
     public function callback(Request $request, string $provider): HttpRedirectResponse
     {
+        $redirectRoute = config('foundry.mandate.redirect_route', 'payment-methods.index');
+
         try {
             $request->user()->handlePaymentCallback($provider, $request);
 
-            return redirect()->to('/billing/payment-method?setup=success');
+            return redirect()->route($redirectRoute, [
+                'setup' => 'success',
+            ]);
         } catch (\Exception $e) {
             report($e);
 
-            return redirect()->to('/billing/payment-method?setup=failed&error='.urlencode($e->getMessage()));
+            return redirect()->route($redirectRoute, [
+                'setup' => 'failed',
+                'error' => urlencode($e->getMessage()),
+            ]);
         }
     }
 
