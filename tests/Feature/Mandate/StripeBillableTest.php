@@ -177,8 +177,7 @@ class StripeBillableTest extends TestCase
         $manager->setup();
 
         $manager = new BillerManager($subscription->user);
-        $manager->setProvider(PaymentProvider::STRIPE);
-        $result = $manager->removePaymentMethod();
+        $result = $manager->removePaymentMethod('pm_card_visa');
 
         $this->assertTrue($result);
     }

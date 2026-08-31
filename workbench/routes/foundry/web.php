@@ -189,7 +189,7 @@ Route::middleware(['auth:user'])->group(function () {
         Route::post('/', [BillerController::class, 'create'])->name('create');
         Route::match(['get', 'post'], 'callback/{provider}', [BillerController::class, 'callback'])->name('callback');
         Route::post('confirm', [BillerController::class, 'confirm'])->name('confirm');
-        Route::delete('/', [BillerController::class, 'destroy'])->name('destroy');
+        Route::delete('{payment_method}', [BillerController::class, 'destroy'])->name('destroy');
     });
 });
 

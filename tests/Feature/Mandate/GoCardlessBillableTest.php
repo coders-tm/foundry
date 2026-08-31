@@ -22,7 +22,7 @@ class GoCardlessBillableTest extends TestCase
     {
         parent::setUp();
 
-        if (empty(config('foundry.payment_providers.gocardless.access_token')) || config('foundry.payment_providers.gocardless.access_token') === 'test_gocardless_access_token') {
+        if (empty(config('foundry.payment_providers.gocardless.access_token'))) {
             $this->markTestSkipped('GoCardless API keys not configured.');
         }
     }
@@ -50,9 +50,8 @@ class GoCardlessBillableTest extends TestCase
 
         $this->assertTrue((bool) $result);
 
-        $manager = new BillerManager($subscription->user, $paymentMethod);
-        $manager->setProvider(PaymentProvider::GOCARDLESS);
-        $result = $manager->removePaymentMethod();
+        $manager = new BillerManager($subscription->user);
+        $result = $manager->removePaymentMethod($paymentMethod);
 
         $this->assertTrue((bool) $result);
     }

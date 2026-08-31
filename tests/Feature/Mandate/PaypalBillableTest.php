@@ -82,8 +82,7 @@ class PaypalBillableTest extends TestCase
         $manager->setup();
 
         $manager = new BillerManager($subscription->user);
-        $manager->setProvider(PaymentProvider::PAYPAL);
-        $result = $manager->removePaymentMethod();
+        $result = $manager->removePaymentMethod('VAULT-ID-123');
 
         $this->assertTrue($result);
 

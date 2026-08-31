@@ -357,7 +357,8 @@
             if (!confirm("Are you sure you want to remove this payment method?")) return;
 
             try {
-                const response = await fetch("{{ route('payment-methods.destroy') }}", {
+                const url = "{{ route('payment-methods.destroy', ['payment_method' => ':id']) }}".replace(':id', encodeURIComponent(id));
+                const response = await fetch(url, {
                     method: "DELETE",
                     headers: {
                         "Content-Type": "application/json",
@@ -365,8 +366,7 @@
                         "X-CSRF-TOKEN": csrfToken
                     },
                     body: JSON.stringify({
-                        provider: provider,
-                        payment_method: id
+                        provider: provider
                     })
                 });
 

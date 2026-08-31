@@ -2,7 +2,7 @@
 
 namespace Foundry\Mandate;
 
-use Foundry\Mandate\Models\PaymentMethod as PaymentMethodModel;
+use Foundry\Mandate\Models\PaymentMethod;
 use Foundry\Mandate\Responses\RedirectResponse;
 use Foundry\Mandate\Services\PaymentService;
 use Foundry\Payment\Payable;
@@ -26,7 +26,7 @@ class BillerManager
     /**
      * The payment method or mandate reference.
      *
-     * @var PaymentMethodModel|string|null
+     * @var PaymentMethod|string|null
      */
     protected mixed $paymentMethod;
 
@@ -39,7 +39,7 @@ class BillerManager
      * Create a new BillerManager instance.
      *
      * @param  Model|object  $owner  User model or billable entity instance
-     * @param  PaymentMethodModel|string|null  $paymentMethod  Payment method reference or model
+     * @param  PaymentMethod|string|null  $paymentMethod  Payment method reference or model
      *
      * @throws \InvalidArgumentException
      */
@@ -73,7 +73,7 @@ class BillerManager
     /**
      * Set the payment method or mandate reference.
      *
-     * @param  PaymentMethodModel|string|null  $paymentMethod  Payment method model or ID
+     * @param  PaymentMethod|string|null  $paymentMethod  Payment method model or ID
      * @return $this
      */
     public function setPaymentMethod(mixed $paymentMethod): self
@@ -89,9 +89,9 @@ class BillerManager
      * @param  string  $provider  Payment provider name
      * @param  string  $providerId  Provider payment method ID
      */
-    public function findPaymentMethod(string $provider, string $providerId): PaymentMethodModel
+    public function findPaymentMethod(string $provider, string $providerId): PaymentMethod
     {
-        return PaymentMethodModel::where([
+        return PaymentMethod::where([
             'user_id' => $this->owner->getKey(),
             'provider' => $provider,
             'provider_id' => $providerId,
@@ -106,7 +106,7 @@ class BillerManager
      *
      * @throws \Exception
      */
-    public function confirm(string $provider, array $options): PaymentMethodModel
+    public function confirm(string $provider, array $options): PaymentMethod
     {
         return $this->getService($provider)->confirm($options);
     }
@@ -114,19 +114,19 @@ class BillerManager
     /**
      * Resolve a saved payment method for the owner.
      *
-     * @param  PaymentMethodModel|string|null  $paymentMethod  Optional payment method model or ID
+     * @param  PaymentMethod|string|null  $paymentMethod  Optional payment method model or ID
      * @param  string|null  $provider  Optional payment provider name
      */
-    public function resolvePaymentMethod(mixed $paymentMethod = null, ?string $provider = null): ?PaymentMethodModel
+    public function resolvePaymentMethod(mixed $paymentMethod = null, ?string $provider = null): ?PaymentMethod
     {
         $ownerId = $this->owner->getKey();
 
-        if ($paymentMethod instanceof PaymentMethodModel) {
+        if ($paymentMethod instanceof PaymentMethod) {
             return $paymentMethod;
         }
 
         if (is_string($paymentMethod) && ! empty($paymentMethod)) {
-            $found = PaymentMethodModel::where('user_id', $ownerId)
+            $found = PaymentMethod::where('user_id', $ownerId)
                 ->where(function ($query) use ($paymentMethod) {
                     $query->where('id', $paymentMethod)->orWhere('provider_id', $paymentMethod);
                 })
@@ -137,7 +137,7 @@ class BillerManager
             }
         }
 
-        $query = PaymentMethodModel::where('user_id', $ownerId);
+        $query = PaymentMethod::where('user_id', $ownerId);
 
         if ($provider) {
             $query->where('provider', $provider);
@@ -150,7 +150,7 @@ class BillerManager
      * Resolve and return the provider-specific PaymentService instance.
      *
      * @param  string|null  $provider  Payment provider name
-     * @param  PaymentMethodModel|string|null  $paymentMethod  Payment method model or ID
+     * @param  PaymentMethod|string|null  $paymentMethod  Payment method model or ID
      *
      * @throws \InvalidArgumentException
      */
@@ -159,7 +159,7 @@ class BillerManager
         $targetPm = $paymentMethod ?? $this->paymentMethod;
         $resolvedProvider = $provider ?? $this->provider;
 
-        if (! $resolvedProvider && $targetPm instanceof PaymentMethodModel) {
+        if (! $resolvedProvider && $targetPm instanceof PaymentMethod) {
             $resolvedProvider = $targetPm->provider;
         }
 
@@ -195,7 +195,7 @@ class BillerManager
     /**
      * Set up a saved payment method.
      *
-     * @return PaymentMethodModel|RedirectResponse|null
+     * @return PaymentMethod|RedirectResponse|null
      *
      * @throws \Exception
      */
@@ -207,23 +207,31 @@ class BillerManager
     /**
      * Remove the owner's saved payment method.
      *
-     * @param  PaymentMethodModel|string|null  $paymentMethod  Optional payment method model or ID
+     * @param  PaymentMethod|string  $paymentMethod  The payment method model or ID
      * @return bool
      *
      * @throws \Exception
      */
-    public function removePaymentMethod(mixed $paymentMethod = null): mixed
+    public function removePaymentMethod(mixed $paymentMethod): mixed
     {
-        $targetPm = $paymentMethod ?? $this->paymentMethod;
+        if (empty($paymentMethod)) {
+            throw new \InvalidArgumentException('A specific payment method instance or ID is required for removal.');
+        }
 
-        return $this->getService(paymentMethod: $targetPm)->remove();
+        $pm = $this->resolvePaymentMethod($paymentMethod);
+
+        if (! $pm) {
+            throw new \InvalidArgumentException('Payment method not found.');
+        }
+
+        return $this->getService(provider: $pm->provider, paymentMethod: $pm)->remove();
     }
 
     /**
      * Charge a Payable entity using the owner's saved payment method.
      *
      * @param  Payable  $payable  The payable model or order instance to charge
-     * @param  PaymentMethodModel|string|null  $paymentMethod  Optional payment method instance or provider ID
+     * @param  PaymentMethod|string|null  $paymentMethod  Optional payment method instance or provider ID
      * @param  array<string, mixed>  $options  Additional charge options
      *
      * @throws \Exception
@@ -246,7 +254,7 @@ class BillerManager
     /**
      * Get all saved payment methods for the owner.
      *
-     * @return Collection<int, PaymentMethodModel>
+     * @return Collection<int, PaymentMethod>
      */
     public function paymentMethods(): Collection
     {
@@ -257,7 +265,7 @@ class BillerManager
      * Handle provider-specific redirect callback.
      *
      * @param  Request  $request  HTTP request instance
-     * @return PaymentMethodModel|RedirectResponse|bool
+     * @return PaymentMethod|RedirectResponse|bool
      *
      * @throws \Exception
      */

@@ -92,30 +92,12 @@ class BillerController extends Controller
     /**
      * Remove the authenticated user's saved payment method.
      */
-    public function destroy(Request $request): JsonResponse
+    public function destroy(Request $request, string $paymentMethod): JsonResponse
     {
-        $request->validate([
-            'provider' => 'nullable|string',
-            'payment_method' => 'nullable|string',
-        ]);
-
-        $request->user()->removePaymentMethod(
-            $request->payment_method ?? null,
-            $request->provider ?? null
-        );
+        $request->user()->removePaymentMethod($paymentMethod);
 
         return response()->json([
             'message' => __('Payment method has been removed successfully.'),
         ]);
-    }
-
-    /**
-     * Get all saved payment methods and status of the authenticated user.
-     */
-    public function status(Request $request): JsonResponse
-    {
-        return response()->json(
-            $request->user()->paymentMethods()
-        );
     }
 }

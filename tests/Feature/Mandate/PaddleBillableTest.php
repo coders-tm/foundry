@@ -114,8 +114,7 @@ class PaddleBillableTest extends TestCase
         $manager->setup();
 
         $manager = new BillerManager($subscription->user);
-        $manager->setProvider(PaymentProvider::PADDLE);
-        $result = $manager->removePaymentMethod();
+        $result = $manager->removePaymentMethod('pm_paddle_123');
 
         $this->assertTrue($result);
 
