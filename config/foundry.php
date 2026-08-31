@@ -312,12 +312,25 @@ return [
             'order' => 11,
         ],
 
+        'payu' => [
+            'name' => 'PayU',
+            'label' => 'PayU',
+            'provider' => 'payu',
+            'enabled' => (bool) env('PAYU_ENABLED', false),
+            'merchant_key' => env('PAYU_MERCHANT_KEY'),
+            'merchant_salt' => env('PAYU_MERCHANT_SALT'),
+            'webhook_url' => env('PAYU_WEBHOOK_URL'),
+            'test_mode' => (bool) env('PAYU_TEST_MODE', true),
+            'supported_currencies' => array_filter(explode(',', env('PAYU_SUPPORTED_CURRENCIES', ''))),
+            'order' => 12,
+        ],
+
         'wallet' => [
             'name' => 'Wallet',
             'label' => 'Account Wallet',
             'provider' => 'wallet',
             'enabled' => (bool) env('WALLET_ENABLED', true),
-            'order' => 12,
+            'order' => 13,
         ],
 
         'manual' => [
@@ -325,7 +338,7 @@ return [
             'label' => 'Bank Transfer / Manual',
             'provider' => 'manual',
             'enabled' => (bool) env('MANUAL_PAYMENT_ENABLED', true),
-            'order' => 13,
+            'order' => 14,
         ],
     ],
 

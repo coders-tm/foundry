@@ -63,21 +63,36 @@ class PaymentProvider
 
     /**
      * Get all payment providers configuration from foundry config.
+     *
+     * @return \Illuminate\Support\Collection<string, PaymentMethod>
      */
     public static function all(): Collection
     {
         $providers = config('foundry.payment_providers', []);
 
-        return collect($providers);
+        return collect($providers)->map(function ($config, $key) {
+            if (! is_array($config)) {
+                return null;
+            }
+
+            $provider = $config['provider'] ?? $key;
+
+            return PaymentMethod::fromArray(array_merge([
+                'id' => $provider,
+                'provider' => $provider,
+            ], $config));
+        })->filter();
     }
 
     /**
      * Get enabled payment providers.
+     *
+     * @return \Illuminate\Support\Collection<string, PaymentMethod>
      */
     public static function enabled(): Collection
     {
-        return static::all()->filter(function ($config) {
-            return is_array($config) && ($config['enabled'] ?? false);
+        return static::all()->filter(function (PaymentMethod $method) {
+            return $method->enabled;
         });
     }
 
@@ -108,55 +123,23 @@ class PaymentProvider
      */
     public static function getPublicKey(array $item): array
     {
-        $provider = $item['provider'] ?? null;
-
-        $publicKey = match ($provider) {
-            self::STRIPE => $item['key'] ?? null,
-            self::PAYPAL => $item['client_id'] ?? null,
-            self::RAZORPAY => $item['key_id'] ?? null,
-            self::PADDLE => $item['client_token'] ?? null,
-            self::ALIPAY => $item['app_id'] ?? null,
-            self::MERCADOPAGO,
-            self::PAYSTACK,
-            self::XENDIT,
-            self::FLUTTERWAVE => $item['public_key'] ?? null,
-            default => $item['public_key'] ?? $item['client_id'] ?? null,
-        };
-
-        $environment = $item['environment'] ?? $item['mode'] ?? (
-            isset($item['test_mode']) ? ($item['test_mode'] ? 'sandbox' : 'live') : null
-        );
+        $method = PaymentMethod::fromArray($item);
 
         return [
-            'public_key' => $publicKey,
-            'environment' => $environment,
+            'public_key' => $method->publicKey,
+            'environment' => $method->environment,
         ];
     }
 
     /**
      * Get providers for public checkout rendering.
+     *
+     * @return \Illuminate\Support\Collection<int, PaymentMethod>
      */
     public static function toPublic(): Collection
     {
         return static::enabled()
-            ->sortBy(fn ($item) => is_array($item) ? ($item['order'] ?? 99) : 99)
-            ->values()
-            ->map(function ($item) {
-                if (! is_array($item)) {
-                    return [];
-                }
-
-                return array_merge([
-                    'id' => $item['provider'] ?? null,
-                    'name' => $item['name'] ?? $item['provider'] ?? '',
-                    'label' => $item['label'] ?? $item['name'] ?? $item['provider'] ?? '',
-                    'provider' => $item['provider'] ?? null,
-                    'logo' => $item['logo'] ?? null,
-                    'payment_instructions' => $item['payment_instructions'] ?? null,
-                    'additional_details' => $item['additional_details'] ?? null,
-                    'methods' => $item['methods'] ?? [],
-                    'transaction_fee' => $item['transaction_fee'] ?? null,
-                ], static::getPublicKey($item));
-            });
+            ->sortBy(fn (PaymentMethod $item) => $item->order ?? 99)
+            ->values();
     }
 }
