@@ -58,8 +58,8 @@
     "srmklive/paypal": "^3.0",
     "stevebauman/location": "^7.2.0",
     "stripe/stripe-php": "^17.3.0",
-    "symfony/console": "^7.0",
-    "symfony/http-kernel": "^7.0",
+    "symfony/console": "^7.4.5|^8.0.5",
+    "symfony/http-kernel": "^7.4.5|^8.0.5",
     "symfony/polyfill-intl-icu": "^1.22.1",
     "vedmant/laravel-shortcodes": "^1.1",
     "xendit/xendit-php": "^7.0",
@@ -70,9 +70,9 @@
     "laravel/pint": "^1.27",
     "mockery/mockery": "^1.6",
     "nunomaduro/collision": "^8.1",
-    "orchestra/testbench": "^10.6",
-    "pestphp/pest": "^4.0",
-    "pestphp/pest-plugin-laravel": "^4.0",
+    "orchestra/testbench": "^11.0",
+    "pestphp/pest": "^5.0",
+    "pestphp/pest-plugin-laravel": "^5.0",
     "phpstan/phpstan": "^1.10"
   },
   "suggest": {
