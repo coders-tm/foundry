@@ -118,7 +118,7 @@ it('show subscription invoice includes line items', function () {
     $this->assertEquals('Subscription', $invoice->orderable_type);
     $this->assertDatabaseHas('line_items', ['itemable_id' => $invoice->id, 'itemable_type' => 'Order']);
     $response = $this->actingAs($this->admin, 'admin')->getJson(route('admin.orders.show', $invoice->id))->assertSuccessful();
-    $response->assertJsonStructure(['id', 'line_items' => [['*' => ['title', 'price']]]]);
+    $response->assertJsonStructure(['id', 'line_items' => ['*' => ['title', 'price']]]);
     $data = $response->json();
     $this->assertCount(1, $data['line_items']);
     $lineItem = $data['line_items'][0];
