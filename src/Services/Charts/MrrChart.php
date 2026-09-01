@@ -24,7 +24,7 @@ class MrrChart extends AbstractChart
                 ->where('subscriptions.status', 'active')
                 ->where('subscriptions.created_at', '<=', $date)
                 ->where(function ($q) use ($date) {
-                    $q->whereNull('subscriptions.canceled_at')
+                    $q->whereNull('subscriptions.cancels_at')
                         ->orWhere('subscriptions.expires_at', '>', $date);
                 })
                 ->sum(DB::raw("

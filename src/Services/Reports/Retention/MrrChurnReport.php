@@ -68,16 +68,16 @@ class MrrChurnReport extends AbstractReport
             ->mergeBindings($periodQuery)
             ->leftJoin(DB::raw('subscriptions as subs_starting'), function ($join) {
                 $join->whereRaw('subs_starting.created_at < periods.period_start')
-                    ->whereRaw('(subs_starting.canceled_at IS NULL OR subs_starting.canceled_at >= periods.period_start)');
+                    ->whereRaw('(subs_starting.cancels_at IS NULL OR subs_starting.cancels_at >= periods.period_start)');
             })
             ->leftJoin(DB::raw('plans as plans_starting'), 'subs_starting.plan_id', '=', 'plans_starting.id')
             ->leftJoin(DB::raw('subscriptions as subs_ending'), function ($join) {
                 $join->whereRaw('subs_ending.created_at <= periods.period_end')
-                    ->whereRaw('(subs_ending.canceled_at IS NULL OR subs_ending.canceled_at > periods.period_end)');
+                    ->whereRaw('(subs_ending.cancels_at IS NULL OR subs_ending.cancels_at > periods.period_end)');
             })
             ->leftJoin(DB::raw('plans as plans_ending'), 'subs_ending.plan_id', '=', 'plans_ending.id')
             ->leftJoin(DB::raw('subscriptions as subs_churned'), function ($join) {
-                $join->whereRaw('subs_churned.canceled_at BETWEEN periods.period_start AND periods.period_end');
+                $join->whereRaw('subs_churned.cancels_at BETWEEN periods.period_start AND periods.period_end');
             })
             ->leftJoin(DB::raw('plans as plans_churned'), 'subs_churned.plan_id', '=', 'plans_churned.id')
             ->leftJoin(DB::raw('subscriptions as subs_new'), function ($join) {
@@ -175,7 +175,7 @@ class MrrChurnReport extends AbstractReport
 
         $currentMrr = DB::table('subscriptions')
             ->leftJoin('plans', 'subscriptions.plan_id', '=', 'plans.id')
-            ->whereNull('subscriptions.canceled_at')
+            ->whereNull('subscriptions.cancels_at')
             ->where(function ($q) use ($now) {
                 $q->whereNull('subscriptions.expires_at')
                     ->orWhereRaw('subscriptions.expires_at > ?', [$now]);

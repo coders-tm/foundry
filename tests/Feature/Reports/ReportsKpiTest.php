@@ -83,7 +83,7 @@ class ReportsKpiTest extends FeatureTestCase
                         'user_id' => $user->id,
                         'plan_id' => $plan->id,
                         'status' => 'canceled',
-                        'canceled_at' => $createdAt->copy()->addMonths(rand(1, 3)),
+                        'cancels_at' => $createdAt->copy()->addMonths(rand(1, 3)),
                         'created_at' => $createdAt,
                     ]);
                 }

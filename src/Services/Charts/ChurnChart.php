@@ -24,8 +24,8 @@ class ChurnChart extends AbstractChart
                 ->count();
 
             $churned = Subscription::query()
-                ->whereYear('canceled_at', $date->year)
-                ->whereMonth('canceled_at', $date->month)
+                ->whereYear('cancels_at', $date->year)
+                ->whereMonth('cancels_at', $date->month)
                 ->count();
 
             $churnRate = $activeStart > 0 ? ($churned / $activeStart) * 100 : 0;

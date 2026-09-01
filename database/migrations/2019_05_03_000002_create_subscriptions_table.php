@@ -29,10 +29,11 @@ return new class extends Migration
             $table->timestamp('starts_at')->nullable()->index();
             $table->dateTime('expires_at')->nullable();
             $table->timestamp('ends_at')->nullable();
-            $table->timestamp('canceled_at')->nullable()->index();
+            $table->timestamp('cancels_at')->nullable()->index();
             $table->timestamp('frozen_at')->nullable()->comment('When the subscription was frozen (paused)');
             $table->timestamp('release_at')->nullable()->comment('When the subscription should automatically unfreeze');
             $table->boolean('is_free_forever')->default(false);
+            $table->timestamp('credit_resets_at')->nullable();
             $table->timestamps();
 
             $table->foreign('plan_id')->references('id')->on('plans')->nullOnDelete();

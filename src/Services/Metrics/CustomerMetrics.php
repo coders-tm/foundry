@@ -372,7 +372,7 @@ class CustomerMetrics extends MetricsCalculator
         }
 
         $churned = Subscription::query()
-            ->whereBetween('canceled_at', [$start, $end])
+            ->whereBetween('cancels_at', [$start, $end])
             ->count();
 
         return round(($churned / $activeStart) * 100, 2);
@@ -384,9 +384,9 @@ class CustomerMetrics extends MetricsCalculator
             ->where(function ($query) use ($date) {
                 // Grace Period: Canceled but active
                 $query->where(function ($q) use ($date) {
-                    $q->whereNotNull('canceled_at')
+                    $q->whereNotNull('cancels_at')
                         ->where('expires_at', '>', $date)
-                        ->where('canceled_at', '<=', $date);
+                        ->where('cancels_at', '<=', $date);
                 })
                 // Payment Issues: Incomplete, Expired (Past Due), or Pending
                     ->orWhereIn('status', [

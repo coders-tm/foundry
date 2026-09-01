@@ -47,8 +47,8 @@ class RevenueChurnMetric extends AbstractMetric
                             ->groupBy('orderable_id');
                     });
             })
-            ->whereNotNull('subscriptions.canceled_at')
-            ->whereBetween('subscriptions.canceled_at', [$start, $end])
+            ->whereNotNull('subscriptions.cancels_at')
+            ->whereBetween('subscriptions.cancels_at', [$start, $end])
             ->where('subscriptions.is_free_forever', false)
             ->sum(DB::raw($this->mrrSumExpression())) ?? 0.0;
 
@@ -83,8 +83,8 @@ class RevenueChurnMetric extends AbstractMetric
                             ->groupBy('orderable_id');
                     });
             })
-            ->whereNotNull('subscriptions.canceled_at')
-            ->whereBetween('subscriptions.canceled_at', [$start, $end])
+            ->whereNotNull('subscriptions.cancels_at')
+            ->whereBetween('subscriptions.cancels_at', [$start, $end])
             ->sum(DB::raw($this->mrrSumExpression())) ?? 0.0;
 
         return [

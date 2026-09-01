@@ -44,6 +44,7 @@ class SubscriptionFactory extends Factory
             'expires_at' => $plan ? $this->calculateExpiresAt($plan, $startsAt) : $startsAt->copy()->addMonth(),
             'billing_interval' => $plan?->interval,
             'billing_interval_count' => $plan?->interval_count ?? 1,
+            'credit_resets_at' => $plan ? $this->calculateExpiresAt($plan, $startsAt) : $startsAt->copy()->addMonth(),
         ];
     }
 
@@ -100,7 +101,7 @@ class SubscriptionFactory extends Factory
         return $this->state([
             'status' => SubscriptionStatus::CANCELED,
             'expires_at' => now(),
-            'canceled_at' => now(),
+            'cancels_at' => now(),
         ]);
     }
 

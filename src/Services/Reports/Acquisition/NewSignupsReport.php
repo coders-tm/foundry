@@ -87,7 +87,7 @@ class NewSignupsReport extends AbstractReport
                 DB::raw('COUNT(DISTINCT subscriptions.id) as new_subscriptions'),
                 DB::raw('COUNT(DISTINCT CASE WHEN subscriptions.trial_ends_at IS NOT NULL THEN subscriptions.id END) as trial_signups'),
                 DB::raw('COUNT(DISTINCT CASE WHEN subscriptions.trial_ends_at IS NULL THEN subscriptions.id END) as paid_signups'),
-                DB::raw('COALESCE(SUM(DISTINCT CASE WHEN subscriptions.canceled_at IS NULL THEN plans.price ELSE 0 END), 0) as mrr_added'),
+                DB::raw('COALESCE(SUM(DISTINCT CASE WHEN subscriptions.cancels_at IS NULL THEN plans.price ELSE 0 END), 0) as mrr_added'),
             ])
             ->groupBy('periods.period_start', 'periods.period_end', 'periods.period_order')
             ->orderBy('periods.period_order');
@@ -155,7 +155,7 @@ class NewSignupsReport extends AbstractReport
             ->whereBetween('subscriptions.created_at', [$filters['from'], $filters['to']])
             ->selectRaw('
                 COUNT(*) as total_new_subscriptions,
-                COALESCE(SUM(CASE WHEN subscriptions.canceled_at IS NULL THEN plans.price END), 0) as total_mrr_added
+                COALESCE(SUM(CASE WHEN subscriptions.cancels_at IS NULL THEN plans.price END), 0) as total_mrr_added
             ')
             ->first();
 

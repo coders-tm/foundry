@@ -35,9 +35,9 @@ class SubscriptionMetrics extends MetricsCalculator
             $range = $this->getDateRange();
 
             return Foundry::$subscriptionModel::query()
-                ->whereNotNull('canceled_at')
+                ->whereNotNull('cancels_at')
                 ->where('expires_at', '>', $range['end'])
-                ->where('canceled_at', '<=', $range['end'])
+                ->where('cancels_at', '<=', $range['end'])
                 ->count();
         });
     }
@@ -186,15 +186,15 @@ class SubscriptionMetrics extends MetricsCalculator
         return $this->remember('avg_lifetime', function () {
             // Use database-agnostic approach
             $subscriptions = Foundry::$subscriptionModel::query()
-                ->whereNotNull('canceled_at')
-                ->get(['created_at', 'canceled_at']);
+                ->whereNotNull('cancels_at')
+                ->get(['created_at', 'cancels_at']);
 
             if ($subscriptions->isEmpty()) {
                 return 0.0;
             }
 
             $totalDays = $subscriptions->sum(function ($sub) {
-                return $sub->created_at->diffInDays($sub->canceled_at);
+                return $sub->created_at->diffInDays($sub->cancels_at);
             });
 
             return round($totalDays / $subscriptions->count(), 2);
@@ -220,8 +220,8 @@ class SubscriptionMetrics extends MetricsCalculator
             $retained = Foundry::$subscriptionModel::query()
                 ->where('created_at', '<=', $range['start'])
                 ->where(function ($q) use ($range) {
-                    $q->whereNull('canceled_at')
-                        ->orWhere('canceled_at', '>', $range['end']);
+                    $q->whereNull('cancels_at')
+                        ->orWhere('cancels_at', '>', $range['end']);
                 })
                 ->count();
 
@@ -467,8 +467,8 @@ class SubscriptionMetrics extends MetricsCalculator
     protected function cancelledBetween(Carbon $start, Carbon $end): int
     {
         return Foundry::$subscriptionModel::query()
-            ->whereNotNull('canceled_at')
-            ->whereBetween('canceled_at', [$start, $end])
+            ->whereNotNull('cancels_at')
+            ->whereBetween('cancels_at', [$start, $end])
             ->count();
     }
 
@@ -509,8 +509,8 @@ class SubscriptionMetrics extends MetricsCalculator
             ->whereNotNull('trial_ends_at')
             ->whereBetween('created_at', [$start, $end])
             ->where(function ($q) {
-                $q->whereNull('canceled_at')
-                    ->orWhere('canceled_at', '>', DB::raw('trial_ends_at'));
+                $q->whereNull('cancels_at')
+                    ->orWhere('cancels_at', '>', DB::raw('trial_ends_at'));
             })
             ->count();
 

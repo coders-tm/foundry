@@ -134,7 +134,7 @@ class KpiMetricsTest extends TestCase
             'created_at' => now()->subMonth()->subDays(2),
             'starts_at' => now()->subMonth()->subDays(2),
             'expires_at' => now()->addMonth(),
-            'canceled_at' => now()->subDays(15),
+            'cancels_at' => now()->subDays(15),
         ]);
         Order::factory()->create([
             'orderable_id' => $sub->id,
@@ -244,7 +244,7 @@ class KpiMetricsTest extends TestCase
             'status' => 'active',
             'created_at' => now()->subMonths(2),
             'starts_at' => now()->subMonths(2),
-            'canceled_at' => now()->subDays(5),
+            'cancels_at' => now()->subDays(5),
             'expires_at' => now()->addMonth(),
         ]);
 

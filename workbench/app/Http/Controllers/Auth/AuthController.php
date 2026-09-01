@@ -173,20 +173,4 @@ class AuthController extends Controller
         return $this->me($guard);
     }
 
-    public function addDeviceToken(Request $request): JsonResponse
-    {
-        $this->validate($request, [
-            'device_token' => 'required|string',
-        ]);
-
-        try {
-            user()->addDeviceToken($request->device_token);
-        } catch (\Throwable) {
-            // Device token registration is non-critical
-        }
-
-        return response()->json([
-            'message' => __('Device token added successfully.'),
-        ], 200);
-    }
 }

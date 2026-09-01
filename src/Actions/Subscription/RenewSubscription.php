@@ -21,9 +21,6 @@ class RenewSubscription
     {
         $subscription->assertRenewable();
 
-        // Detach actions before renewing
-        $subscription->detachActions();
-
         if ($subscription->next_plan) {
             $subscription->plan()->associate($subscription->nextPlan);
 
@@ -68,11 +65,11 @@ class RenewSubscription
             'expires_at' => $newExpiresAt,
             'ends_at' => $graceEndsAt, // Set grace period end date from now, or null if no grace period
             'trial_ends_at' => null, // Clear trial ends at date
-        ])->save();
+        ]);
 
-        // Reset usages for renewal - respects resetable flag
-        // Called after save to ensure we use the NEW expires_at
         $subscription->resetUsagesForRenewal();
+
+        $subscription->advanceCreditResetsAt()->save();
 
         // Generate new invoice for the period - subscription enters grace
         $invoice = app(GenerateSubscriptionInvoice::class)->execute($subscription);

@@ -24,7 +24,7 @@ class MrrChurnReportTest extends TestCase
             'type' => 'app',
             'status' => 'cancelled',
             'quantity' => 1,
-            'canceled_at' => $from->copy()->addDays(15),
+            'cancels_at' => $from->copy()->addDays(15),
             'created_at' => $from->copy(),
             'starts_at' => $from->copy(),
         ]);

@@ -64,7 +64,7 @@ class SettingPolicy
      */
     public function restore(Model $admin): bool
     {
-        return $admin->can('blogs:write');
+        return $admin->can('settings:write');
     }
 
     /**
@@ -72,6 +72,6 @@ class SettingPolicy
      */
     public function forceDelete(Model $admin): bool
     {
-        return $admin->can('blogs:write');
+        return $admin->can('settings:write');
     }
 }

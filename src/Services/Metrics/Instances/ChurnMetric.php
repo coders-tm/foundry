@@ -22,8 +22,8 @@ class ChurnMetric extends AbstractMetric
             ->count('subscriptions.user_id');
 
         $churnedDuringPeriod = DB::table('subscriptions')
-            ->whereNotNull('canceled_at')
-            ->whereBetween('canceled_at', [$start, $end])
+            ->whereNotNull('cancels_at')
+            ->whereBetween('cancels_at', [$start, $end])
             ->distinct('user_id')
             ->count('user_id');
 
@@ -45,8 +45,8 @@ class ChurnMetric extends AbstractMetric
     {
         return [
             'logo_churn' => DB::table('subscriptions')
-                ->whereNotNull('canceled_at')
-                ->whereBetween('canceled_at', [$start, $end])
+                ->whereNotNull('cancels_at')
+                ->whereBetween('cancels_at', [$start, $end])
                 ->distinct('user_id')
                 ->count('user_id'),
         ];

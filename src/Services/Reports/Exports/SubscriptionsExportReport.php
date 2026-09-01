@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
  * Subscriptions Export Report
  *
  * Exports subscription lifecycle data with plan details via LEFT JOIN.
- * Grace period logic: canceled_at set but expires_at future = still active access.
+ * Grace period logic: cancels_at set but expires_at future = still active access.
  */
 class SubscriptionsExportReport extends AbstractReport
 {
@@ -26,7 +26,7 @@ class SubscriptionsExportReport extends AbstractReport
         'quantity' => ['label' => 'Quantity', 'type' => 'number'],
         'trial_ends_at' => ['label' => 'Trial Ends At', 'type' => 'text'],
         'expires_at' => ['label' => 'Expires At', 'type' => 'text'],
-        'canceled_at' => ['label' => 'Canceled At', 'type' => 'text'],
+        'cancels_at' => ['label' => 'Canceled At', 'type' => 'text'],
         'created_at' => ['label' => 'Created At', 'type' => 'text'],
         'updated_at' => ['label' => 'Updated At', 'type' => 'text'],
     ];
@@ -64,7 +64,7 @@ class SubscriptionsExportReport extends AbstractReport
                 'subscriptions.quantity',
                 'subscriptions.trial_ends_at',
                 'subscriptions.expires_at',
-                'subscriptions.canceled_at',
+                'subscriptions.cancels_at',
                 'subscriptions.created_at',
                 'subscriptions.updated_at',
                 DB::raw('COALESCE(plans.price, 0) as plan_price'),
@@ -92,7 +92,7 @@ class SubscriptionsExportReport extends AbstractReport
             'quantity' => (int) ($row->quantity ?? 1),
             'trial_ends_at' => $row->trial_ends_at ?? '',
             'expires_at' => $row->expires_at ?? '',
-            'canceled_at' => $row->canceled_at ?? '',
+            'cancels_at' => $row->cancels_at ?? '',
             'created_at' => $row->created_at ?? '',
             'updated_at' => $row->updated_at ?? '',
         ];

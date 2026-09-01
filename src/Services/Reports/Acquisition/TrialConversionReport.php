@@ -79,12 +79,12 @@ class TrialConversionReport extends AbstractReport
                 'periods.period_order',
                 DB::raw('COUNT(DISTINCT subscriptions.id) as trials_started'),
                 DB::raw('COUNT(DISTINCT CASE
-                    WHEN subscriptions.canceled_at IS NOT NULL
-                    AND subscriptions.canceled_at <= subscriptions.trial_ends_at
+                    WHEN subscriptions.cancels_at IS NOT NULL
+                    AND subscriptions.cancels_at <= subscriptions.trial_ends_at
                     THEN subscriptions.id
                 END) as trials_expired'),
                 DB::raw("COUNT(DISTINCT CASE
-                    WHEN (subscriptions.canceled_at IS NULL OR subscriptions.canceled_at > subscriptions.trial_ends_at)
+                    WHEN (subscriptions.cancels_at IS NULL OR subscriptions.cancels_at > subscriptions.trial_ends_at)
                     AND subscriptions.trial_ends_at <= '{$now}'
                     THEN subscriptions.id
                 END) as trials_converted"),
@@ -128,7 +128,7 @@ class TrialConversionReport extends AbstractReport
             ->selectRaw('
                 COUNT(*) as trials_started,
                 COUNT(CASE
-                    WHEN (canceled_at IS NULL OR canceled_at > trial_ends_at)
+                    WHEN (cancels_at IS NULL OR cancels_at > trial_ends_at)
                     AND trial_ends_at <= ?
                     THEN 1
                 END) as trials_converted

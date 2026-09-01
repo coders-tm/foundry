@@ -36,7 +36,7 @@ class MrrMovementReportTest extends TestCase
             'quantity' => 1,
             'created_at' => $from->copy(),
             'starts_at' => $from->copy(),
-            'canceled_at' => $from->copy()->addMonth()->addDays(10),
+            'cancels_at' => $from->copy()->addMonth()->addDays(10),
         ]);
 
         // Act

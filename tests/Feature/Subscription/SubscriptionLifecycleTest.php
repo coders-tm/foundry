@@ -112,20 +112,20 @@ class SubscriptionLifecycleTest extends TestCase
         $subscription = $user->newSubscription('default', $plan->id)
             ->saveAndInvoice([], true);
 
-        $this->assertNull($subscription->canceled_at);
+        $this->assertNull($subscription->cancels_at);
         $this->assertFalse($subscription->canceled());
 
         // Cancel subscription
         $subscription->cancel();
 
-        $this->assertNotNull($subscription->canceled_at);
+        $this->assertNotNull($subscription->cancels_at);
         $this->assertTrue($subscription->canceled());
         $this->assertTrue($subscription->canceledOnGracePeriod());
 
         // Resume subscription
         $subscription->resume();
 
-        $this->assertNull($subscription->canceled_at);
+        $this->assertNull($subscription->cancels_at);
         $this->assertFalse($subscription->canceled());
         $this->assertTrue($subscription->active());
     }

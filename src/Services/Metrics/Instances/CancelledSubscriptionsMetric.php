@@ -14,8 +14,8 @@ class CancelledSubscriptionsMetric extends AbstractMetric
     public function calculate(Carbon $start, Carbon $end): mixed
     {
         return DB::table('subscriptions')
-            ->whereNotNull('canceled_at')
-            ->whereBetween('canceled_at', [$start, $end])
+            ->whereNotNull('cancels_at')
+            ->whereBetween('cancels_at', [$start, $end])
             ->count();
     }
 

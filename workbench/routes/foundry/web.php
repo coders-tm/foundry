@@ -29,7 +29,6 @@ Route::group([
             Route::post('change-password', 'password')->name('change-password');
             Route::post('me', 'me')->name('current');
             Route::post('request-account-deletion', 'requestAccountDeletion')->name('request-account-deletion');
-            Route::post('add-device-token', 'addDeviceToken')->name('add-device-token');
         });
     });
     Route::group([

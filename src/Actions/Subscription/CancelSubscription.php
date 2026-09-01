@@ -19,7 +19,7 @@ class CancelSubscription
             $subscription->expires_at = $subscription->trial_ends_at;
         }
 
-        $subscription->canceled_at = now();
+        $subscription->cancels_at = $subscription->expires_at ?? now();
         $subscription->save();
 
         return $subscription;
@@ -31,11 +31,9 @@ class CancelSubscription
     public function cancelAt(Subscription $subscription, ?\DateTimeInterface $endsAt): Subscription
     {
         if ($endsAt instanceof \DateTimeInterface) {
-            $subscription->expires_at = $endsAt->getTimestamp();
+            $subscription->cancels_at = $endsAt;
         }
 
-        $subscription->status = SubscriptionStatus::CANCELED;
-        $subscription->canceled_at = now();
         $subscription->save();
 
         return $subscription;
@@ -48,8 +46,7 @@ class CancelSubscription
     {
         $subscription->fill([
             'status' => SubscriptionStatus::CANCELED,
-            'expires_at' => now(),
-            'canceled_at' => now(),
+            'cancels_at' => now(),
         ])->save();
 
         return $subscription;

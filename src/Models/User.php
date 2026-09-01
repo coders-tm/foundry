@@ -87,11 +87,6 @@ class User extends Authenticatable
         return [$this->email => $this->name];
     }
 
-    public function routeNotificationForFcm(): array
-    {
-        return $this->deviceTokens()->pluck('token')->toArray();
-    }
-
     public function routeNotificationForTwilio()
     {
         return $this->phone_number;
@@ -187,11 +182,6 @@ class User extends Authenticatable
     public function supportTickets(): HasMany
     {
         return $this->hasMany(Foundry::$supportTicketModel, 'email', 'email');
-    }
-
-    public function deviceTokens(): HasMany
-    {
-        return $this->hasMany(DeviceToken::class);
     }
 
     /**
@@ -293,7 +283,7 @@ class User extends Authenticatable
     {
         return $query->whereHas('subscriptions', function ($q) use ($type) {
             $q->active()
-                ->whereNull('canceled_at')
+                ->whereNull('cancels_at')
                 ->whereHas('plan', function ($q) use ($type) {
                     $q->whereInterval($type)
                         ->where('price', '<>', 0);
@@ -307,7 +297,7 @@ class User extends Authenticatable
     public function scopeOnlyRolling($query): Builder
     {
         return $query->whereHas('subscriptions', function ($q) {
-            $q->active()->whereNull('canceled_at');
+            $q->active()->whereNull('cancels_at');
         });
     }
 
@@ -317,7 +307,7 @@ class User extends Authenticatable
     public function scopeOnlyEnds($query): Builder
     {
         return $query->whereHas('subscriptions', function ($q) {
-            $q->active()->whereNotNull('canceled_at');
+            $q->active()->whereNotNull('cancels_at');
         });
     }
 
@@ -608,17 +598,6 @@ class User extends Authenticatable
     protected static function newFactory()
     {
         return UserFactory::new();
-    }
-
-    public function addDeviceToken(string $deviceToken)
-    {
-        if (! $deviceToken) {
-            throw new \InvalidArgumentException('Device token cannot be empty.');
-        }
-
-        return $this->deviceTokens()->updateOrCreate([
-            'token' => $deviceToken,
-        ]);
     }
 
     protected static function booted()

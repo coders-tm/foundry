@@ -5,6 +5,7 @@ namespace Foundry\Actions\Subscription;
 use Foundry\Events\SubscriptionPlanChanged;
 use Foundry\Foundry;
 use Foundry\Models\Subscription;
+use Foundry\Services\Period;
 
 class SwapSubscriptionPlan
 {
@@ -42,10 +43,18 @@ class SwapSubscriptionPlan
         // Set new period based on the new plan
         $subscription->setPeriod($newPlan->interval->value, $newPlan->interval_count);
 
+        $creditStartDate = $subscription->starts_at ?? now();
+        $creditPeriod = new Period(
+            $newPlan->interval->value,
+            $newPlan->interval_count,
+            $creditStartDate
+        );
+
         $subscription->fill([
-            'canceled_at' => null,
+            'cancels_at' => null,
             'billing_interval' => $newPlan->interval->value,
             'billing_interval_count' => $newPlan->interval_count,
+            'credit_resets_at' => $creditPeriod->getEndDate(),
         ])->save();
 
         // Sync features from the new plan (this will also reset usage)

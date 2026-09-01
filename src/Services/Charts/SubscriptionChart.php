@@ -13,7 +13,7 @@ class SubscriptionChart extends AbstractChart
     public function get(): array
     {
         $dateFormat = $this->getDateFormatExpression('created_at');
-        $canceledDateFormat = $this->getDateFormatExpression('canceled_at');
+        $canceledDateFormat = $this->getDateFormatExpression('cancels_at');
 
         $newSubs = Subscription::select(
             DB::raw("{$dateFormat} as label"),
@@ -29,9 +29,9 @@ class SubscriptionChart extends AbstractChart
             DB::raw("{$canceledDateFormat} as label"),
             DB::raw('COUNT(*) as total')
         )
-            ->whereBetween('canceled_at', [$this->startDate, $this->endDate])
+            ->whereBetween('cancels_at', [$this->startDate, $this->endDate])
             ->groupBy('label')
-            ->orderBy(DB::raw('MIN(canceled_at)'), 'ASC')
+            ->orderBy(DB::raw('MIN(cancels_at)'), 'ASC')
             ->get()
             ->mapWithKeys(fn ($item) => [$this->formatLabel($item->label) => $item->total]);
 

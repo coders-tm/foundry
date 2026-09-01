@@ -83,8 +83,8 @@ class MrrMovementReport extends AbstractReport
 
         $churnedGroupConcat = $this->dbGroupConcat(
             "CASE
-                WHEN subscriptions.canceled_at >= periods.period_start
-                AND subscriptions.canceled_at <= periods.period_end
+                WHEN subscriptions.cancels_at >= periods.period_start
+                AND subscriptions.cancels_at <= periods.period_end
                 THEN {$concatExpr}
             END",
             '|',
@@ -96,7 +96,7 @@ class MrrMovementReport extends AbstractReport
             ->leftJoin('subscriptions', function ($join) {
                 $join->where(function ($q) {
                     $q->whereBetween('subscriptions.created_at', [DB::raw('periods.period_start'), DB::raw('periods.period_end')])
-                        ->orWhereBetween('subscriptions.canceled_at', [DB::raw('periods.period_start'), DB::raw('periods.period_end')]);
+                        ->orWhereBetween('subscriptions.cancels_at', [DB::raw('periods.period_start'), DB::raw('periods.period_end')]);
                 });
             })
             ->select([

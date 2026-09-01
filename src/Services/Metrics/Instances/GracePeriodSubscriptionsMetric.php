@@ -14,9 +14,9 @@ class GracePeriodSubscriptionsMetric extends AbstractMetric
     public function calculate(Carbon $start, Carbon $end): mixed
     {
         return DB::table('subscriptions')
-            ->whereNotNull('canceled_at')
+            ->whereNotNull('cancels_at')
             ->where('expires_at', '>', $end)
-            ->where('canceled_at', '<=', $end)
+            ->where('cancels_at', '<=', $end)
             ->count();
     }
 

@@ -38,7 +38,7 @@ class TrialConversionReportTest extends TestCase
             'trial_ends_at' => $from->copy()->addDays(14),
             'created_at' => $from->copy()->addDays(1),
             'starts_at' => $from->copy()->addDays(1),
-            'canceled_at' => $from->copy()->addDays(10),
+            'cancels_at' => $from->copy()->addDays(10),
         ]);
 
         // Act

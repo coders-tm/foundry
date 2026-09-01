@@ -33,7 +33,7 @@ class ArpuChart extends AbstractChart
                 ->where('status', 'active')
                 ->where('created_at', '<=', $monthEnd)
                 ->where(function ($q) use ($monthEnd) {
-                    $q->whereNull('canceled_at')
+                    $q->whereNull('cancels_at')
                         ->orWhere('expires_at', '>', $monthEnd);
                 })
                 ->distinct('user_id')

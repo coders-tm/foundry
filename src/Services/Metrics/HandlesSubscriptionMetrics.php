@@ -68,7 +68,7 @@ trait HandlesSubscriptionMetrics
                     SubscriptionStatus::CANCELED,
                 ])->where(function ($inner) use ($date) {
                     $inner->where(function ($q) use ($date) {
-                        $q->whereNull('subscriptions.canceled_at')
+                        $q->whereNull('subscriptions.cancels_at')
                             ->where(function ($q) use ($date) {
                                 $q->whereNull('subscriptions.ends_at')
                                     ->orWhere('subscriptions.ends_at', '>', $date);

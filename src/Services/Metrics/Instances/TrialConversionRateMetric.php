@@ -26,8 +26,8 @@ class TrialConversionRateMetric extends AbstractMetric
             ->whereNotNull('trial_ends_at')
             ->whereBetween('created_at', [$start, $end])
             ->where(function ($q) {
-                $q->whereNull('canceled_at')
-                    ->orWhereColumn('canceled_at', '>', 'trial_ends_at');
+                $q->whereNull('cancels_at')
+                    ->orWhereColumn('cancels_at', '>', 'trial_ends_at');
             })
             ->count();
 

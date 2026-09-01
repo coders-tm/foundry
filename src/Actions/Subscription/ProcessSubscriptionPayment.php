@@ -45,7 +45,13 @@ class ProcessSubscriptionPayment
             $subscription->fill([
                 'status' => SubscriptionStatus::ACTIVE,
                 'ends_at' => null,
-            ])->save();
+            ]);
+
+            if (! $subscription->credit_resets_at) {
+                $subscription->advanceCreditResetsAt($subscription->starts_at ?? now());
+            }
+
+            $subscription->save();
 
             $subscription->syncUsages();
         }
@@ -69,7 +75,13 @@ class ProcessSubscriptionPayment
         $subscription->fill([
             'status' => SubscriptionStatus::ACTIVE,
             'ends_at' => null,
-        ])->save();
+        ]);
+
+        if (! $subscription->credit_resets_at) {
+            $subscription->advanceCreditResetsAt($subscription->starts_at ?? now());
+        }
+
+        $subscription->save();
 
         event(new SubscriptionPaid($subscription, $order));
 

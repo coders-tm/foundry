@@ -49,7 +49,7 @@ class PlanPolicy
      */
     public function update(Model $admin, Plan $plan): bool
     {
-        return $admin->canAny(['plans:write', 'plans:editor']) && ($plan->user_id == $admin->id || $plan->hasUser($admin->id));
+        return $admin->canAny(['plans:write', 'plans:editor']);
     }
 
     /**

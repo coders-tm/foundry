@@ -64,12 +64,12 @@ class MrrByPlanReport extends AbstractReport
                 'plans.created_at',
                 'plans.updated_at',
                 DB::raw("COUNT(DISTINCT CASE
-                    WHEN subscriptions.canceled_at IS NULL
+                    WHEN subscriptions.cancels_at IS NULL
                     AND (subscriptions.expires_at IS NULL OR subscriptions.expires_at > '{$now}')
                     THEN subscriptions.id
                 END) as active_subscriptions"),
                 DB::raw("COALESCE(SUM(CASE
-                    WHEN subscriptions.canceled_at IS NULL
+                    WHEN subscriptions.cancels_at IS NULL
                     AND (subscriptions.expires_at IS NULL OR subscriptions.expires_at > '{$now}')
                     THEN subscriptions.quantity
                 END), 0) as total_quantity"),

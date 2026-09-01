@@ -129,7 +129,7 @@ class SubscriptionFreezeTest extends TestCase
         $user = User::factory()->create();
         $subscription = $user->newSubscription('default', $plan->id)->saveWithoutInvoice();
         $subscription->status = SubscriptionStatus::CANCELED;
-        $subscription->canceled_at = now();
+        $subscription->cancels_at = now();
         $subscription->save();
 
         $this->expectException(\LogicException::class);
