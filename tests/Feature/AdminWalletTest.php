@@ -9,9 +9,9 @@ uses(TestCase::class);
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    $this->user = \Foundry\Models\User::factory()->create();
+    $this->user = User::factory()->create();
 
-    $this->admin = \Foundry\Models\Admin::factory()->create([
+    $this->admin = Admin::factory()->create([
         'is_super_admin' => true,
     ]);
 });
@@ -110,7 +110,7 @@ it('requires valid amount for debit', function () {
 
 it('prevents non admin from accessing admin wallet routes', function () {
     /** @var User $otherUser */
-    $otherUser = \Foundry\Models\User::factory()->create();
+    $otherUser = User::factory()->create();
 
     $response = $this->actingAs($otherUser, 'user')
         ->getJson("/admin/users/{$this->user->id}/wallet/balance");

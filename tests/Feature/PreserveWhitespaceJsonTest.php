@@ -1,10 +1,14 @@
 <?php
 
-uses(Foundry\Tests\TestCase::class);
+use Foundry\Casts\PreserveWhitespaceJson;
+use Foundry\Tests\TestCase;
+use Illuminate\Database\Eloquent\Model;
+
+uses(TestCase::class);
 
 beforeEach(function () {
-    $this->cast = new \Foundry\Casts\PreserveWhitespaceJson;
-    $this->model = new class extends \Illuminate\Database\Eloquent\Model {};
+    $this->cast = new PreserveWhitespaceJson;
+    $this->model = new class extends Model {};
 });
 
 it('preserves trailing whitespace in text content', function () {
@@ -164,7 +168,7 @@ it('handles serialization', function () {
 });
 
 it('throws exception for invalid json in get', function () {
-    $this->expectException(\JsonException::class);
+    $this->expectException(JsonException::class);
 
     $invalidJson = '{"invalid": json}';
     $this->cast->get($this->model, 'data', $invalidJson, []);

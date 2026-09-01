@@ -1,20 +1,26 @@
 <?php
 
-uses(Foundry\Tests\TestCase::class);
+use App\Models\User;
+use Foundry\Models\Subscription;
+use Foundry\Notifications\Admins\SubscriptionCanceledNotification;
+use Foundry\Tests\TestCase;
+use Illuminate\Support\Facades\Notification;
+
+uses(TestCase::class);
 
 it('sends admin subscription canceled notification', function () {
-    \Illuminate\Support\Facades\Notification::fake();
+    Notification::fake();
 
-    $user = \App\Models\User::factory()->create();
-    $subscription = \Foundry\Models\Subscription::factory()->canceled()->create(['user_id' => $user->id]);
+    $user = User::factory()->create();
+    $subscription = Subscription::factory()->canceled()->create(['user_id' => $user->id]);
 
-    $notification = new \Foundry\Notifications\Admins\SubscriptionCanceledNotification($subscription);
+    $notification = new SubscriptionCanceledNotification($subscription);
 
-    \Illuminate\Support\Facades\Notification::send($user, $notification);
+    Notification::send($user, $notification);
 
-    \Illuminate\Support\Facades\Notification::assertSentTo(
+    Notification::assertSentTo(
         $user,
-        \Foundry\Notifications\Admins\SubscriptionCanceledNotification::class,
+        SubscriptionCanceledNotification::class,
         function ($notification, $channels) use ($subscription) {
             return $notification->subject === $subscription->renderNotification('admin:subscription-cancel')->subject &&
                 $notification->message === $subscription->renderNotification('admin:subscription-cancel')->content;

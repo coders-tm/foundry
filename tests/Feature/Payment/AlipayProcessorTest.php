@@ -1,42 +1,53 @@
 <?php
 
-uses(\Foundry\Tests\Feature\FeatureTestCase::class)
-    ->use(\Illuminate\Foundation\Testing\RefreshDatabase::class);
+use Foundry\Foundry;
+use Foundry\Models\ExchangeRate;
+use Foundry\Models\Payment;
+use Foundry\Payment\Mappers\AlipayPayment;
+use Foundry\Payment\Payable;
+use Foundry\Payment\Processor;
+use Foundry\Payment\Processors\AlipayProcessor;
+use Foundry\Tests\Feature\FeatureTestCase;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
+
+uses(FeatureTestCase::class)
+    ->use(RefreshDatabase::class);
 
 beforeEach(function () {
-    \Foundry\Models\ExchangeRate::create(['currency' => 'CNY', 'rate' => 7.0]);
+    ExchangeRate::create(['currency' => 'CNY', 'rate' => 7.0]);
 });
 
 afterEach(function () {
-    $reflection = new \ReflectionClass(\Foundry\Foundry::class);
+    $reflection = new ReflectionClass(Foundry::class);
     $property = $reflection->getProperty('alipayClient');
     $property->setAccessible(true);
     $property->setValue(null, null);
 });
 
 it('creates alipay processor instance', function () {
-    $processor = \Foundry\Payment\Processor::make('alipay');
-    $this->assertInstanceOf(\Foundry\Payment\Processors\AlipayProcessor::class, $processor);
+    $processor = Processor::make('alipay');
+    $this->assertInstanceOf(AlipayProcessor::class, $processor);
     $this->assertEquals('alipay', $processor->getProvider());
 });
 
 it('sets up alipay payment intent', function () {
-    $processor = new \Foundry\Payment\Processors\AlipayProcessor;
-    $payable = \Foundry\Payment\Payable::make(['reference_id' => '12345', 'grand_total' => 100.00, 'currency' => 'CNY', 'billing_address' => ['country_code' => 'CN', 'country' => 'China'], 'description' => 'Test Payment', 'source' => (object) ['id' => 1]]);
+    $processor = new AlipayProcessor;
+    $payable = Payable::make(['reference_id' => '12345', 'grand_total' => 100.00, 'currency' => 'CNY', 'billing_address' => ['country_code' => 'CN', 'country' => 'China'], 'description' => 'Test Payment', 'source' => (object) ['id' => 1]]);
 
-    $alipayMock = \Mockery::mock('Yansongda\Pay\Gateways\Alipay');
-    $redirectMock = \Mockery::mock('Symfony\Component\HttpFoundation\RedirectResponse');
+    $alipayMock = Mockery::mock('Yansongda\Pay\Gateways\Alipay');
+    $redirectMock = Mockery::mock('Symfony\Component\HttpFoundation\RedirectResponse');
     $redirectMock->shouldReceive('getTargetUrl')->andReturn('https://alipay.com/pay');
-    $alipayMock->shouldReceive('web')->once()->with(\Mockery::on(function ($args) {
+    $alipayMock->shouldReceive('web')->once()->with(Mockery::on(function ($args) {
         return $args['out_trade_no'] === '12345' && $args['total_amount'] === '700.00' && strpos($args['_return_url'], 'state=') !== false;
     }))->andReturn($redirectMock);
 
-    $reflection = new \ReflectionClass(\Foundry\Foundry::class);
+    $reflection = new ReflectionClass(Foundry::class);
     $property = $reflection->getProperty('alipayClient');
     $property->setAccessible(true);
     $property->setValue(null, $alipayMock);
 
-    $result = $processor->setupPaymentIntent(new \Illuminate\Http\Request, $payable);
+    $result = $processor->setupPaymentIntent(new Request, $payable);
 
     $this->assertEquals('https://alipay.com/pay', $result['redirect_url']);
     $this->assertEquals('12345', $result['payment_intent_id']);
@@ -45,15 +56,15 @@ it('sets up alipay payment intent', function () {
 });
 
 it('confirms alipay payment', function () {
-    $processor = \Foundry\Payment\Processor::make('alipay');
-    $payable = \Foundry\Payment\Payable::make(['grand_total' => 100.00]);
-    $request = new \Illuminate\Http\Request;
+    $processor = Processor::make('alipay');
+    $payable = Payable::make(['grand_total' => 100.00]);
+    $request = new Request;
 
-    $alipayMock = \Mockery::mock('Yansongda\Pay\Gateways\Alipay');
+    $alipayMock = Mockery::mock('Yansongda\Pay\Gateways\Alipay');
     $response = ['trade_no' => 'alipay_123', 'out_trade_no' => 'order_123', 'total_amount' => '100.00', 'trade_status' => 'TRADE_SUCCESS', 'fund_bill_list' => [['fund_channel' => 'PCREDIT', 'amount' => '100.00']]];
     $alipayMock->shouldReceive('verify')->once()->andReturn($response);
 
-    $reflection = new \ReflectionClass(\Foundry\Foundry::class);
+    $reflection = new ReflectionClass(Foundry::class);
     $property = $reflection->getProperty('alipayClient');
     $property->setAccessible(true);
     $property->setValue(null, $alipayMock);
@@ -62,19 +73,19 @@ it('confirms alipay payment', function () {
 
     $this->assertTrue($result->isSuccess());
     $this->assertEquals('alipay_123', $result->getTransactionId());
-    $this->assertInstanceOf(\Foundry\Payment\Mappers\AlipayPayment::class, $result->getPaymentData());
+    $this->assertInstanceOf(AlipayPayment::class, $result->getPaymentData());
     $this->assertEquals('Ant Credit Pay (Huabei)', $result->getPaymentData()->toString());
 });
 
 it('handles alipay success callback', function () {
-    $processor = new \Foundry\Payment\Processors\AlipayProcessor;
-    $payment = \Foundry\Models\Payment::create(['paymentable_type' => 'App\Models\Order', 'paymentable_id' => 1, 'provider' => 'alipay', 'transaction_id' => 'pending_123', 'amount' => 100.00, 'status' => 'pending']);
-    $request = new \Illuminate\Http\Request(['state' => $payment->uuid]);
+    $processor = new AlipayProcessor;
+    $payment = Payment::create(['paymentable_type' => 'App\Models\Order', 'paymentable_id' => 1, 'provider' => 'alipay', 'transaction_id' => 'pending_123', 'amount' => 100.00, 'status' => 'pending']);
+    $request = new Request(['state' => $payment->uuid]);
 
-    $alipayMock = \Mockery::mock('Yansongda\Pay\Gateways\Alipay');
+    $alipayMock = Mockery::mock('Yansongda\Pay\Gateways\Alipay');
     $alipayMock->shouldReceive('verify')->once()->andReturn(['trade_no' => 'alipay_123', 'out_trade_no' => '12345', 'total_amount' => '100.00', 'trade_status' => 'TRADE_SUCCESS']);
 
-    $reflection = new \ReflectionClass(\Foundry\Foundry::class);
+    $reflection = new ReflectionClass(Foundry::class);
     $property = $reflection->getProperty('alipayClient');
     $property->setAccessible(true);
     $property->setValue(null, $alipayMock);
@@ -87,9 +98,9 @@ it('handles alipay success callback', function () {
 });
 
 it('handles alipay cancel callback', function () {
-    $processor = new \Foundry\Payment\Processors\AlipayProcessor;
-    $payment = \Foundry\Models\Payment::create(['paymentable_type' => 'App\Models\Order', 'paymentable_id' => 1, 'provider' => 'alipay', 'transaction_id' => 'pending_123', 'amount' => 100.00, 'status' => 'pending']);
-    $request = new \Illuminate\Http\Request(['state' => $payment->uuid]);
+    $processor = new AlipayProcessor;
+    $payment = Payment::create(['paymentable_type' => 'App\Models\Order', 'paymentable_id' => 1, 'provider' => 'alipay', 'transaction_id' => 'pending_123', 'amount' => 100.00, 'status' => 'pending']);
+    $request = new Request(['state' => $payment->uuid]);
 
     $result = $processor->handleCancelCallback($request);
 

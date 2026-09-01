@@ -26,6 +26,7 @@ use Foundry\Notifications\UserLogin;
 use Foundry\Notifications\UserResetPasswordNotification;
 use Foundry\Notifications\UserSignupNotification;
 use Foundry\Tests\TestCase;
+use Illuminate\Support\Str;
 
 uses(TestCase::class);
 
@@ -46,13 +47,13 @@ beforeEach(function () {
     $this->seed(NotificationSeeder::class);
 
     $this->user = User::factory()->create([
-        'email' => 'user@example.com',
+        'email' => 'user-'.Str::random(8).'@example.com',
         'first_name' => 'John',
         'last_name' => 'Doe',
     ]);
 
     $this->admin = Admin::factory()->create([
-        'email' => 'admin@example.com',
+        'email' => 'admin-'.Str::random(8).'@example.com',
         'first_name' => 'Admin',
         'last_name' => 'User',
     ]);

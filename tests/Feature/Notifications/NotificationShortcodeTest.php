@@ -1,119 +1,139 @@
 <?php
 
-uses(\Foundry\Tests\Feature\FeatureTestCase::class);
+use Foundry\Models\Subscription;
+use Foundry\Models\Subscription\Plan;
+use Foundry\Models\User;
+use Foundry\Notifications\SubscriptionCanceledNotification;
+use Foundry\Notifications\SubscriptionCancelNotification;
+use Foundry\Notifications\SubscriptionDowngradeNotification;
+use Foundry\Notifications\SubscriptionExpiredNotification;
+use Foundry\Notifications\SubscriptionRenewedNotification;
+use Foundry\Notifications\SubscriptionUpgradeNotification;
+use Foundry\Notifications\UserSignupNotification;
+use Foundry\Tests\Feature\FeatureTestCase;
+use Illuminate\Support\Facades\Notification;
+
+uses(FeatureTestCase::class);
 
 it('sends user signup notification', function () {
-    $user = \Foundry\Models\User::factory()->create();
-    \Illuminate\Support\Facades\Notification::fake();
+    $user = User::factory()->create();
+    Notification::fake();
 
-    \Foundry\Models\Subscription::factory()->create(['user_id' => $user->id]);
+    Subscription::factory()->create(['user_id' => $user->id]);
 
-    $user->notify(new \Foundry\Notifications\UserSignupNotification($user));
+    $user->notify(new UserSignupNotification($user));
 
-    \Illuminate\Support\Facades\Notification::assertSentTo(
+    Notification::assertSentTo(
         [$user],
-        \Foundry\Notifications\UserSignupNotification::class,
+        UserSignupNotification::class,
         function ($notification, $channels) use ($user) {
             $this->assertStringContainsString($user->first_name, $notification->message);
             $this->assertStringContainsString($user->subscription()->plan->label, $notification->message);
+
             return true;
         }
     );
 });
 
 it('sends subscription upgrade notification', function () {
-    $subscription = \Foundry\Models\Subscription::factory()->create();
-    \Illuminate\Support\Facades\Notification::fake();
+    $subscription = Subscription::factory()->create();
+    Notification::fake();
 
-    $subscription->oldPlan = \Foundry\Models\Subscription\Plan::factory()->make();
+    $subscription->oldPlan = Plan::factory()->make();
 
-    $subscription->user->notify(new \Foundry\Notifications\SubscriptionUpgradeNotification($subscription));
+    $subscription->user->notify(new SubscriptionUpgradeNotification($subscription));
 
-    \Illuminate\Support\Facades\Notification::assertSentTo(
+    Notification::assertSentTo(
         [$subscription->user],
-        \Foundry\Notifications\SubscriptionUpgradeNotification::class,
+        SubscriptionUpgradeNotification::class,
         function ($notification, $channels) use ($subscription) {
             $this->assertStringContainsString($subscription->plan->label, $notification->message);
+
             return true;
         }
     );
 });
 
 it('sends subscription renewed notification', function () {
-    $subscription = \Foundry\Models\Subscription::factory()->create();
-    \Illuminate\Support\Facades\Notification::fake();
+    $subscription = Subscription::factory()->create();
+    Notification::fake();
 
-    $subscription->user->notify(new \Foundry\Notifications\SubscriptionRenewedNotification($subscription));
+    $subscription->user->notify(new SubscriptionRenewedNotification($subscription));
 
-    \Illuminate\Support\Facades\Notification::assertSentTo(
+    Notification::assertSentTo(
         [$subscription->user],
-        \Foundry\Notifications\SubscriptionRenewedNotification::class,
+        SubscriptionRenewedNotification::class,
         function ($notification, $channels) use ($subscription) {
             $this->assertStringContainsString($subscription->plan->label, $notification->message);
+
             return true;
         }
     );
 });
 
 it('sends subscription expired notification', function () {
-    $subscription = \Foundry\Models\Subscription::factory()->create();
-    \Illuminate\Support\Facades\Notification::fake();
+    $subscription = Subscription::factory()->create();
+    Notification::fake();
 
-    $subscription->user->notify(new \Foundry\Notifications\SubscriptionExpiredNotification($subscription));
+    $subscription->user->notify(new SubscriptionExpiredNotification($subscription));
 
-    \Illuminate\Support\Facades\Notification::assertSentTo(
+    Notification::assertSentTo(
         [$subscription->user],
-        \Foundry\Notifications\SubscriptionExpiredNotification::class,
+        SubscriptionExpiredNotification::class,
         function ($notification, $channels) use ($subscription) {
             $this->assertStringContainsString($subscription->plan->label, $notification->message);
+
             return true;
         }
     );
 });
 
 it('sends subscription downgrade notification', function () {
-    $subscription = \Foundry\Models\Subscription::factory()->create();
-    \Illuminate\Support\Facades\Notification::fake();
+    $subscription = Subscription::factory()->create();
+    Notification::fake();
 
-    $subscription->user->notify(new \Foundry\Notifications\SubscriptionDowngradeNotification($subscription));
+    $subscription->user->notify(new SubscriptionDowngradeNotification($subscription));
 
-    \Illuminate\Support\Facades\Notification::assertSentTo(
+    Notification::assertSentTo(
         [$subscription->user],
-        \Foundry\Notifications\SubscriptionDowngradeNotification::class,
+        SubscriptionDowngradeNotification::class,
         function ($notification, $channels) use ($subscription) {
             $this->assertStringContainsString($subscription->plan->label, $notification->message);
+
             return true;
         }
     );
 });
 
 it('sends subscription cancel notification', function () {
-    $subscription = \Foundry\Models\Subscription::factory()->create();
-    \Illuminate\Support\Facades\Notification::fake();
+    $subscription = Subscription::factory()->create();
+    Notification::fake();
 
-    $subscription->user->notify(new \Foundry\Notifications\SubscriptionCancelNotification($subscription));
+    $subscription->user->notify(new SubscriptionCancelNotification($subscription));
 
-    \Illuminate\Support\Facades\Notification::assertSentTo(
+    Notification::assertSentTo(
         [$subscription->user],
-        \Foundry\Notifications\SubscriptionCancelNotification::class,
+        SubscriptionCancelNotification::class,
         function ($notification, $channels) use ($subscription) {
             $this->assertStringContainsString($subscription->plan->label, $notification->message);
+
             return true;
         }
     );
 });
 
 it('sends subscription canceled notification', function () {
-    $subscription = \Foundry\Models\Subscription::factory()->create();
-    \Illuminate\Support\Facades\Notification::fake();
+    $subscription = Subscription::factory()->create();
+    Notification::fake();
 
-    $subscription->user->notify(new \Foundry\Notifications\SubscriptionCanceledNotification($subscription));
+    $subscription->user->notify(new SubscriptionCanceledNotification($subscription));
 
-    \Illuminate\Support\Facades\Notification::assertSentTo(
+    Notification::assertSentTo(
         [$subscription->user],
-        \Foundry\Notifications\SubscriptionCanceledNotification::class,
+        SubscriptionCanceledNotification::class,
         function ($notification, $channels) use ($subscription) {
             $this->assertStringContainsString($subscription->plan->label, $notification->message);
+
             return true;
         }
     );

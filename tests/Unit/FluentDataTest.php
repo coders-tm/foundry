@@ -1,10 +1,14 @@
 <?php
 
-uses(PHPUnit\Framework\TestCase::class);
+use Foundry\Support\FluentData;
+use Illuminate\Support\Collection;
+use PHPUnit\Framework\TestCase;
+
+uses(TestCase::class);
 
 it('can be instantiated with array', function () {
     $data = ['foo' => 'bar'];
-    $fluent = new \Foundry\Support\FluentData($data);
+    $fluent = new FluentData($data);
 
     $this->assertEquals('bar', $fluent->foo);
     $this->assertEquals('bar', $fluent['foo']);
@@ -12,7 +16,7 @@ it('can be instantiated with array', function () {
 
 it('can be instantiated with object', function () {
     $data = (object) ['foo' => 'bar'];
-    $fluent = new \Foundry\Support\FluentData($data);
+    $fluent = new FluentData($data);
 
     $this->assertEquals('bar', $fluent->foo);
 });
@@ -26,16 +30,16 @@ it('supports nested access', function () {
             ],
         ],
     ];
-    $fluent = new \Foundry\Support\FluentData($data);
+    $fluent = new FluentData($data);
 
-    $this->assertInstanceOf(\Foundry\Support\FluentData::class, $fluent->user);
+    $this->assertInstanceOf(FluentData::class, $fluent->user);
     $this->assertEquals('John', $fluent->user->name);
-    $this->assertInstanceOf(\Foundry\Support\FluentData::class, $fluent->user->address);
+    $this->assertInstanceOf(FluentData::class, $fluent->user->address);
     $this->assertEquals('New York', $fluent->user->address->city);
 });
 
 it('returns safe object for undefined keys', function () {
-    $fluent = new \Foundry\Support\FluentData([]);
+    $fluent = new FluentData([]);
 
     $this->assertNull($fluent->missing);
     $this->assertNull($fluent->missing->nested);
@@ -43,19 +47,19 @@ it('returns safe object for undefined keys', function () {
 
 it('is countable', function () {
     $data = ['a' => 1, 'b' => 2];
-    $fluent = new \Foundry\Support\FluentData($data);
+    $fluent = new FluentData($data);
 
     $this->assertCount(2, $fluent);
     $this->assertEquals(2, $fluent->count());
 
-    $empty = new \Foundry\Support\FluentData([]);
+    $empty = new FluentData([]);
     $this->assertCount(0, $empty);
     $this->assertEquals(0, $empty->count());
 });
 
 it('is iterable', function () {
     $data = ['a' => 1, 'b' => 2];
-    $fluent = new \Foundry\Support\FluentData($data);
+    $fluent = new FluentData($data);
 
     $result = [];
     foreach ($fluent as $key => $value) {
@@ -72,16 +76,16 @@ it('wraps children during iteration', function () {
             ['id' => 2],
         ],
     ];
-    $fluent = new \Foundry\Support\FluentData($data);
+    $fluent = new FluentData($data);
 
     foreach ($fluent->items as $item) {
-        $this->assertInstanceOf(\Foundry\Support\FluentData::class, $item);
+        $this->assertInstanceOf(FluentData::class, $item);
     }
 });
 
 it('handles collection', function () {
-    $collection = new \Illuminate\Support\Collection(['key' => 'value']);
-    $fluent = new \Foundry\Support\FluentData($collection);
+    $collection = new Collection(['key' => 'value']);
+    $fluent = new FluentData($collection);
 
     $this->assertEquals('value', $fluent->key);
 });
@@ -93,7 +97,7 @@ it('handles explicit type conversions', function () {
         'string_num' => '100',
         'null_val' => null,
     ];
-    $fluent = new \Foundry\Support\FluentData($data);
+    $fluent = new FluentData($data);
 
     $this->assertEquals(42, $fluent->int_val);
     $this->assertEquals(10.5, $fluent->float_val);

@@ -1,17 +1,18 @@
 <?php
 
-uses(\Foundry\Tests\TestCase::class);
-
-use Foundry\Events\ResetFeatureUsages;
+use Foundry\Contracts\SubscriptionStatus;
+use Foundry\Foundry;
+use Foundry\Tests\TestCase;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Event;
+
+uses(TestCase::class);
 
 afterEach(function () {
     Carbon::setTestNow(null);
 });
 
 it('plan can store yearly fee', function () {
-    $plan = (\Foundry\Foundry::$planModel)::factory()->create([
+    $plan = (Foundry::$planModel)::factory()->create([
         'price' => 1000,
         'yearly_fee' => 10000,
     ]);
@@ -21,7 +22,7 @@ it('plan can store yearly fee', function () {
 });
 
 it('plan yearly price formatted accessor', function () {
-    $plan = (\Foundry\Foundry::$planModel)::factory()->create([
+    $plan = (Foundry::$planModel)::factory()->create([
         'price' => 1000,
         'yearly_fee' => 10000,
     ]);
@@ -31,7 +32,7 @@ it('plan yearly price formatted accessor', function () {
 });
 
 it('plan yearly fee is calculated from price when no yearly fee set', function () {
-    $plan = (\Foundry\Foundry::$planModel)::factory()->create([
+    $plan = (Foundry::$planModel)::factory()->create([
         'price' => 1000,
         'interval' => 'month',
         'interval_count' => 1,
@@ -42,7 +43,7 @@ it('plan yearly fee is calculated from price when no yearly fee set', function (
 });
 
 it('plan is free checks yearly fee', function () {
-    $plan = (\Foundry\Foundry::$planModel)::factory()->create([
+    $plan = (Foundry::$planModel)::factory()->create([
         'price' => 0,
         'yearly_fee' => 100,
     ]);
@@ -51,7 +52,7 @@ it('plan is free checks yearly fee', function () {
 });
 
 it('plan is free when both prices zero', function () {
-    $plan = (\Foundry\Foundry::$planModel)::factory()->create([
+    $plan = (Foundry::$planModel)::factory()->create([
         'price' => 0,
         'yearly_fee' => 0,
     ]);
@@ -60,7 +61,7 @@ it('plan is free when both prices zero', function () {
 });
 
 it('plan is free when yearly fee null and price zero', function () {
-    $plan = (\Foundry\Foundry::$planModel)::factory()->create([
+    $plan = (Foundry::$planModel)::factory()->create([
         'price' => 0,
         'yearly_fee' => null,
     ]);
@@ -69,7 +70,7 @@ it('plan is free when yearly fee null and price zero', function () {
 });
 
 it('yearly fee is included in currency fields', function () {
-    $plan = (\Foundry\Foundry::$planModel)::factory()->create([
+    $plan = (Foundry::$planModel)::factory()->create([
         'price' => 1000,
         'yearly_fee' => 10000,
     ]);
@@ -78,8 +79,8 @@ it('yearly fee is included in currency fields', function () {
 });
 
 it('new subscription with yearly billing sets correct interval', function () {
-    $user = (\Foundry\Foundry::$subscriptionUserModel)::factory()->create();
-    $plan = (\Foundry\Foundry::$planModel)::factory()->create([
+    $user = (Foundry::$subscriptionUserModel)::factory()->create();
+    $plan = (Foundry::$planModel)::factory()->create([
         'price' => 1000,
         'yearly_fee' => 10000,
         'interval' => 'year',
@@ -95,8 +96,8 @@ it('new subscription with yearly billing sets correct interval', function () {
 });
 
 it('new subscription with yearly billing sets credit resets at', function () {
-    $user = (\Foundry\Foundry::$subscriptionUserModel)::factory()->create();
-    $plan = (\Foundry\Foundry::$planModel)::factory()->create([
+    $user = (Foundry::$subscriptionUserModel)::factory()->create();
+    $plan = (Foundry::$planModel)::factory()->create([
         'price' => 1000,
         'yearly_fee' => 10000,
         'interval' => 'year',
@@ -114,8 +115,8 @@ it('new subscription with yearly billing sets credit resets at', function () {
 it('new subscription with yearly billing credit resets at matches plan interval', function () {
     Carbon::setTestNow(Carbon::parse('2026-06-01 12:00:00'));
 
-    $user = (\Foundry\Foundry::$subscriptionUserModel)::factory()->create();
-    $plan = (\Foundry\Foundry::$planModel)::factory()->create([
+    $user = (Foundry::$subscriptionUserModel)::factory()->create();
+    $plan = (Foundry::$planModel)::factory()->create([
         'price' => 1000,
         'yearly_fee' => 10000,
         'interval' => 'year',
@@ -134,8 +135,8 @@ it('new subscription with yearly billing credit resets at matches plan interval'
 });
 
 it('new subscription with monthly billing sets credit resets at', function () {
-    $user = (\Foundry\Foundry::$subscriptionUserModel)::factory()->create();
-    $plan = (\Foundry\Foundry::$planModel)::factory()->create([
+    $user = (Foundry::$subscriptionUserModel)::factory()->create();
+    $plan = (Foundry::$planModel)::factory()->create([
         'price' => 1000,
         'yearly_fee' => 10000,
         'trial_days' => 0,
@@ -148,8 +149,8 @@ it('new subscription with monthly billing sets credit resets at', function () {
 });
 
 it('new subscription monthly billing uses plan interval', function () {
-    $user = (\Foundry\Foundry::$subscriptionUserModel)::factory()->create();
-    $plan = (\Foundry\Foundry::$planModel)::factory()->create([
+    $user = (Foundry::$subscriptionUserModel)::factory()->create();
+    $plan = (Foundry::$planModel)::factory()->create([
         'price' => 1000,
         'interval' => 'month',
         'trial_days' => 0,
@@ -164,8 +165,8 @@ it('new subscription monthly billing uses plan interval', function () {
 it('yearly subscription expires at is one year from now', function () {
     Carbon::setTestNow(Carbon::parse('2026-06-01 12:00:00'));
 
-    $user = (\Foundry\Foundry::$subscriptionUserModel)::factory()->create();
-    $plan = (\Foundry\Foundry::$planModel)::factory()->create([
+    $user = (Foundry::$subscriptionUserModel)::factory()->create();
+    $plan = (Foundry::$planModel)::factory()->create([
         'price' => 1000,
         'yearly_fee' => 10000,
         'interval' => 'year',
@@ -183,8 +184,8 @@ it('yearly subscription expires at is one year from now', function () {
 });
 
 it('yearly subscription upcoming invoice uses yearly fee', function () {
-    $user = (\Foundry\Foundry::$subscriptionUserModel)::factory()->create();
-    $plan = (\Foundry\Foundry::$planModel)::factory()->create([
+    $user = (Foundry::$subscriptionUserModel)::factory()->create();
+    $plan = (Foundry::$planModel)::factory()->create([
         'price' => 1000,
         'yearly_fee' => 10000,
         'interval' => 'year',
@@ -204,8 +205,8 @@ it('yearly subscription upcoming invoice uses yearly fee', function () {
 });
 
 it('yearly subscription upcoming invoice uses year interval', function () {
-    $user = (\Foundry\Foundry::$subscriptionUserModel)::factory()->create();
-    $plan = (\Foundry\Foundry::$planModel)::factory()->create([
+    $user = (Foundry::$subscriptionUserModel)::factory()->create();
+    $plan = (Foundry::$planModel)::factory()->create([
         'price' => 1000,
         'yearly_fee' => 10000,
         'interval' => 'year',
@@ -223,8 +224,8 @@ it('yearly subscription upcoming invoice uses year interval', function () {
 });
 
 it('monthly subscription upcoming invoice uses plan price', function () {
-    $user = (\Foundry\Foundry::$subscriptionUserModel)::factory()->create();
-    $plan = (\Foundry\Foundry::$planModel)::factory()->create([
+    $user = (Foundry::$subscriptionUserModel)::factory()->create();
+    $plan = (Foundry::$planModel)::factory()->create([
         'price' => 1000,
         'yearly_fee' => 10000,
         'interval' => 'month',
@@ -242,8 +243,8 @@ it('monthly subscription upcoming invoice uses plan price', function () {
 });
 
 it('yearly subscription status response includes credit resets at', function () {
-    $user = (\Foundry\Foundry::$subscriptionUserModel)::factory()->create();
-    $plan = (\Foundry\Foundry::$planModel)::factory()->create([
+    $user = (Foundry::$subscriptionUserModel)::factory()->create();
+    $plan = (Foundry::$planModel)::factory()->create([
         'price' => 1000,
         'yearly_fee' => 10000,
         'trial_days' => 0,
@@ -259,8 +260,8 @@ it('yearly subscription status response includes credit resets at', function () 
 });
 
 it('monthly subscription status response credit resets at is not null', function () {
-    $user = (\Foundry\Foundry::$subscriptionUserModel)::factory()->create();
-    $plan = (\Foundry\Foundry::$planModel)::factory()->create([
+    $user = (Foundry::$subscriptionUserModel)::factory()->create();
+    $plan = (Foundry::$planModel)::factory()->create([
         'price' => 1000,
         'trial_days' => 0,
     ]);
@@ -277,8 +278,8 @@ it('monthly subscription status response credit resets at is not null', function
 it('advance credit resets at moves to next plan interval', function () {
     Carbon::setTestNow(Carbon::parse('2026-06-01 12:00:00'));
 
-    $user = (\Foundry\Foundry::$subscriptionUserModel)::factory()->create();
-    $plan = (\Foundry\Foundry::$planModel)::factory()->create([
+    $user = (Foundry::$subscriptionUserModel)::factory()->create();
+    $plan = (Foundry::$planModel)::factory()->create([
         'price' => 1000,
         'yearly_fee' => 10000,
         'interval' => 'year',
@@ -302,15 +303,15 @@ it('advance credit resets at moves to next plan interval', function () {
 });
 
 it('swap resets to plan defaults and updates credit resets at', function () {
-    $user = (\Foundry\Foundry::$subscriptionUserModel)::factory()->create();
-    $plan = (\Foundry\Foundry::$planModel)::factory()->create([
+    $user = (Foundry::$subscriptionUserModel)::factory()->create();
+    $plan = (Foundry::$planModel)::factory()->create([
         'price' => 1000,
         'yearly_fee' => 10000,
         'interval' => 'year',
         'interval_count' => 1,
         'trial_days' => 0,
     ]);
-    $newPlan = (\Foundry\Foundry::$planModel)::factory()->create([
+    $newPlan = (Foundry::$planModel)::factory()->create([
         'price' => 2000,
         'interval' => 'month',
         'interval_count' => 1,
@@ -334,8 +335,8 @@ it('swap resets to plan defaults and updates credit resets at', function () {
 it('yearly billing creates subscription with correct period', function () {
     Carbon::setTestNow(Carbon::parse('2026-06-01 12:00:00'));
 
-    $user = (\Foundry\Foundry::$subscriptionUserModel)::factory()->create();
-    $plan = (\Foundry\Foundry::$planModel)::factory()->create([
+    $user = (Foundry::$subscriptionUserModel)::factory()->create();
+    $plan = (Foundry::$planModel)::factory()->create([
         'price' => 1000,
         'yearly_fee' => 10000,
         'interval' => 'year',
@@ -363,8 +364,8 @@ it('yearly billing creates subscription with correct period', function () {
 });
 
 it('yearly subscription generates invoice with yearly price', function () {
-    $user = (\Foundry\Foundry::$subscriptionUserModel)::factory()->create();
-    $plan = (\Foundry\Foundry::$planModel)::factory()->create([
+    $user = (Foundry::$subscriptionUserModel)::factory()->create();
+    $plan = (Foundry::$planModel)::factory()->create([
         'price' => 1000,
         'yearly_fee' => 12000,
         'interval' => 'year',
@@ -384,8 +385,8 @@ it('yearly subscription generates invoice with yearly price', function () {
 });
 
 it('monthly subscription generates invoice with monthly price', function () {
-    $user = (\Foundry\Foundry::$subscriptionUserModel)::factory()->create();
-    $plan = (\Foundry\Foundry::$planModel)::factory()->create([
+    $user = (Foundry::$subscriptionUserModel)::factory()->create();
+    $plan = (Foundry::$planModel)::factory()->create([
         'price' => 1000,
         'yearly_fee' => 12000,
         'interval' => 'month',
@@ -405,8 +406,8 @@ it('monthly subscription generates invoice with monthly price', function () {
 });
 
 it('credit resets at is set even without yearly fee', function () {
-    $user = (\Foundry\Foundry::$subscriptionUserModel)::factory()->create();
-    $plan = (\Foundry\Foundry::$planModel)::factory()->create([
+    $user = (Foundry::$subscriptionUserModel)::factory()->create();
+    $plan = (Foundry::$planModel)::factory()->create([
         'price' => 1000,
         'yearly_fee' => null,
         'interval' => 'year',
@@ -426,8 +427,8 @@ it('credit resets at is set even without yearly fee', function () {
 it('yearly billing with trial sets credit resets at correctly', function () {
     Carbon::setTestNow(Carbon::parse('2026-06-01 12:00:00'));
 
-    $user = (\Foundry\Foundry::$subscriptionUserModel)::factory()->create();
-    $plan = (\Foundry\Foundry::$planModel)::factory()->create([
+    $user = (Foundry::$subscriptionUserModel)::factory()->create();
+    $plan = (Foundry::$planModel)::factory()->create([
         'price' => 1000,
         'yearly_fee' => 10000,
         'interval' => 'year',
@@ -450,8 +451,8 @@ it('yearly billing with trial sets credit resets at correctly', function () {
 it('payment keeps credit resets at intact', function () {
     Carbon::setTestNow(Carbon::parse('2026-06-01 12:00:00'));
 
-    $user = (\Foundry\Foundry::$subscriptionUserModel)::factory()->create();
-    $plan = (\Foundry\Foundry::$planModel)::factory()->create([
+    $user = (Foundry::$subscriptionUserModel)::factory()->create();
+    $plan = (Foundry::$planModel)::factory()->create([
         'price' => 1000,
         'yearly_fee' => 10000,
         'interval' => 'year',
@@ -480,8 +481,8 @@ it('payment keeps credit resets at intact', function () {
 it('renew advances credit resets at', function () {
     Carbon::setTestNow(Carbon::parse('2026-06-01 12:00:00'));
 
-    $user = (\Foundry\Foundry::$subscriptionUserModel)::factory()->create();
-    $plan = (\Foundry\Foundry::$planModel)::factory()->create([
+    $user = (Foundry::$subscriptionUserModel)::factory()->create();
+    $plan = (Foundry::$planModel)::factory()->create([
         'price' => 1000,
         'yearly_fee' => 10000,
         'interval' => 'year',
@@ -513,8 +514,8 @@ it('renew advances credit resets at', function () {
 it('early renew extends expires_at for active subscription without resetting credits', function () {
     Carbon::setTestNow(Carbon::parse('2026-06-01 12:00:00'));
 
-    $user = (\Foundry\Foundry::$subscriptionUserModel)::factory()->create();
-    $plan = (\Foundry\Foundry::$planModel)::factory()->create([
+    $user = (Foundry::$subscriptionUserModel)::factory()->create();
+    $plan = (Foundry::$planModel)::factory()->create([
         'price' => 1000,
         'interval' => 'month',
         'interval_count' => 1,
@@ -534,14 +535,14 @@ it('early renew extends expires_at for active subscription without resetting cre
     $this->assertTrue($subscription->expires_at->eq(Carbon::parse('2026-08-01 12:00:00')),
         "expires_at: expected 2026-08-01 12:00:00 got {$subscription->expires_at}"
     );
-    $this->assertEquals(\Foundry\Contracts\SubscriptionStatus::ACTIVE, $subscription->status);
+    $this->assertEquals(SubscriptionStatus::ACTIVE, $subscription->status);
 });
 
 it('early renew preserves feature usage for active subscription', function () {
     Carbon::setTestNow(Carbon::parse('2026-06-01 12:00:00'));
 
-    $user = (\Foundry\Foundry::$subscriptionUserModel)::factory()->create();
-    $plan = (\Foundry\Foundry::$planModel)::factory()->create([
+    $user = (Foundry::$subscriptionUserModel)::factory()->create();
+    $plan = (Foundry::$planModel)::factory()->create([
         'price' => 1000,
         'interval' => 'month',
         'interval_count' => 1,
@@ -575,8 +576,8 @@ it('early renew preserves feature usage for active subscription', function () {
 it('early renew does not advance credit_resets_at for active subscription', function () {
     Carbon::setTestNow(Carbon::parse('2026-06-01 12:00:00'));
 
-    $user = (\Foundry\Foundry::$subscriptionUserModel)::factory()->create();
-    $plan = (\Foundry\Foundry::$planModel)::factory()->create([
+    $user = (Foundry::$subscriptionUserModel)::factory()->create();
+    $plan = (Foundry::$planModel)::factory()->create([
         'price' => 1000,
         'interval' => 'month',
         'interval_count' => 1,
@@ -601,8 +602,8 @@ it('early renew does not advance credit_resets_at for active subscription', func
 it('expired subscription renew resets credits and advances credit_resets_at', function () {
     Carbon::setTestNow(Carbon::parse('2026-06-01 12:00:00'));
 
-    $user = (\Foundry\Foundry::$subscriptionUserModel)::factory()->create();
-    $plan = (\Foundry\Foundry::$planModel)::factory()->create([
+    $user = (Foundry::$subscriptionUserModel)::factory()->create();
+    $plan = (Foundry::$planModel)::factory()->create([
         'price' => 1000,
         'interval' => 'month',
         'interval_count' => 1,
@@ -628,7 +629,7 @@ it('expired subscription renew resets credits and advances credit_resets_at', fu
     // Expire the subscription
     Carbon::setTestNow(Carbon::parse('2026-07-15 12:00:00'));
     $subscription->update([
-        'status' => \Foundry\Contracts\SubscriptionStatus::EXPIRED,
+        'status' => SubscriptionStatus::EXPIRED,
         'expires_at' => Carbon::now()->subDay(),
     ]);
 
@@ -650,8 +651,8 @@ it('expired subscription renew resets credits and advances credit_resets_at', fu
 it('early renew clears ends_at and trial_ends_at', function () {
     Carbon::setTestNow(Carbon::parse('2026-06-01 12:00:00'));
 
-    $user = (\Foundry\Foundry::$subscriptionUserModel)::factory()->create();
-    $plan = (\Foundry\Foundry::$planModel)::factory()->create([
+    $user = (Foundry::$subscriptionUserModel)::factory()->create();
+    $plan = (Foundry::$planModel)::factory()->create([
         'price' => 1000,
         'interval' => 'month',
         'interval_count' => 1,

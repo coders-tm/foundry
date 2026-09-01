@@ -1,10 +1,17 @@
 <?php
 
-uses(Foundry\Tests\BaseTestCase::class)->use(\Illuminate\Foundation\Testing\RefreshDatabase::class);
+use Foundry\Models\Order;
+use Foundry\Models\Tax;
+use Foundry\Repository\OrderRepository;
+use Foundry\Tests\BaseTestCase;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
+
+uses(BaseTestCase::class)->use(RefreshDatabase::class);
 
 it('calculates simple taxable from request', function () {
-    $order = new \Foundry\Models\Order;
-    $request = \Illuminate\Http\Request::create('/orders', 'POST', [
+    $order = new Order;
+    $request = Request::create('/orders', 'POST', [
         'collect_tax' => true,
         'line_items' => [
             [
@@ -23,7 +30,7 @@ it('calculates simple taxable from request', function () {
         ],
     ]);
 
-    $order = \Foundry\Repository\OrderRepository::fromRequest($request, $order);
+    $order = OrderRepository::fromRequest($request, $order);
 
     $this->assertEquals(100, $order->sub_total);
     $this->assertEquals(10, $order->tax_total);
@@ -33,8 +40,8 @@ it('calculates simple taxable from request', function () {
 });
 
 it('calculates line item discount from request', function () {
-    $order = new \Foundry\Models\Order;
-    $request = \Illuminate\Http\Request::create('/orders', 'POST', [
+    $order = new Order;
+    $request = Request::create('/orders', 'POST', [
         'collect_tax' => true,
         'line_items' => [
             [
@@ -53,7 +60,7 @@ it('calculates line item discount from request', function () {
         ],
     ]);
 
-    $order = \Foundry\Repository\OrderRepository::fromRequest($request, $order);
+    $order = OrderRepository::fromRequest($request, $order);
 
     $this->assertEquals(100, $order->sub_total);
     $this->assertEquals(20, $order->discount_total);
@@ -66,8 +73,8 @@ it('calculates line item discount from request', function () {
 });
 
 it('calculates order level discount from request', function () {
-    $order = new \Foundry\Models\Order;
-    $request = \Illuminate\Http\Request::create('/orders', 'POST', [
+    $order = new Order;
+    $request = Request::create('/orders', 'POST', [
         'collect_tax' => true,
         'line_items' => [
             [
@@ -86,7 +93,7 @@ it('calculates order level discount from request', function () {
         ],
     ]);
 
-    $order = \Foundry\Repository\OrderRepository::fromRequest($request, $order);
+    $order = OrderRepository::fromRequest($request, $order);
 
     $this->assertEquals(100, $order->sub_total);
     $this->assertEquals(20, $order->discount_total);
@@ -97,8 +104,8 @@ it('calculates order level discount from request', function () {
 });
 
 it('hydrates customer and address from request', function () {
-    $order = new \Foundry\Models\Order;
-    $request = \Illuminate\Http\Request::create('/orders', 'POST', [
+    $order = new Order;
+    $request = Request::create('/orders', 'POST', [
         'customer' => [
             'first_name' => 'John',
             'last_name' => 'Doe',
@@ -112,7 +119,7 @@ it('hydrates customer and address from request', function () {
         'line_items' => [],
     ]);
 
-    $order = \Foundry\Repository\OrderRepository::fromRequest($request, $order);
+    $order = OrderRepository::fromRequest($request, $order);
 
     $this->assertNotNull($order->customer);
     $this->assertEquals('John', $order->customer->first_name);
@@ -121,8 +128,8 @@ it('hydrates customer and address from request', function () {
 });
 
 it('hydrates contact from request', function () {
-    $order = new \Foundry\Models\Order;
-    $request = \Illuminate\Http\Request::create('/orders', 'POST', [
+    $order = new Order;
+    $request = Request::create('/orders', 'POST', [
         'contact' => [
             'first_name' => 'Jane',
             'last_name' => 'Smith',
@@ -131,7 +138,7 @@ it('hydrates contact from request', function () {
         'line_items' => [],
     ]);
 
-    $order = \Foundry\Repository\OrderRepository::fromRequest($request, $order);
+    $order = OrderRepository::fromRequest($request, $order);
 
     $this->assertNotNull($order->contact);
     $this->assertEquals('Jane', $order->contact->first_name);
@@ -139,7 +146,7 @@ it('hydrates contact from request', function () {
 });
 
 it('calculates concurrent taxes indian gst from request', function () {
-    \Foundry\Models\Tax::create([
+    Tax::create([
         'country' => 'India',
         'code' => 'IN',
         'state' => '*',
@@ -147,7 +154,7 @@ it('calculates concurrent taxes indian gst from request', function () {
         'rate' => 9,
         'priority' => 1,
     ]);
-    \Foundry\Models\Tax::create([
+    Tax::create([
         'country' => 'India',
         'code' => 'IN',
         'state' => '*',
@@ -156,8 +163,8 @@ it('calculates concurrent taxes indian gst from request', function () {
         'priority' => 2,
     ]);
 
-    $order = new \Foundry\Models\Order;
-    $request = \Illuminate\Http\Request::create('/orders', 'POST', [
+    $order = new Order;
+    $request = Request::create('/orders', 'POST', [
         'collect_tax' => true,
         'line_items' => [
             [
@@ -172,7 +179,7 @@ it('calculates concurrent taxes indian gst from request', function () {
         ],
     ]);
 
-    $order = \Foundry\Repository\OrderRepository::fromRequest($request, $order);
+    $order = OrderRepository::fromRequest($request, $order);
 
     $this->assertEquals(100, $order->sub_total);
     $this->assertEquals(18, $order->tax_total);
@@ -183,7 +190,7 @@ it('calculates concurrent taxes indian gst from request', function () {
 });
 
 it('calculates compounding taxes from request', function () {
-    \Foundry\Models\Tax::create([
+    Tax::create([
         'country' => 'Canada',
         'code' => 'CA',
         'state' => '*',
@@ -191,7 +198,7 @@ it('calculates compounding taxes from request', function () {
         'rate' => 5,
         'priority' => 1,
     ]);
-    \Foundry\Models\Tax::create([
+    Tax::create([
         'country' => 'Canada',
         'code' => 'CA',
         'state' => '*',
@@ -201,8 +208,8 @@ it('calculates compounding taxes from request', function () {
         'priority' => 2,
     ]);
 
-    $order = new \Foundry\Models\Order;
-    $request = \Illuminate\Http\Request::create('/orders', 'POST', [
+    $order = new Order;
+    $request = Request::create('/orders', 'POST', [
         'collect_tax' => true,
         'line_items' => [
             [
@@ -217,7 +224,7 @@ it('calculates compounding taxes from request', function () {
         ],
     ]);
 
-    $order = \Foundry\Repository\OrderRepository::fromRequest($request, $order);
+    $order = OrderRepository::fromRequest($request, $order);
 
     $this->assertEquals(15.5, $order->tax_total);
     $this->assertEquals(115.5, $order->grand_total);

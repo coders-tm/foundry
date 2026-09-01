@@ -1,9 +1,14 @@
 <?php
 
-uses(Foundry\Tests\BaseTestCase::class)->use(\Illuminate\Foundation\Testing\RefreshDatabase::class);
+use Foundry\Models\Order\DiscountLine;
+use Foundry\Repository\InvoiceRepository;
+use Foundry\Tests\BaseTestCase;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
+uses(BaseTestCase::class)->use(RefreshDatabase::class);
 
 it('calculates simple taxable scenario', function () {
-    $repository = new \Foundry\Repository\InvoiceRepository([
+    $repository = new InvoiceRepository([
         'collect_tax' => true,
         'line_items' => [
             [
@@ -25,7 +30,7 @@ it('calculates simple taxable scenario', function () {
 });
 
 it('calculates mixed taxability scenario', function () {
-    $repository = new \Foundry\Repository\InvoiceRepository([
+    $repository = new InvoiceRepository([
         'collect_tax' => true,
         'line_items' => [
             [
@@ -54,7 +59,7 @@ it('calculates mixed taxability scenario', function () {
 });
 
 it('calculates line item discount scenario', function () {
-    $repository = new \Foundry\Repository\InvoiceRepository([
+    $repository = new InvoiceRepository([
         'collect_tax' => true,
         'line_items' => [
             [
@@ -62,7 +67,7 @@ it('calculates line item discount scenario', function () {
                 'price' => 100,
                 'quantity' => 1,
                 'taxable' => true,
-                'discount' => new \Foundry\Models\Order\DiscountLine([
+                'discount' => new DiscountLine([
                     'type' => 'fixed_amount',
                     'value' => 20,
                 ]),
@@ -82,7 +87,7 @@ it('calculates line item discount scenario', function () {
 });
 
 it('calculates order level fixed discount scenario', function () {
-    $repository = new \Foundry\Repository\InvoiceRepository([
+    $repository = new InvoiceRepository([
         'collect_tax' => true,
         'line_items' => [
             [
@@ -110,7 +115,7 @@ it('calculates order level fixed discount scenario', function () {
 });
 
 it('calculates mixed taxability with order discount prorating scenario', function () {
-    $repository = new \Foundry\Repository\InvoiceRepository([
+    $repository = new InvoiceRepository([
         'collect_tax' => true,
         'line_items' => [
             [
@@ -146,7 +151,7 @@ it('calculates mixed taxability with order discount prorating scenario', functio
 });
 
 it('calculates compounding taxes scenario', function () {
-    $repository = new \Foundry\Repository\InvoiceRepository([
+    $repository = new InvoiceRepository([
         'collect_tax' => true,
         'line_items' => [
             [
@@ -169,7 +174,7 @@ it('calculates compounding taxes scenario', function () {
 });
 
 it('calculates quantities and rounding scenario', function () {
-    $repository = new \Foundry\Repository\InvoiceRepository([
+    $repository = new InvoiceRepository([
         'collect_tax' => true,
         'line_items' => [
             [
@@ -200,7 +205,7 @@ it('calculates quantities and rounding scenario', function () {
 });
 
 it('calculates combined discounts scenario', function () {
-    $repository = new \Foundry\Repository\InvoiceRepository([
+    $repository = new InvoiceRepository([
         'collect_tax' => true,
         'line_items' => [
             [
@@ -233,7 +238,7 @@ it('calculates combined discounts scenario', function () {
 });
 
 it('calculates concurrent taxes indian gst scenario', function () {
-    $repository = new \Foundry\Repository\InvoiceRepository([
+    $repository = new InvoiceRepository([
         'collect_tax' => true,
         'line_items' => [
             [
@@ -258,7 +263,7 @@ it('calculates concurrent taxes indian gst scenario', function () {
 });
 
 it('calculates compounded taxes with discount scenario', function () {
-    $repository = new \Foundry\Repository\InvoiceRepository([
+    $repository = new InvoiceRepository([
         'collect_tax' => true,
         'line_items' => [
             [

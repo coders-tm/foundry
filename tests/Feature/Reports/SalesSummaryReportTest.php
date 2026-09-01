@@ -1,45 +1,50 @@
 <?php
 
-uses(\Foundry\Tests\TestCase::class);
+use Carbon\Carbon;
+use Foundry\Models\Order;
+use Foundry\Services\Reports\Orders\SalesSummaryReport;
+use Foundry\Tests\TestCase;
+
+uses(TestCase::class);
 
 it('report generates sales summary data', function () {
     // Arrange
     $from = Carbon::now()->subMonths(1)->startOfMonth();
     $to = Carbon::now()->endOfMonth();
-    
-    \Foundry\Models\Order::factory()->create([
-    'customer_id' => 1001,
-    'status' => 'completed',
-    'payment_status' => 'paid',
-    'grand_total' => 250.00,
-    'created_at' => $from->copy()->addDays(5),
+
+    Order::factory()->create([
+        'customer_id' => 1001,
+        'status' => 'completed',
+        'payment_status' => 'paid',
+        'grand_total' => 250.00,
+        'created_at' => $from->copy()->addDays(5),
     ]);
-    
-    \Foundry\Models\Order::factory()->create([
-    'customer_id' => 1002,
-    'status' => 'completed',
-    'payment_status' => 'paid',
-    'grand_total' => 300.00,
-    'created_at' => $from->copy()->addDays(10),
+
+    Order::factory()->create([
+        'customer_id' => 1002,
+        'status' => 'completed',
+        'payment_status' => 'paid',
+        'grand_total' => 300.00,
+        'created_at' => $from->copy()->addDays(10),
     ]);
-    
+
     // Act
     $report = new SalesSummaryReport;
     $filters = [
-    'date_from' => $from->format('Y-m-d'),
-    'date_to' => $to->format('Y-m-d'),
-    'granularity' => 'monthly',
+        'date_from' => $from->format('Y-m-d'),
+        'date_to' => $to->format('Y-m-d'),
+        'granularity' => 'monthly',
     ];
-    
+
     $result = $report->paginate($report->validate($filters), 25, 1);
-    
+
     // Assert
     $this->assertNotEmpty($result['data']);
     foreach ($result['data'] as $row) {
-    $this->assertArrayHasKey('period', $row);
-    $this->assertArrayHasKey('total_orders', $row);
-    $this->assertArrayHasKey('gmv', $row);
-    $this->assertArrayHasKey('net_revenue', $row);
+        $this->assertArrayHasKey('period', $row);
+        $this->assertArrayHasKey('total_orders', $row);
+        $this->assertArrayHasKey('gmv', $row);
+        $this->assertArrayHasKey('net_revenue', $row);
     }
 });
 
@@ -47,24 +52,24 @@ it('summary calculates totals', function () {
     // Arrange
     $from = Carbon::now()->subMonth()->startOfMonth();
     $to = Carbon::now()->endOfMonth();
-    
-    \Foundry\Models\Order::factory()->create([
-    'customer_id' => 1001,
-    'status' => 'completed',
-    'payment_status' => 'paid',
-    'grand_total' => 500.00,
-    'created_at' => $from->copy()->addDays(5),
+
+    Order::factory()->create([
+        'customer_id' => 1001,
+        'status' => 'completed',
+        'payment_status' => 'paid',
+        'grand_total' => 500.00,
+        'created_at' => $from->copy()->addDays(5),
     ]);
-    
+
     // Act
     $report = new SalesSummaryReport;
     $filters = [
-    'date_from' => $from->format('Y-m-d'),
-    'date_to' => $to->format('Y-m-d'),
+        'date_from' => $from->format('Y-m-d'),
+        'date_to' => $to->format('Y-m-d'),
     ];
-    
+
     $summary = $report->summarize($report->validate($filters));
-    
+
     // Assert
     $this->assertIsArray($summary);
 });

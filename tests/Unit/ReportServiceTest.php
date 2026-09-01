@@ -1,9 +1,15 @@
 <?php
 
-uses(Foundry\Tests\TestCase::class);
+use Foundry\Services\Reports\Exports\SubscriptionsExportReport;
+use Foundry\Services\Reports\ReportInterface;
+use Foundry\Services\Reports\ReportService;
+use Foundry\Services\Reports\Revenue\MrrByPlanReport;
+use Foundry\Tests\TestCase;
+
+uses(TestCase::class);
 
 it('can get all report types', function () {
-    $types = \Foundry\Services\Reports\ReportService::all();
+    $types = ReportService::all();
 
     $this->assertIsArray($types);
     $this->assertGreaterThan(0, count($types));
@@ -13,7 +19,7 @@ it('can get all report types', function () {
 });
 
 it('can get grouped reports', function () {
-    $grouped = \Foundry\Services\Reports\ReportService::grouped();
+    $grouped = ReportService::grouped();
 
     $this->assertIsArray($grouped);
     $this->assertArrayHasKey('revenue', $grouped);
@@ -23,53 +29,53 @@ it('can get grouped reports', function () {
 });
 
 it('can get report category', function () {
-    $this->assertEquals('exports', \Foundry\Services\Reports\ReportService::getCategory('subscriptions'));
-    $this->assertEquals('revenue', \Foundry\Services\Reports\ReportService::getCategory('mrr-by-plan'));
-    $this->assertEquals('retention', \Foundry\Services\Reports\ReportService::getCategory('customer-churn'));
-    $this->assertNull(\Foundry\Services\Reports\ReportService::getCategory('non-existent'));
+    $this->assertEquals('exports', ReportService::getCategory('subscriptions'));
+    $this->assertEquals('revenue', ReportService::getCategory('mrr-by-plan'));
+    $this->assertEquals('retention', ReportService::getCategory('customer-churn'));
+    $this->assertNull(ReportService::getCategory('non-existent'));
 });
 
 it('can get report label', function () {
-    $this->assertEquals('Subscriptions Export', \Foundry\Services\Reports\ReportService::getLabel('subscriptions'));
-    $this->assertEquals('MRR by Plan', \Foundry\Services\Reports\ReportService::getLabel('mrr-by-plan'));
+    $this->assertEquals('Subscriptions Export', ReportService::getLabel('subscriptions'));
+    $this->assertEquals('MRR by Plan', ReportService::getLabel('mrr-by-plan'));
 });
 
 it('can resolve export report', function () {
-    $service = \Foundry\Services\Reports\ReportService::resolve('subscriptions');
-    $this->assertInstanceOf(\Foundry\Services\Reports\ReportInterface::class, $service);
-    $this->assertInstanceOf(\Foundry\Services\Reports\Exports\SubscriptionsExportReport::class, $service);
+    $service = ReportService::resolve('subscriptions');
+    $this->assertInstanceOf(ReportInterface::class, $service);
+    $this->assertInstanceOf(SubscriptionsExportReport::class, $service);
 });
 
 it('can resolve revenue report', function () {
-    $service = \Foundry\Services\Reports\ReportService::resolve('mrr-by-plan');
-    $this->assertInstanceOf(\Foundry\Services\Reports\ReportInterface::class, $service);
-    $this->assertInstanceOf(\Foundry\Services\Reports\Revenue\MrrByPlanReport::class, $service);
+    $service = ReportService::resolve('mrr-by-plan');
+    $this->assertInstanceOf(ReportInterface::class, $service);
+    $this->assertInstanceOf(MrrByPlanReport::class, $service);
 });
 
 it('throws exception for invalid type', function () {
-    $this->expectException(\InvalidArgumentException::class);
+    $this->expectException(InvalidArgumentException::class);
     $this->expectExceptionMessage('Unknown report type: invalid-type');
 
-    \Foundry\Services\Reports\ReportService::resolve('invalid-type');
+    ReportService::resolve('invalid-type');
 });
 
 it('can check if type exists', function () {
-    $this->assertTrue(\Foundry\Services\Reports\ReportService::has('subscriptions'));
-    $this->assertTrue(\Foundry\Services\Reports\ReportService::has('mrr-by-plan'));
-    $this->assertFalse(\Foundry\Services\Reports\ReportService::has('invalid-type'));
+    $this->assertTrue(ReportService::has('subscriptions'));
+    $this->assertTrue(ReportService::has('mrr-by-plan'));
+    $this->assertFalse(ReportService::has('invalid-type'));
 });
 
 it('can get reports for category', function () {
-    $revenue = \Foundry\Services\Reports\ReportService::forCategory('revenue');
+    $revenue = ReportService::forCategory('revenue');
     $this->assertContains('mrr-by-plan', $revenue);
 
-    $exports = \Foundry\Services\Reports\ReportService::forCategory('exports');
+    $exports = ReportService::forCategory('exports');
     $this->assertContains('subscriptions', $exports);
     $this->assertContains('orders', $exports);
 });
 
 it('can get all with labels', function () {
-    $allWithLabels = \Foundry\Services\Reports\ReportService::allWithLabels();
+    $allWithLabels = ReportService::allWithLabels();
 
     $this->assertIsArray($allWithLabels);
     $this->assertArrayHasKey('subscriptions', $allWithLabels);
@@ -77,7 +83,7 @@ it('can get all with labels', function () {
 });
 
 it('can get category labels', function () {
-    $labels = \Foundry\Services\Reports\ReportService::getCategoryLabels();
+    $labels = ReportService::getCategoryLabels();
 
     $this->assertIsArray($labels);
     $this->assertEquals('Revenue', $labels['revenue']);
@@ -85,7 +91,7 @@ it('can get category labels', function () {
 });
 
 it('export report can handle correct type', function () {
-    $service = new \Foundry\Services\Reports\Exports\SubscriptionsExportReport;
+    $service = new SubscriptionsExportReport;
 
     $this->assertTrue($service::canHandle('subscriptions'));
     $this->assertFalse($service::canHandle('orders'));
@@ -93,7 +99,7 @@ it('export report can handle correct type', function () {
 });
 
 it('revenue report can handle correct type', function () {
-    $service = new \Foundry\Services\Reports\Revenue\MrrByPlanReport;
+    $service = new MrrByPlanReport;
 
     $this->assertTrue($service::canHandle('mrr-by-plan'));
     $this->assertFalse($service::canHandle('sales-summary'));
@@ -101,13 +107,13 @@ it('revenue report can handle correct type', function () {
 });
 
 it('can register custom report', function () {
-    \Foundry\Services\Reports\ReportService::register('custom-report', \Foundry\Services\Reports\Exports\SubscriptionsExportReport::class);
+    ReportService::register('custom-report', SubscriptionsExportReport::class);
 
-    $this->assertTrue(\Foundry\Services\Reports\ReportService::has('custom-report'));
-    $service = \Foundry\Services\Reports\ReportService::resolve('custom-report');
-    $this->assertInstanceOf(\Foundry\Services\Reports\Exports\SubscriptionsExportReport::class, $service);
+    $this->assertTrue(ReportService::has('custom-report'));
+    $service = ReportService::resolve('custom-report');
+    $this->assertInstanceOf(SubscriptionsExportReport::class, $service);
 
     // Cleanup
-    \Foundry\Services\Reports\ReportService::unregister('custom-report');
-    $this->assertFalse(\Foundry\Services\Reports\ReportService::has('custom-report'));
+    ReportService::unregister('custom-report');
+    $this->assertFalse(ReportService::has('custom-report'));
 });

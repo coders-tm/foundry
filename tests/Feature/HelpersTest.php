@@ -1,9 +1,20 @@
 <?php
 
-uses(\Foundry\Tests\Feature\FeatureTestCase::class);
+use App\Models\User;
+use Foundry\Facades\Settings;
+use Foundry\Models\Admin;
+use Foundry\Models\Tax;
+use Foundry\Notifications\NewAdminNotification;
+use Foundry\Repository\BaseRepository;
+use Foundry\Tests\Feature\FeatureTestCase;
+use Illuminate\Notifications\AnonymousNotifiable;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Route;
+
+uses(FeatureTestCase::class);
 
 beforeEach(function () {
-    \Illuminate\Support\Facades\Route::get('/foo', function () {
+    Route::get('/foo', function () {
         if (is_user()) {
             return guard();
         }
@@ -11,13 +22,13 @@ beforeEach(function () {
         return response(403);
     })->middleware('auth:user');
 
-    \Illuminate\Support\Facades\Route::get('admin/email', function () {
+    Route::get('admin/email', function () {
         return user('email');
     })->middleware('auth:admin');
 });
 
 it('guard function returns user guard', function () {
-    $user = \App\Models\User::factory()->create();
+    $user = User::factory()->create();
 
     $this->actingAs($user);
 
@@ -27,7 +38,7 @@ it('guard function returns user guard', function () {
 });
 
 it('user function returns specific user property', function () {
-    $user = \Foundry\Models\Admin::factory()->create();
+    $user = Admin::factory()->create();
 
     $this->actingAs($user, 'admin');
 
@@ -37,30 +48,30 @@ it('user function returns specific user property', function () {
 });
 
 it('settings', function () {
-    \Foundry\Facades\Settings::set('foo', ['bar' => 'baz']);
+    Settings::set('foo', ['bar' => 'baz']);
     $this->assertEquals(['bar' => 'baz'], settings('foo'));
 });
 
 it('admin notify', function () {
-    \Illuminate\Support\Facades\Notification::fake();
+    Notification::fake();
 
-    $admin = \Foundry\Models\Admin::factory()->create();
+    $admin = Admin::factory()->create();
 
-    admin_notify(new \Foundry\Notifications\NewAdminNotification($admin, 'password'));
+    admin_notify(new NewAdminNotification($admin, 'password'));
 
-    \Illuminate\Support\Facades\Notification::assertSentTo(
-        new \Illuminate\Notifications\AnonymousNotifiable,
-        \Foundry\Notifications\NewAdminNotification::class,
+    Notification::assertSentTo(
+        new AnonymousNotifiable,
+        NewAdminNotification::class,
         function ($notification, $channels) {
-            return get_class($notification) === \Foundry\Notifications\NewAdminNotification::class;
+            return get_class($notification) === NewAdminNotification::class;
         }
     );
 });
 
 it('country taxes', function () {
-    $repository = new class extends \Foundry\Repository\BaseRepository {};
+    $repository = new class extends BaseRepository {};
 
-    \Foundry\Models\Tax::create([
+    Tax::create([
         'country' => 'United States',
         'label' => 'VAT',
         'code' => 'US',
@@ -69,7 +80,7 @@ it('country taxes', function () {
         'priority' => 0,
     ]);
 
-    \Foundry\Models\Tax::create([
+    Tax::create([
         'country' => 'United States',
         'label' => 'VAT',
         'code' => 'US',
@@ -83,9 +94,9 @@ it('country taxes', function () {
 });
 
 it('default tax', function () {
-    $repository = new class extends \Foundry\Repository\BaseRepository {};
+    $repository = new class extends BaseRepository {};
 
-    \Foundry\Models\Tax::create([
+    Tax::create([
         'country' => 'United Kingdom',
         'label' => 'VAT',
         'code' => 'UK',
@@ -94,7 +105,7 @@ it('default tax', function () {
         'priority' => 0,
     ]);
 
-    \Foundry\Models\Tax::create([
+    Tax::create([
         'country' => 'United Kingdom',
         'label' => 'VAT',
         'code' => 'UK',
@@ -107,9 +118,9 @@ it('default tax', function () {
 });
 
 it('rest of world tax', function () {
-    $repository = new class extends \Foundry\Repository\BaseRepository {};
+    $repository = new class extends BaseRepository {};
 
-    \Foundry\Models\Tax::create([
+    Tax::create([
         'country' => 'Rest of World',
         'label' => 'VAT',
         'code' => '*',
@@ -122,9 +133,9 @@ it('rest of world tax', function () {
 });
 
 it('billing address tax', function () {
-    $repository = new class extends \Foundry\Repository\BaseRepository {};
+    $repository = new class extends BaseRepository {};
 
-    \Foundry\Models\Tax::create([
+    Tax::create([
         'country' => 'Rest of World',
         'label' => 'VAT',
         'code' => '*',

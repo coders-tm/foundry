@@ -6,12 +6,13 @@ use Foundry\Models\Subscription;
 use Foundry\Models\Subscription\Feature;
 use Foundry\Models\Subscription\Plan;
 use Foundry\Services\PaymentProvider;
+use Foundry\Tests\Feature\FeatureTestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Workbench\App\Models\Admin;
 use Workbench\App\Models\User;
 
-uses(\Foundry\Tests\Feature\FeatureTestCase::class);
+uses(FeatureTestCase::class);
 uses(RefreshDatabase::class);
 
 beforeEach(function () {

@@ -1,61 +1,74 @@
 <?php
 
-uses(Foundry\Tests\BaseTestCase::class)->use(\Illuminate\Foundation\Testing\RefreshDatabase::class);
+use Foundry\Payment\Processors\FlutterwaveProcessor;
+use Foundry\Payment\Processors\KlarnaProcessor;
+use Foundry\Payment\Processors\ManualProcessor;
+use Foundry\Payment\Processors\MercadoPagoProcessor;
+use Foundry\Payment\Processors\PaypalProcessor;
+use Foundry\Payment\Processors\PaystackProcessor;
+use Foundry\Payment\Processors\RazorpayProcessor;
+use Foundry\Payment\Processors\StripeProcessor;
+use Foundry\Payment\Processors\WalletProcessor;
+use Foundry\Payment\Processors\XenditProcessor;
+use Foundry\Tests\BaseTestCase;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
+uses(BaseTestCase::class)->use(RefreshDatabase::class);
 
 it('stripe processor has supported currencies', function () {
-    $processor = new \Foundry\Payment\Processors\StripeProcessor;
+    $processor = new StripeProcessor;
     $this->assertNotEmpty($processor->supportedCurrencies());
     $this->assertContains('USD', $processor->supportedCurrencies());
 });
 
 it('paypal processor has supported currencies', function () {
-    $processor = new \Foundry\Payment\Processors\PaypalProcessor;
+    $processor = new PaypalProcessor;
     $this->assertNotEmpty($processor->supportedCurrencies());
     $this->assertContains('USD', $processor->supportedCurrencies());
 });
 
 it('klarna processor has supported currencies', function () {
-    $processor = new \Foundry\Payment\Processors\KlarnaProcessor;
+    $processor = new KlarnaProcessor;
     $this->assertNotEmpty($processor->supportedCurrencies());
     $this->assertContains('USD', $processor->supportedCurrencies());
 });
 
 it('xendit processor has supported currencies', function () {
-    $processor = new \Foundry\Payment\Processors\XenditProcessor;
+    $processor = new XenditProcessor;
     $this->assertNotEmpty($processor->supportedCurrencies());
     $this->assertContains('IDR', $processor->supportedCurrencies());
 });
 
 it('paystack processor has supported currencies', function () {
-    $processor = new \Foundry\Payment\Processors\PaystackProcessor;
+    $processor = new PaystackProcessor;
     $this->assertNotEmpty($processor->supportedCurrencies());
     $this->assertContains('NGN', $processor->supportedCurrencies());
 });
 
 it('razorpay processor has supported currencies', function () {
-    $processor = new \Foundry\Payment\Processors\RazorpayProcessor;
+    $processor = new RazorpayProcessor;
     $this->assertNotEmpty($processor->supportedCurrencies());
     $this->assertContains('INR', $processor->supportedCurrencies());
 });
 
 it('flutterwave processor has supported currencies', function () {
-    $processor = new \Foundry\Payment\Processors\FlutterwaveProcessor;
+    $processor = new FlutterwaveProcessor;
     $this->assertNotEmpty($processor->supportedCurrencies());
     $this->assertContains('NGN', $processor->supportedCurrencies());
 });
 
 it('mercadopago processor has supported currencies', function () {
-    $processor = new \Foundry\Payment\Processors\MercadoPagoProcessor;
+    $processor = new MercadoPagoProcessor;
     $this->assertNotEmpty($processor->supportedCurrencies());
     $this->assertContains('BRL', $processor->supportedCurrencies());
 });
 
 it('manual processor supports all currencies', function () {
-    $processor = new \Foundry\Payment\Processors\ManualProcessor;
+    $processor = new ManualProcessor;
     $this->assertEmpty($processor->supportedCurrencies());
 });
 
 it('wallet processor supports all currencies', function () {
-    $processor = new \Foundry\Payment\Processors\WalletProcessor;
+    $processor = new WalletProcessor;
     $this->assertEmpty($processor->supportedCurrencies());
 });

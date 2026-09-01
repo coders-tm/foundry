@@ -1,11 +1,17 @@
 <?php
 
-uses(Foundry\Tests\TestCase::class)->use(\Illuminate\Foundation\Testing\RefreshDatabase::class);
+use Foundry\Models\Admin;
+use Foundry\Models\ExchangeRate;
+use Foundry\Tests\TestCase;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
+
+uses(TestCase::class)->use(RefreshDatabase::class);
 
 beforeEach(function () {
-    \Foundry\Models\ExchangeRate::query()->delete();
+    ExchangeRate::query()->delete();
 
-    $this->admin = \Foundry\Models\Admin::factory()->create([
+    $this->admin = Admin::factory()->create([
         'is_active' => true,
         'is_super_admin' => true,
     ]);
@@ -13,8 +19,8 @@ beforeEach(function () {
 });
 
 it('index returns rates', function () {
-    \Foundry\Models\ExchangeRate::create(['currency' => 'GBP', 'rate' => 0.75]);
-    \Foundry\Models\ExchangeRate::create(['currency' => 'EUR', 'rate' => 0.85]);
+    ExchangeRate::create(['currency' => 'GBP', 'rate' => 0.75]);
+    ExchangeRate::create(['currency' => 'EUR', 'rate' => 0.85]);
 
     $response = $this->getJson('/admin/exchange-rates');
 
@@ -56,7 +62,7 @@ it('sync triggers command', function () {
 });
 
 it('destroy deletes rate', function () {
-    $rate = \Foundry\Models\ExchangeRate::create(['currency' => 'JPY', 'rate' => 110.0]);
+    $rate = ExchangeRate::create(['currency' => 'JPY', 'rate' => 110.0]);
 
     $response = $this->deleteJson("/admin/exchange-rates/{$rate->id}");
 
@@ -66,7 +72,7 @@ it('destroy deletes rate', function () {
 });
 
 it('estimate returns calculated amount', function () {
-    \Foundry\Models\ExchangeRate::create(['currency' => 'INR', 'rate' => 84.0]);
+    ExchangeRate::create(['currency' => 'INR', 'rate' => 84.0]);
 
     $response = $this->getJson('/exchange-rates/estimate?amount=10&country=IN');
 
@@ -79,10 +85,10 @@ it('estimate returns calculated amount', function () {
 });
 
 it('command updates only existing rates but ensures base', function () {
-    \Foundry\Models\ExchangeRate::create(['currency' => 'EUR', 'rate' => 0.85]);
+    ExchangeRate::create(['currency' => 'EUR', 'rate' => 0.85]);
 
-    \Illuminate\Support\Facades\Http::fake([
-        '*' => \Illuminate\Support\Facades\Http::response([
+    Http::fake([
+        '*' => Http::response([
             'rates' => [
                 'USD' => 1.0,
                 'EUR' => 0.90,

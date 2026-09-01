@@ -14,7 +14,7 @@ use Illuminate\Http\Request;
 uses(TestCase::class);
 
 beforeEach(function () {
-    $this->user = \Foundry\Models\User::factory()->create();
+    $this->user = User::factory()->create();
 });
 
 it('can get or create wallet', function () {
@@ -53,7 +53,7 @@ it('can debit wallet', function () {
 });
 
 it('cannot debit more than wallet balance', function () {
-    $this->expectException(\Exception::class);
+    $this->expectException(Exception::class);
     $this->expectExceptionMessage('Insufficient wallet balance');
 
     $this->user->creditWallet(50.00, 'test', 'Initial balance');

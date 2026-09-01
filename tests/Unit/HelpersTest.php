@@ -1,15 +1,22 @@
 <?php
 
-uses(Foundry\Tests\BaseTestCase::class);
+use App\Models\User;
+use Foundry\Models\Admin;
+use Foundry\Repository\BaseRepository;
+use Foundry\Tests\BaseTestCase;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Optional;
+
+uses(BaseTestCase::class);
 
 beforeEach(function () {
-    \Illuminate\Support\Facades\Config::set('app.name', 'AppName');
-    \Illuminate\Support\Facades\Config::set('app.url', env('APP_URL', 'http://localhost'));
-    \Illuminate\Support\Facades\Config::set('foundry.admin_url', env('FOUNDRY_ADMIN_URL', 'http://localhost/admin'));
-    \Illuminate\Support\Facades\Config::set('foundry.admin_prefix', env('FOUNDRY_ADMIN_PREFIX', 'admin'));
-    \Illuminate\Support\Facades\Config::set('recaptcha.site_key', env('RECAPTCHA_SITE_KEY'));
+    Config::set('app.name', 'AppName');
+    Config::set('app.url', env('APP_URL', 'http://localhost'));
+    Config::set('foundry.admin_url', env('FOUNDRY_ADMIN_URL', 'http://localhost/admin'));
+    Config::set('foundry.admin_prefix', env('FOUNDRY_ADMIN_PREFIX', 'admin'));
+    Config::set('recaptcha.site_key', env('RECAPTCHA_SITE_KEY'));
 
-    $user = \App\Models\User::factory()->make();
+    $user = User::factory()->make();
     $user->guard ??= 'user';
     $user->id ??= 1;
     $user->first_name = 'Test';
@@ -21,16 +28,16 @@ beforeEach(function () {
 });
 
 afterEach(function () {
-    \Illuminate\Support\Facades\Config::set('app.name', 'AppName');
-    \Illuminate\Support\Facades\Config::set('app.url', env('APP_URL', 'http://localhost'));
-    \Illuminate\Support\Facades\Config::set('foundry.admin_url', env('FOUNDRY_ADMIN_URL', 'http://localhost/admin'));
-    \Illuminate\Support\Facades\Config::set('foundry.admin_prefix', env('FOUNDRY_ADMIN_PREFIX', 'admin'));
-    \Illuminate\Support\Facades\Config::set('recaptcha.site_key', env('RECAPTCHA_SITE_KEY'));
+    Config::set('app.name', 'AppName');
+    Config::set('app.url', env('APP_URL', 'http://localhost'));
+    Config::set('foundry.admin_url', env('FOUNDRY_ADMIN_URL', 'http://localhost/admin'));
+    Config::set('foundry.admin_prefix', env('FOUNDRY_ADMIN_PREFIX', 'admin'));
+    Config::set('recaptcha.site_key', env('RECAPTCHA_SITE_KEY'));
 });
 
 function mockRequest($user = null, $path = '/')
 {
-    $user = $user ?? \App\Models\User::factory()->make();
+    $user = $user ?? User::factory()->make();
     $user->guard ??= 'user';
     $user->id ??= 1;
     $user->first_name = 'Test';
@@ -91,14 +98,14 @@ it('user function returns null if no user', function () {
 });
 
 it('is user function returns true for user guard', function () {
-    $user = \App\Models\User::factory()->make();
+    $user = User::factory()->make();
     $user->guard = 'user';
     mockRequest($user);
     $this->assertTrue(is_user());
 });
 
 it('is user function returns false for non user guard', function () {
-    $user = \Foundry\Models\Admin::factory()->make();
+    $user = Admin::factory()->make();
     $user->guard = 'admin';
     mockRequest($user, 'admin');
 
@@ -111,7 +118,7 @@ it('is user function returns false if no user', function () {
 });
 
 it('is admin function returns true for admin guard', function () {
-    $user = \Foundry\Models\Admin::factory()->make();
+    $user = Admin::factory()->make();
     $user->guard = 'admin';
     mockRequest($user, 'admin');
 
@@ -119,7 +126,7 @@ it('is admin function returns true for admin guard', function () {
 });
 
 it('is admin function returns false for non admin guard', function () {
-    $user = \App\Models\User::factory()->make();
+    $user = User::factory()->make();
     $user->guard = 'user';
     mockRequest($user);
     $this->assertFalse(is_admin());
@@ -184,7 +191,7 @@ it('is active handles multiple routes', function () {
 });
 
 it('has recaptcha', function () {
-    \Illuminate\Support\Facades\Config::set('recaptcha.site_key', 'site_key');
+    Config::set('recaptcha.site_key', 'site_key');
     $this->assertTrue(has_recaptcha());
 });
 
@@ -209,7 +216,7 @@ it('format amount', function () {
 });
 
 it('currency symbol', function () {
-    $currenciesMock = \Mockery::mock('Symfony\Polyfill\Intl\Icu\Currencies');
+    $currenciesMock = Mockery::mock('Symfony\Polyfill\Intl\Icu\Currencies');
     $currenciesMock->shouldReceive('getSymbol')->with('USD')->andReturn('$');
     $this->assertEquals('$', currency_symbol('USD'));
 });
@@ -227,9 +234,9 @@ it('replace short code', function () {
 });
 
 it('has', function () {
-    $this->assertInstanceOf(\Illuminate\Support\Optional::class, has(null));
+    $this->assertInstanceOf(Optional::class, has(null));
 });
 
 it('get country code', function () {
-    $this->assertEquals('*', \Foundry\Repository\BaseRepository::getCountryCode(null));
+    $this->assertEquals('*', BaseRepository::getCountryCode(null));
 });

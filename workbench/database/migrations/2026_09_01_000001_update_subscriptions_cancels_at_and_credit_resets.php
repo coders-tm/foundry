@@ -18,9 +18,9 @@ return new class extends Migration
             }
 
             // Add credit_resets_at column
-           if (! Schema::hasColumn('subscriptions', 'credit_resets_at')) {
+            if (! Schema::hasColumn('subscriptions', 'credit_resets_at')) {
                 $table->timestamp('credit_resets_at')->nullable()->after('is_free_forever');
-           }
+            }
         });
     }
 

@@ -1,9 +1,12 @@
 <?php
 
-uses(Foundry\Tests\TestCase::class);
+use Foundry\Services\PaymentProvider;
+use Foundry\Tests\TestCase;
+
+uses(TestCase::class);
 
 it('can dynamically add and retrieve a payment provider via facade', function () {
-    \Foundry\Services\PaymentProvider::add('custom_crypto', [
+    PaymentProvider::add('custom_crypto', [
         'name' => 'Crypto Pay',
         'label' => 'Pay with Crypto',
         'enabled' => true,
@@ -12,19 +15,19 @@ it('can dynamically add and retrieve a payment provider via facade', function ()
         'methods' => ['usdt', 'btc'],
     ]);
 
-    $this->assertTrue(\Foundry\Services\PaymentProvider::has('custom_crypto'));
+    $this->assertTrue(PaymentProvider::has('custom_crypto'));
 
-    $config = \Foundry\Services\PaymentProvider::find('custom_crypto');
+    $config = PaymentProvider::find('custom_crypto');
     $this->assertNotNull($config);
     $this->assertEquals('custom_crypto', $config['provider']);
     $this->assertEquals('Crypto Pay', $config['name']);
     $this->assertEquals(['usdt', 'btc'], $config['methods']);
 
-    $enabled = \Foundry\Services\PaymentProvider::enabled();
+    $enabled = PaymentProvider::enabled();
     $this->assertTrue($enabled->has('custom_crypto'));
 
-    $publicProviders = \Foundry\Services\PaymentProvider::toPublic();
-    $cryptoPublic = $publicProviders->firstWhere('provider', 'custom_crypto');
+    $publicProviders = PaymentProvider::toPublic();
+    $cryptoPublic = $publicProviders->firstWhere('provider', 'custom_crypto')->toArray();
     $this->assertNotNull($cryptoPublic);
     $this->assertEquals('Crypto Pay', $cryptoPublic['name']);
     $this->assertEquals('Pay with Crypto', $cryptoPublic['label']);
@@ -33,20 +36,20 @@ it('can dynamically add and retrieve a payment provider via facade', function ()
     $this->assertArrayNotHasKey('client_id', $cryptoPublic);
     $this->assertArrayNotHasKey('credentials', $cryptoPublic);
 
-    \Foundry\Services\PaymentProvider::remove('custom_crypto');
-    $this->assertFalse(\Foundry\Services\PaymentProvider::has('custom_crypto'));
-    $this->assertNull(\Foundry\Services\PaymentProvider::find('custom_crypto'));
+    PaymentProvider::remove('custom_crypto');
+    $this->assertFalse(PaymentProvider::has('custom_crypto'));
+    $this->assertNull(PaymentProvider::find('custom_crypto'));
 });
 
 it('can add a payment provider statically on registry class', function () {
-    \Foundry\Services\PaymentProvider::add('custom_bank', [
+    PaymentProvider::add('custom_bank', [
         'name' => 'Bank Direct',
         'enabled' => true,
     ]);
 
-    $this->assertTrue(\Foundry\Services\PaymentProvider::has('custom_bank'));
-    $this->assertEquals('Bank Direct', \Foundry\Services\PaymentProvider::find('custom_bank')['name']);
+    $this->assertTrue(PaymentProvider::has('custom_bank'));
+    $this->assertEquals('Bank Direct', PaymentProvider::find('custom_bank')['name']);
 
-    \Foundry\Services\PaymentProvider::remove('custom_bank');
-    $this->assertFalse(\Foundry\Services\PaymentProvider::has('custom_bank'));
+    PaymentProvider::remove('custom_bank');
+    $this->assertFalse(PaymentProvider::has('custom_bank'));
 });

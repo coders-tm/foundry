@@ -172,5 +172,4 @@ class AuthController extends Controller
 
         return $this->me($guard);
     }
-
 }

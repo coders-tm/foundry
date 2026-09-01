@@ -1,20 +1,30 @@
 <?php
 
-uses(\Foundry\Tests\Feature\FeatureTestCase::class)->use(\Illuminate\Foundation\Testing\RefreshDatabase::class);
+use Foundry\Models\ExchangeRate;
+use Foundry\Models\Order;
+use Foundry\Models\Payment;
+use Foundry\Models\User;
+use Foundry\Payment\Payable;
+use Foundry\Services\PaymentProvider;
+use Foundry\Tests\Feature\FeatureTestCase;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Config;
+
+uses(FeatureTestCase::class)->use(RefreshDatabase::class);
 
 beforeEach(function () {
-    \Illuminate\Support\Facades\Config::set('app.currency', 'USD');
+    Config::set('app.currency', 'USD');
 });
 
 it('stores correct gateway amount and currency in payment metadata', function () {
-    \Foundry\Models\ExchangeRate::updateOrCreate(
+    ExchangeRate::updateOrCreate(
         ['currency' => 'EUR'],
         ['rate' => 0.85]
     );
 
-    $user = \Foundry\Models\User::factory()->create();
+    $user = User::factory()->create();
 
-    $order = \Foundry\Models\Order::factory()->create([
+    $order = Order::factory()->create([
         'customer_id' => $user->id,
         'grand_total' => 100.00,
         'billing_address' => [
@@ -23,13 +33,13 @@ it('stores correct gateway amount and currency in payment metadata', function ()
         ],
     ]);
 
-    $payable = \Foundry\Payment\Payable::fromOrder($order);
+    $payable = Payable::fromOrder($order);
 
     $this->assertEquals('EUR', $payable->getCurrency());
     $this->assertEquals(85.00, $payable->getGatewayAmount());
 
-    $payment = \Foundry\Models\Payment::createForOrder($order, [
-        'provider' => \Foundry\Services\PaymentProvider::STRIPE,
+    $payment = Payment::createForOrder($order, [
+        'provider' => PaymentProvider::STRIPE,
         'transaction_id' => 'tx_123456',
         'amount' => $payable->getGrandTotal(),
         'status' => 'completed',

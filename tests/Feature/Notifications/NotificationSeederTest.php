@@ -1,27 +1,32 @@
 <?php
 
-uses(\Foundry\Tests\TestCase::class)
-    ->use(\Illuminate\Foundation\Testing\RefreshDatabase::class);
+use Database\Seeders\NotificationSeeder;
+use Foundry\Models\Notification;
+use Foundry\Tests\TestCase;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
+uses(TestCase::class)
+    ->use(RefreshDatabase::class);
 
 beforeEach(function () {
-    \Foundry\Models\Notification::query()->delete();
+    Notification::query()->delete();
 });
 
 it('loads notification templates from blade files', function () {
-    $seeder = new \Database\Seeders\NotificationSeeder;
+    $seeder = new NotificationSeeder;
     $seeder->run();
 
-    $this->assertGreaterThan(0, \Foundry\Models\Notification::count());
-    $this->assertTrue(\Foundry\Models\Notification::where('type', 'user:signup')->exists());
-    $this->assertTrue(\Foundry\Models\Notification::where('type', 'admin:hold-release')->exists());
-    $this->assertTrue(\Foundry\Models\Notification::where('type', 'admin:import-completed')->exists());
+    $this->assertGreaterThan(0, Notification::count());
+    $this->assertTrue(Notification::where('type', 'user:signup')->exists());
+    $this->assertTrue(Notification::where('type', 'admin:hold-release')->exists());
+    $this->assertTrue(Notification::where('type', 'admin:import-completed')->exists());
 });
 
 it('parses metadata from blade comments correctly', function () {
-    $seeder = new \Database\Seeders\NotificationSeeder;
+    $seeder = new NotificationSeeder;
     $seeder->run();
 
-    $notification = \Foundry\Models\Notification::where('type', 'user:signup')->first();
+    $notification = Notification::where('type', 'user:signup')->first();
 
     $this->assertNotNull($notification);
     $this->assertEquals('Signup', $notification->label);
@@ -31,10 +36,10 @@ it('parses metadata from blade comments correctly', function () {
 });
 
 it('parses import completed notification', function () {
-    $seeder = new \Database\Seeders\NotificationSeeder;
+    $seeder = new NotificationSeeder;
     $seeder->run();
 
-    $notification = \Foundry\Models\Notification::where('type', 'admin:import-completed')->first();
+    $notification = Notification::where('type', 'admin:import-completed')->first();
 
     $this->assertNotNull($notification);
     $this->assertEquals('Import Completed', $notification->label);
@@ -47,7 +52,7 @@ it('parses import completed notification', function () {
 });
 
 it('updates existing notifications without duplicates', function () {
-    \Foundry\Models\Notification::create([
+    Notification::create([
         'label' => 'Old Label',
         'subject' => 'Old Subject',
         'type' => 'user:signup',
@@ -55,24 +60,24 @@ it('updates existing notifications without duplicates', function () {
         'content' => 'Old content',
     ]);
 
-    $this->assertEquals(1, \Foundry\Models\Notification::count());
+    $this->assertEquals(1, Notification::count());
 
-    $seeder = new \Database\Seeders\NotificationSeeder;
+    $seeder = new NotificationSeeder;
     $seeder->run();
 
-    $notification = \Foundry\Models\Notification::where('type', 'user:signup')->first();
+    $notification = Notification::where('type', 'user:signup')->first();
     $this->assertEquals('Signup', $notification->label);
     $this->assertNotEquals('Old Label', $notification->label);
 
-    $totalNotifications = \Foundry\Models\Notification::count();
+    $totalNotifications = Notification::count();
     $this->assertGreaterThan(1, $totalNotifications);
 
-    $uniqueTypes = \Foundry\Models\Notification::pluck('type')->unique()->count();
+    $uniqueTypes = Notification::pluck('type')->unique()->count();
     $this->assertEquals($totalNotifications, $uniqueTypes);
 });
 
 it('seeds all notification types', function () {
-    $seeder = new \Database\Seeders\NotificationSeeder;
+    $seeder = new NotificationSeeder;
     $seeder->run();
 
     $expectedTypes = [
@@ -90,7 +95,7 @@ it('seeds all notification types', function () {
         'admin:payment-failed', 'admin:refund-processed',
     ];
 
-    $seededTypes = \Foundry\Models\Notification::pluck('type')->toArray();
+    $seededTypes = Notification::pluck('type')->toArray();
 
     foreach ($expectedTypes as $type) {
         $this->assertContains($type, $seededTypes);
@@ -100,10 +105,10 @@ it('seeds all notification types', function () {
 });
 
 it('handles missing optional metadata fields', function () {
-    $seeder = new \Database\Seeders\NotificationSeeder;
+    $seeder = new NotificationSeeder;
     $seeder->run();
 
-    $notifications = \Foundry\Models\Notification::all();
+    $notifications = Notification::all();
 
     foreach ($notifications as $notification) {
         $this->assertNotEmpty($notification->type);

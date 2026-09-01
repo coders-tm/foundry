@@ -64,7 +64,7 @@ class PaymentProvider
     /**
      * Get all payment providers configuration from foundry config.
      *
-     * @return \Illuminate\Support\Collection<string, PaymentMethod>
+     * @return Collection<string, PaymentMethod>
      */
     public static function all(): Collection
     {
@@ -87,7 +87,7 @@ class PaymentProvider
     /**
      * Get enabled payment providers.
      *
-     * @return \Illuminate\Support\Collection<string, PaymentMethod>
+     * @return Collection<string, PaymentMethod>
      */
     public static function enabled(): Collection
     {
@@ -134,7 +134,7 @@ class PaymentProvider
     /**
      * Get providers for public checkout rendering.
      *
-     * @return \Illuminate\Support\Collection<int, PaymentMethod>
+     * @return Collection<int, PaymentMethod>
      */
     public static function toPublic(): Collection
     {

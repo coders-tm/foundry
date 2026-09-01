@@ -1,15 +1,20 @@
 <?php
 
-uses(Foundry\Tests\TestCase::class);
+use Foundry\Models\ExchangeRate;
+use Foundry\Services\Currency;
+use Foundry\Tests\TestCase;
+use Stevebauman\Location\Position;
+
+uses(TestCase::class);
 
 it('resolves currency from address country code', function () {
-    \Foundry\Models\ExchangeRate::updateOrCreate(['currency' => 'GBP'], [
+    ExchangeRate::updateOrCreate(['currency' => 'GBP'], [
         'name' => 'British Pound',
         'symbol' => '£',
         'rate' => 0.75,
     ]);
 
-    $currency = new \Foundry\Services\Currency;
+    $currency = new Currency;
     $currency->resolve(['country_code' => 'GB']);
 
     $this->assertEquals('GBP', $currency->code());
@@ -17,13 +22,13 @@ it('resolves currency from address country code', function () {
 });
 
 it('resolves currency from address country name', function () {
-    \Foundry\Models\ExchangeRate::updateOrCreate(['currency' => 'EUR'], [
+    ExchangeRate::updateOrCreate(['currency' => 'EUR'], [
         'name' => 'Euro',
         'symbol' => '€',
         'rate' => 0.85,
     ]);
 
-    $currency = new \Foundry\Services\Currency;
+    $currency = new Currency;
     $currency->resolve(['country' => 'Germany']);
 
     $this->assertEquals('EUR', $currency->code());
@@ -31,19 +36,19 @@ it('resolves currency from address country name', function () {
 });
 
 it('resolves currency from ip when address is missing', function () {
-    \Foundry\Models\ExchangeRate::updateOrCreate(['currency' => 'CAD'], [
+    ExchangeRate::updateOrCreate(['currency' => 'CAD'], [
         'name' => 'Canadian Dollar',
         'symbol' => '$',
         'rate' => 1.25,
     ]);
 
-    $position = new \Stevebauman\Location\Position;
+    $position = new Position;
     $position->countryCode = 'CA';
 
     $request = request();
     $request->attributes->set('ip_location', $position);
 
-    $currency = new \Foundry\Services\Currency;
+    $currency = new Currency;
     $currency->resolve([]);
 
     $this->assertEquals('CAD', $currency->code());
@@ -51,7 +56,7 @@ it('resolves currency from ip when address is missing', function () {
 });
 
 it('falls back to base currency if nothing resolves', function () {
-    $currency = new \Foundry\Services\Currency;
+    $currency = new Currency;
     request()->attributes->set('ip_location', null);
 
     $currency->resolve(['country_code' => 'XX']);

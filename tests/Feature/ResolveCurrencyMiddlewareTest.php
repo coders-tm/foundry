@@ -1,24 +1,34 @@
 <?php
 
-uses(Foundry\Tests\TestCase::class);
+use Foundry\Facades\Currency;
+use Foundry\Models\Admin;
+use Foundry\Models\ExchangeRate;
+use Foundry\Models\User;
+use Foundry\Tests\TestCase;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Route;
+use Stevebauman\Location\Facades\Location;
+use Stevebauman\Location\Position;
+
+uses(TestCase::class);
 
 beforeEach(function () {
-    \Illuminate\Support\Facades\Config::set('app.currency', 'USD');
+    Config::set('app.currency', 'USD');
 
-    \Foundry\Models\ExchangeRate::updateOrCreate(['currency' => 'EUR'], ['rate' => 0.85]);
-    \Foundry\Models\ExchangeRate::updateOrCreate(['currency' => 'GBP'], ['rate' => 0.73]);
-    \Foundry\Models\ExchangeRate::updateOrCreate(['currency' => 'INR'], ['rate' => 85.0]);
+    ExchangeRate::updateOrCreate(['currency' => 'EUR'], ['rate' => 0.85]);
+    ExchangeRate::updateOrCreate(['currency' => 'GBP'], ['rate' => 0.73]);
+    ExchangeRate::updateOrCreate(['currency' => 'INR'], ['rate' => 85.0]);
 
-    \Illuminate\Support\Facades\Route::middleware(['resolve.ip', 'resolve.currency'])->get('/test-currency', function () {
+    Route::middleware(['resolve.ip', 'resolve.currency'])->get('/test-currency', function () {
         return response()->json([
-            'currency' => \Foundry\Facades\Currency::code(),
-            'rate' => \Foundry\Facades\Currency::rate(),
+            'currency' => Currency::code(),
+            'rate' => Currency::rate(),
         ]);
     });
 });
 
 it('skips currency resolution for admin users', function () {
-    $admin = \Foundry\Models\Admin::factory()->create();
+    $admin = Admin::factory()->create();
     $this->actingAs($admin, 'admin');
 
     $response = $this->getJson('/test-currency');
@@ -31,7 +41,7 @@ it('skips currency resolution for admin users', function () {
 });
 
 it('uses saved currency for authenticated user', function () {
-    $user = \Foundry\Models\User::factory()->create();
+    $user = User::factory()->create();
     $user->currency = 'EUR';
     $user->save();
     $this->actingAs($user, 'user');
@@ -46,7 +56,7 @@ it('uses saved currency for authenticated user', function () {
 });
 
 it('resolves currency from user address country', function () {
-    $user = \Foundry\Models\User::factory()->create();
+    $user = User::factory()->create();
     $user->currency = 'GBP';
     $user->save();
     $this->actingAs($user, 'user');
@@ -61,11 +71,11 @@ it('resolves currency from user address country', function () {
 });
 
 it('resolves currency from ip location for guest users', function () {
-    $position = new \Stevebauman\Location\Position;
+    $position = new Position;
     $position->countryCode = 'IN';
     $position->countryName = 'India';
 
-    \Stevebauman\Location\Facades\Location::shouldReceive('get')
+    Location::shouldReceive('get')
         ->once()
         ->andReturn($position);
 
@@ -101,16 +111,16 @@ it('falls back to base currency when no country detected', function () {
 });
 
 it('prioritizes user currency over cf ipcountry', function () {
-    $user = \Foundry\Models\User::factory()->create();
+    $user = User::factory()->create();
     $user->currency = 'EUR';
     $user->save();
     $this->actingAs($user, 'user');
 
-    $position = new \Stevebauman\Location\Position;
+    $position = new Position;
     $position->countryCode = 'IN';
     $position->countryName = 'India';
 
-    \Stevebauman\Location\Facades\Location::shouldReceive('get')
+    Location::shouldReceive('get')
         ->andReturn($position);
 
     $response = $this->getJson('/test-currency');
@@ -123,7 +133,7 @@ it('prioritizes user currency over cf ipcountry', function () {
 });
 
 it('handles user without address gracefully', function () {
-    $user = \Foundry\Models\User::factory()->create();
+    $user = User::factory()->create();
     $this->actingAs($user, 'user');
 
     $response = $this->getJson('/test-currency');
@@ -136,7 +146,7 @@ it('handles user without address gracefully', function () {
 });
 
 it('handles empty user currency gracefully', function () {
-    $user = \Foundry\Models\User::factory()->create();
+    $user = User::factory()->create();
     $this->actingAs($user, 'user');
 
     $response = $this->getJson('/test-currency');
@@ -149,7 +159,7 @@ it('handles empty user currency gracefully', function () {
 });
 
 it('does not persist currency when same as base', function () {
-    $user = \Foundry\Models\User::factory()->create();
+    $user = User::factory()->create();
 
     $user->address()->create([
         'country' => 'United States',
@@ -171,11 +181,11 @@ it('does not persist currency when same as base', function () {
 });
 
 it('works with invalid country code header', function () {
-    $position = new \Stevebauman\Location\Position;
+    $position = new Position;
     $position->countryCode = 'INVALID';
     $position->countryName = 'Invalid Country';
 
-    \Stevebauman\Location\Facades\Location::shouldReceive('get')
+    Location::shouldReceive('get')
         ->once()
         ->andReturn($position);
 

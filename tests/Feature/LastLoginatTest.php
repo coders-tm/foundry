@@ -1,12 +1,18 @@
 <?php
 
-uses(Foundry\Tests\BaseTestCase::class)->use(\Illuminate\Foundation\Testing\RefreshDatabase::class);
+use Foundry\Enum\AppStatus;
+use Foundry\Models\Admin;
+use Foundry\Models\User;
+use Foundry\Tests\BaseTestCase;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
+uses(BaseTestCase::class)->use(RefreshDatabase::class);
 
 it('user last login at is updated on login', function () {
-    $user = \Foundry\Models\User::factory()->create([
+    $user = User::factory()->create([
         'password' => bcrypt('password'),
         'last_login_at' => null,
-        'status' => \Foundry\Enum\AppStatus::ACTIVE,
+        'status' => AppStatus::ACTIVE,
     ]);
 
     $this->assertNull($user->last_login_at);
@@ -28,7 +34,7 @@ it('user last login at is updated on login', function () {
 });
 
 it('admin last login at is updated on login', function () {
-    $admin = \Foundry\Models\Admin::factory()->create([
+    $admin = Admin::factory()->create([
         'password' => bcrypt('password'),
         'last_login_at' => null,
         'is_active' => true,

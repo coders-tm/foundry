@@ -1,15 +1,20 @@
 <?php
 
+use App\Models\Admin;
+use Foundry\Models\Notification;
+use Foundry\Services\NotificationTemplateRenderer;
+use Foundry\Tests\TestCase;
+
 beforeEach(function () {
-    $this->renderer = new \Foundry\Services\NotificationTemplateRenderer;
-    $this->admin = \App\Models\Admin::factory()->create(['is_super_admin' => true]);
+    $this->renderer = new NotificationTemplateRenderer;
+    $this->admin = Admin::factory()->create(['is_super_admin' => true]);
     $this->actingAs($this->admin);
 });
 
-uses(\Foundry\Tests\TestCase::class);
+uses(TestCase::class);
 
 it('renders notification with blade directives', function () {
-    $notification = \Foundry\Models\Notification::factory()->create([
+    $notification = Notification::factory()->create([
         'type' => 'test',
         'subject' => 'Welcome {{ $userName }}',
         'content' => <<<'BLADE'
@@ -46,33 +51,33 @@ BLADE
 });
 
 it('blocks dangerous functions in notification template', function () {
-    $notification = \Foundry\Models\Notification::factory()->create([
+    $notification = Notification::factory()->create([
         'type' => 'test',
         'subject' => 'Test',
         'content' => 'Hello {{ exec("whoami") }}',
     ]);
 
-    $this->expectException(\InvalidArgumentException::class);
+    $this->expectException(InvalidArgumentException::class);
     $this->expectExceptionMessage('not allowed for security reasons');
 
     $notification->render(['name' => 'Test']);
 });
 
 it('blocks dangerous functions inside php directive', function () {
-    $notification = \Foundry\Models\Notification::factory()->create([
+    $notification = Notification::factory()->create([
         'type' => 'test',
         'subject' => 'Test',
         'content' => '@php exec("whoami"); @endphp',
     ]);
 
-    $this->expectException(\InvalidArgumentException::class);
+    $this->expectException(InvalidArgumentException::class);
     $this->expectExceptionMessage('not allowed for security reasons');
 
     $notification->render(['name' => 'Test']);
 });
 
 it('masks env calls in notification template', function () {
-    $notification = \Foundry\Models\Notification::factory()->create([
+    $notification = Notification::factory()->create([
         'type' => 'test',
         'subject' => 'Test',
         'content' => 'Config: {{ env("APP_KEY") }}',
@@ -85,7 +90,7 @@ it('masks env calls in notification template', function () {
 });
 
 it('masks settings calls in notification template', function () {
-    $notification = \Foundry\Models\Notification::factory()->create([
+    $notification = Notification::factory()->create([
         'type' => 'test',
         'subject' => 'Test',
         'content' => 'Setting: {{ settings("database.password") }}',
@@ -97,7 +102,7 @@ it('masks settings calls in notification template', function () {
 });
 
 it('masks sensitive config in notification template', function () {
-    $notification = \Foundry\Models\Notification::factory()->create([
+    $notification = Notification::factory()->create([
         'type' => 'test',
         'subject' => 'Test',
         'content' => 'Secret: {{ config("app.key") }}',
@@ -110,7 +115,7 @@ it('masks sensitive config in notification template', function () {
 });
 
 it('allows safe config in notification template', function () {
-    $notification = \Foundry\Models\Notification::factory()->create([
+    $notification = Notification::factory()->create([
         'type' => 'test',
         'subject' => 'Test',
         'content' => 'App: {{ config("app.name") }}',
@@ -122,20 +127,20 @@ it('allows safe config in notification template', function () {
 });
 
 it('blocks mutation calls in notification template', function () {
-    $notification = \Foundry\Models\Notification::factory()->create([
+    $notification = Notification::factory()->create([
         'type' => 'test',
         'subject' => 'Test',
         'content' => '@php config(["app.name" => "Hacked"]); @endphp',
     ]);
 
-    $this->expectException(\InvalidArgumentException::class);
+    $this->expectException(InvalidArgumentException::class);
     $this->expectExceptionMessage('Mutation calls');
 
     $notification->render([]);
 });
 
 it('validates safe notification template', function () {
-    $notification = \Foundry\Models\Notification::factory()->create([
+    $notification = Notification::factory()->create([
         'type' => 'test',
         'subject' => 'Welcome',
         'content' => <<<'BLADE'
@@ -160,7 +165,7 @@ BLADE
 });
 
 it('validates and rejects dangerous notification template', function () {
-    $notification = \Foundry\Models\Notification::factory()->create([
+    $notification = Notification::factory()->create([
         'type' => 'test',
         'subject' => 'Welcome',
         'content' => 'Hello {{ exec("whoami") }}',
@@ -198,7 +203,7 @@ BLADE;
 });
 
 it('allows all safe blade directives in notifications', function () {
-    $notification = \Foundry\Models\Notification::factory()->create([
+    $notification = Notification::factory()->create([
         'type' => 'test',
         'subject' => 'Test Subject',
         'content' => <<<'BLADE'
@@ -251,20 +256,20 @@ BLADE
 });
 
 it('blocks update function in notification template', function () {
-    $notification = \Foundry\Models\Notification::factory()->create([
+    $notification = Notification::factory()->create([
         'type' => 'test',
         'subject' => 'Test',
         'content' => '@php $user->update(["role" => "admin"]); @endphp',
     ]);
 
-    $this->expectException(\InvalidArgumentException::class);
+    $this->expectException(InvalidArgumentException::class);
     $this->expectExceptionMessage('not allowed for security reasons');
 
-    $notification->render(['user' => new \stdClass]);
+    $notification->render(['user' => new stdClass]);
 });
 
 it('masks env inside php blocks in notifications', function () {
-    $notification = \Foundry\Models\Notification::factory()->create([
+    $notification = Notification::factory()->create([
         'type' => 'test',
         'subject' => 'Test',
         'content' => <<<'BLADE'

@@ -1,14 +1,21 @@
 <?php
 
-uses(Foundry\Tests\TestCase::class);
+use Foundry\Models\Admin;
+use Foundry\Models\Log;
+use Foundry\Services\Logable;
+use Foundry\Services\LogMessageFormatter;
+use Foundry\Tests\TestCase;
+use Illuminate\Database\Eloquent\Model;
+
+uses(TestCase::class);
 
 beforeEach(function () {
-    $this->formatter = new \Foundry\Services\LogMessageFormatter;
+    $this->formatter = new LogMessageFormatter;
 });
 
-function makeLog(array $attributes, ?\Illuminate\Database\Eloquent\Model $logable = null, ?\Foundry\Models\Admin $admin = null): \Foundry\Models\Log
+function makeLog(array $attributes, ?Model $logable = null, ?Admin $admin = null): Log
 {
-    $log = new \Foundry\Models\Log($attributes);
+    $log = new Log($attributes);
 
     if ($logable !== null) {
         $log->setRelation('logable', $logable);
@@ -22,9 +29,9 @@ function makeLog(array $attributes, ?\Illuminate\Database\Eloquent\Model $logabl
 }
 
 it('formats created log with resource name and admin', function () {
-    $admin = \Foundry\Models\Admin::factory()->make(['first_name' => 'Alice', 'last_name' => 'Smith']);
+    $admin = Admin::factory()->make(['first_name' => 'Alice', 'last_name' => 'Smith']);
 
-    \Foundry\Services\Logable::add(\Foundry\Models\Admin::class, fn ($model) => ['name' => $model->name]);
+    Logable::add(Admin::class, fn ($model) => ['name' => $model->name]);
 
     $log = makeLog(
         ['type' => 'created', 'message' => null],
@@ -41,9 +48,9 @@ it('formats created log with resource name and admin', function () {
 });
 
 it('formats updated log', function () {
-    $admin = \Foundry\Models\Admin::factory()->make(['first_name' => 'Bob', 'last_name' => 'Jones']);
+    $admin = Admin::factory()->make(['first_name' => 'Bob', 'last_name' => 'Jones']);
 
-    \Foundry\Services\Logable::add(\Foundry\Models\Admin::class, fn ($model) => ['name' => $model->name]);
+    Logable::add(Admin::class, fn ($model) => ['name' => $model->name]);
 
     $log = makeLog(
         ['type' => 'updated', 'message' => null],
@@ -58,9 +65,9 @@ it('formats updated log', function () {
 });
 
 it('formats deleted log', function () {
-    $admin = \Foundry\Models\Admin::factory()->make(['first_name' => 'Carol', 'last_name' => 'White']);
+    $admin = Admin::factory()->make(['first_name' => 'Carol', 'last_name' => 'White']);
 
-    \Foundry\Services\Logable::add(\Foundry\Models\Admin::class, fn ($model) => ['name' => $model->name]);
+    Logable::add(Admin::class, fn ($model) => ['name' => $model->name]);
 
     $log = makeLog(
         ['type' => 'deleted', 'message' => null],
@@ -75,9 +82,9 @@ it('formats deleted log', function () {
 });
 
 it('formats restored log', function () {
-    $admin = \Foundry\Models\Admin::factory()->make(['first_name' => 'Dave', 'last_name' => 'Green']);
+    $admin = Admin::factory()->make(['first_name' => 'Dave', 'last_name' => 'Green']);
 
-    \Foundry\Services\Logable::add(\Foundry\Models\Admin::class, fn ($model) => ['name' => $model->name]);
+    Logable::add(Admin::class, fn ($model) => ['name' => $model->name]);
 
     $log = makeLog(
         ['type' => 'restored', 'message' => null],
@@ -91,9 +98,9 @@ it('formats restored log', function () {
 });
 
 it('formats force deleted log', function () {
-    $admin = \Foundry\Models\Admin::factory()->make(['first_name' => 'Eve', 'last_name' => 'Black']);
+    $admin = Admin::factory()->make(['first_name' => 'Eve', 'last_name' => 'Black']);
 
-    \Foundry\Services\Logable::add(\Foundry\Models\Admin::class, fn ($model) => ['name' => $model->name]);
+    Logable::add(Admin::class, fn ($model) => ['name' => $model->name]);
 
     $log = makeLog(
         ['type' => 'force-deleted', 'message' => null],
@@ -122,9 +129,9 @@ it('formats login log in first person', function () {
 });
 
 it('formats login log in third person', function () {
-    $admin = \Foundry\Models\Admin::factory()->make(['first_name' => 'Frank', 'last_name' => 'Lee']);
+    $admin = Admin::factory()->make(['first_name' => 'Frank', 'last_name' => 'Lee']);
 
-    \Foundry\Services\Logable::add(\Foundry\Models\Admin::class, fn ($model) => ['name' => $model->name]);
+    Logable::add(Admin::class, fn ($model) => ['name' => $model->name]);
 
     $log = makeLog(
         [
@@ -179,9 +186,9 @@ it('handles null logable gracefully', function () {
 });
 
 it('handles null admin gracefully', function () {
-    $admin = \Foundry\Models\Admin::factory()->make(['first_name' => 'Gina', 'last_name' => 'Hall']);
+    $admin = Admin::factory()->make(['first_name' => 'Gina', 'last_name' => 'Hall']);
 
-    \Foundry\Services\Logable::add(\Foundry\Models\Admin::class, fn ($model) => ['name' => $model->name]);
+    Logable::add(Admin::class, fn ($model) => ['name' => $model->name]);
 
     $log = makeLog(
         ['type' => 'deleted', 'message' => null],
@@ -194,13 +201,13 @@ it('handles null admin gracefully', function () {
 });
 
 it('falls back to type as resource name when no mapper registered', function () {
-    $admin = \Foundry\Models\Admin::factory()->make(['first_name' => 'Henry', 'last_name' => 'Ford']);
+    $admin = Admin::factory()->make(['first_name' => 'Henry', 'last_name' => 'Ford']);
 
-    $reflection = new \ReflectionClass(\Foundry\Services\Logable::class);
+    $reflection = new ReflectionClass(Logable::class);
     $prop = $reflection->getProperty('mappers');
     $prop->setAccessible(true);
     $mappers = $prop->getValue();
-    unset($mappers[\Foundry\Models\Admin::class]);
+    unset($mappers[Admin::class]);
     $prop->setValue(null, $mappers);
 
     $log = makeLog(

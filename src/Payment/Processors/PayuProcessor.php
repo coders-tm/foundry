@@ -2,10 +2,10 @@
 
 namespace Foundry\Payment\Processors;
 
-use Foundry\Foundry;
 use Foundry\Contracts\PaymentProcessorInterface;
-use Foundry\Models\Payment;
+use Foundry\Foundry;
 use Foundry\Models\ExchangeRate;
+use Foundry\Models\Payment;
 use Foundry\Payment\CallbackResult;
 use Foundry\Payment\Mappers\PayuPayment;
 use Foundry\Payment\Payable;

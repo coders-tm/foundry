@@ -1,16 +1,22 @@
 <?php
 
-uses(Foundry\Tests\BaseTestCase::class);
+use Foundry\Payment\Payable;
+use Foundry\Payment\Processors\StripeProcessor;
+use Foundry\Tests\BaseTestCase;
+use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
+
+uses(BaseTestCase::class);
 
 it('validates currency for stripe processor', function () {
-    $processor = new \Foundry\Payment\Processors\StripeProcessor;
+    $processor = new StripeProcessor;
 
-    $payable = \Mockery::mock(\Foundry\Payment\Payable::class);
+    $payable = Mockery::mock(Payable::class);
     $payable->shouldReceive('getCurrency')->andReturn('XXX');
     $payable->shouldReceive('getGatewayAmount')->andReturn(100);
     $payable->shouldReceive('setCurrencies');
 
-    $this->expectException(\Illuminate\Validation\ValidationException::class);
+    $this->expectException(ValidationException::class);
 
-    $processor->setupPaymentIntent(new \Illuminate\Http\Request, $payable);
+    $processor->setupPaymentIntent(new Request, $payable);
 });

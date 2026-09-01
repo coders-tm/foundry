@@ -1,39 +1,45 @@
 <?php
 
-uses(Foundry\Tests\TestCase::class)->use(\Illuminate\Foundation\Testing\RefreshDatabase::class);
+use Foundry\Models\ExchangeRate;
+use Foundry\Models\Order;
+use Foundry\Tests\TestCase;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Config;
+
+uses(TestCase::class)->use(RefreshDatabase::class);
 
 beforeEach(function () {
-    \Illuminate\Support\Facades\Config::set('app.currency', 'USD');
+    Config::set('app.currency', 'USD');
 
-    \Foundry\Models\ExchangeRate::updateOrCreate(
+    ExchangeRate::updateOrCreate(
         ['currency' => 'INR'],
         ['rate' => 83.0]
     );
 });
 
 it('exchange rate returns correct rate', function () {
-    $rate = \Foundry\Models\ExchangeRate::rateFor('INR');
+    $rate = ExchangeRate::rateFor('INR');
     $this->assertEquals(83.0, $rate);
 });
 
 it('exchange rate returns one for base currency', function () {
-    $rate = \Foundry\Models\ExchangeRate::rateFor('USD');
+    $rate = ExchangeRate::rateFor('USD');
     $this->assertEquals(1.0, $rate);
 });
 
 it('exchange rate converts amount correctly', function () {
-    $converted = \Foundry\Models\ExchangeRate::convertAmount(100.00, 'USD', 'INR');
+    $converted = ExchangeRate::convertAmount(100.00, 'USD', 'INR');
     $this->assertEquals(8300.00, $converted);
 
-    $converted = \Foundry\Models\ExchangeRate::convertAmount(8300.00, 'INR', 'USD');
+    $converted = ExchangeRate::convertAmount(8300.00, 'INR', 'USD');
     $this->assertEquals(100.00, $converted);
 
-    $converted = \Foundry\Models\ExchangeRate::convertAmount(100.00, 'USD', 'USD');
+    $converted = ExchangeRate::convertAmount(100.00, 'USD', 'USD');
     $this->assertEquals(100.00, $converted);
 });
 
 it('order stores base values only', function () {
-    $order = \Foundry\Models\Order::factory()->create([
+    $order = Order::factory()->create([
         'grand_total' => 100.00,
         'sub_total' => 80.00,
         'tax_total' => 10.00,
@@ -48,12 +54,12 @@ it('order stores base values only', function () {
 });
 
 it('get currency from country code', function () {
-    $currency = \Foundry\Models\ExchangeRate::getCurrencyFromCountryCode('IN');
+    $currency = ExchangeRate::getCurrencyFromCountryCode('IN');
     $this->assertEquals('INR', $currency);
 
-    $currency = \Foundry\Models\ExchangeRate::getCurrencyFromCountryCode('US');
+    $currency = ExchangeRate::getCurrencyFromCountryCode('US');
     $this->assertEquals('USD', $currency);
 
-    $currency = \Foundry\Models\ExchangeRate::getCurrencyFromCountryCode('XX');
+    $currency = ExchangeRate::getCurrencyFromCountryCode('XX');
     $this->assertEquals('USD', $currency);
 });

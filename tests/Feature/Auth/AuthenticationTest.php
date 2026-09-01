@@ -1,6 +1,9 @@
 <?php
 
-uses(\Foundry\Tests\Feature\FeatureTestCase::class);
+use Foundry\Models\Admin;
+use Foundry\Tests\Feature\FeatureTestCase;
+
+uses(FeatureTestCase::class);
 
 it('can render login screen', function () {
     $response = $this->get(route('admin.login'));
@@ -8,7 +11,7 @@ it('can render login screen', function () {
 });
 
 it('admins can authenticate using the login screen', function () {
-    $admin = \Foundry\Models\Admin::factory()->create(['is_active' => true]);
+    $admin = Admin::factory()->create(['is_active' => true]);
 
     $response = $this->post(route('admin.login.store'), [
         'email' => $admin->email,
@@ -21,7 +24,7 @@ it('admins can authenticate using the login screen', function () {
 });
 
 it('admins cannot authenticate with invalid password', function () {
-    $admin = \Foundry\Models\Admin::factory()->create(['is_active' => true]);
+    $admin = Admin::factory()->create(['is_active' => true]);
 
     $this->post(route('admin.login.store'), [
         'email' => $admin->email,
@@ -32,7 +35,7 @@ it('admins cannot authenticate with invalid password', function () {
 });
 
 it('admins can logout', function () {
-    $admin = \Foundry\Models\Admin::factory()->create(['is_active' => true]);
+    $admin = Admin::factory()->create(['is_active' => true]);
 
     $response = $this->actingAs($admin, 'admin')->post(route('admin.logout'));
 

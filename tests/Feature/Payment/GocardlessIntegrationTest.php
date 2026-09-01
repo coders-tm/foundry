@@ -1,6 +1,11 @@
 <?php
 
-uses(\Foundry\Tests\Feature\FeatureTestCase::class);
+use Foundry\Foundry;
+use Foundry\Services\PaymentProvider;
+use Foundry\Tests\Feature\FeatureTestCase;
+use GoCardlessPro\Client;
+
+uses(FeatureTestCase::class);
 
 beforeEach(function () {
     if (! env('GOCARDLESS_ACCESS_TOKEN')) {
@@ -10,14 +15,14 @@ beforeEach(function () {
 });
 
 it('retrieves gocardless provider config', function () {
-    $gocardless = \Foundry\Services\PaymentProvider::find(\Foundry\Services\PaymentProvider::GOCARDLESS);
+    $gocardless = PaymentProvider::find(PaymentProvider::GOCARDLESS);
     $this->assertNotNull($gocardless);
-    $this->assertEquals(\Foundry\Services\PaymentProvider::GOCARDLESS, $gocardless['provider']);
+    $this->assertEquals(PaymentProvider::GOCARDLESS, $gocardless['provider']);
 });
 
 it('creates gocardless client instance', function () {
-    $client = \Foundry\Foundry::gocardless();
-    $this->assertInstanceOf(\GoCardlessPro\Client::class, $client);
+    $client = Foundry::gocardless();
+    $this->assertInstanceOf(Client::class, $client);
 });
 
 it('supports multiple country payment schemes', function () {
@@ -38,7 +43,7 @@ it('supports multiple country payment schemes', function () {
 
 it('validates access token format', function () {
     $token = config('foundry.payment_providers.gocardless.access_token');
-    $provider = \Foundry\Services\PaymentProvider::find(\Foundry\Services\PaymentProvider::GOCARDLESS);
+    $provider = PaymentProvider::find(PaymentProvider::GOCARDLESS);
     $this->assertNotEmpty($token);
     $this->assertIsString($token);
 });

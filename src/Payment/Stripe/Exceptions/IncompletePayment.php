@@ -2,8 +2,8 @@
 
 namespace Foundry\Payment\Stripe\Exceptions;
 
-use Foundry\Payment\Stripe\Payment;
 use Exception;
+use Foundry\Payment\Stripe\Payment;
 use Throwable;
 
 class IncompletePayment extends Exception

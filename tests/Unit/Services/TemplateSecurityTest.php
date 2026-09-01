@@ -1,13 +1,19 @@
 <?php
 
-uses(Foundry\Tests\TestCase::class);
+use Foundry\Models\Notification;
+use Foundry\Services\MaskSensitiveConfig;
+use Foundry\Services\NotificationTemplateRenderer;
+use Foundry\Tests\TestCase;
+use Illuminate\Filesystem\Filesystem;
+
+uses(TestCase::class);
 
 beforeEach(function () {
-    $this->compiler = new \Foundry\Services\MaskSensitiveConfig(
-        app(\Illuminate\Filesystem\Filesystem::class),
+    $this->compiler = new MaskSensitiveConfig(
+        app(Filesystem::class),
         storage_path('framework/views'),
     );
-    $this->renderer = new \Foundry\Services\NotificationTemplateRenderer;
+    $this->renderer = new NotificationTemplateRenderer;
 });
 
 it('allows php directive', function () {
@@ -49,63 +55,63 @@ it('allows slot directive', function () {
 });
 
 it('blocks exec function', function () {
-    $this->expectException(\InvalidArgumentException::class);
+    $this->expectException(InvalidArgumentException::class);
     $this->expectExceptionMessage("Function 'exec' is not allowed");
 
     $this->compiler->compileString("{{ exec('rm -rf /') }}");
 });
 
 it('blocks shell exec function', function () {
-    $this->expectException(\InvalidArgumentException::class);
+    $this->expectException(InvalidArgumentException::class);
     $this->expectExceptionMessage("Function 'shell_exec' is not allowed");
 
     $this->compiler->compileString("{{ shell_exec('whoami') }}");
 });
 
 it('blocks system function', function () {
-    $this->expectException(\InvalidArgumentException::class);
+    $this->expectException(InvalidArgumentException::class);
     $this->expectExceptionMessage("Function 'system' is not allowed");
 
     $this->compiler->compileString("{{ system('ls') }}");
 });
 
 it('blocks eval function', function () {
-    $this->expectException(\InvalidArgumentException::class);
+    $this->expectException(InvalidArgumentException::class);
     $this->expectExceptionMessage("Function 'eval' is not allowed");
 
     $this->compiler->compileString("{{ eval('echo 1;') }}");
 });
 
 it('blocks file get contents function', function () {
-    $this->expectException(\InvalidArgumentException::class);
+    $this->expectException(InvalidArgumentException::class);
     $this->expectExceptionMessage("Function 'file_get_contents' is not allowed");
 
     $this->compiler->compileString("{{ file_get_contents('/etc/passwd') }}");
 });
 
 it('blocks file put contents function', function () {
-    $this->expectException(\InvalidArgumentException::class);
+    $this->expectException(InvalidArgumentException::class);
     $this->expectExceptionMessage("Function 'file_put_contents' is not allowed");
 
     $this->compiler->compileString("{{ file_put_contents('hack.php', '<?php') }}");
 });
 
 it('blocks unlink function', function () {
-    $this->expectException(\InvalidArgumentException::class);
+    $this->expectException(InvalidArgumentException::class);
     $this->expectExceptionMessage("Function 'unlink' is not allowed");
 
     $this->compiler->compileString("{{ unlink('important.txt') }}");
 });
 
 it('blocks db raw function', function () {
-    $this->expectException(\InvalidArgumentException::class);
+    $this->expectException(InvalidArgumentException::class);
     $this->expectExceptionMessage("Function 'DB::raw' is not allowed");
 
     $this->compiler->compileString("{{ DB::raw('DROP TABLE users') }}");
 });
 
 it('blocks call user func', function () {
-    $this->expectException(\InvalidArgumentException::class);
+    $this->expectException(InvalidArgumentException::class);
     $this->expectExceptionMessage("Function 'call_user_func' is not allowed");
 
     $this->compiler->compileString("{{ call_user_func('exec', 'whoami') }}");
@@ -169,19 +175,19 @@ it('masks settings calls inside php', function () {
 });
 
 it('blocks update calls inside php', function () {
-    $this->expectException(\InvalidArgumentException::class);
+    $this->expectException(InvalidArgumentException::class);
     $template = '@php $user->update([\'name\' => \'x\']); @endphp';
     $this->compiler->compileString($template);
 });
 
 it('blocks config set calls inside php', function () {
-    $this->expectException(\InvalidArgumentException::class);
+    $this->expectException(InvalidArgumentException::class);
     $template = "@php Config::set('app.name', 'X'); @endphp";
     $this->compiler->compileString($template);
 });
 
 it('blocks config array write calls inside php', function () {
-    $this->expectException(\InvalidArgumentException::class);
+    $this->expectException(InvalidArgumentException::class);
     $template = "@php config(['app.name' => 'X']); @endphp";
     $this->compiler->compileString($template);
 });
@@ -222,7 +228,7 @@ it('allows safe empty directive', function () {
 });
 
 it('notification renderer blocks dangerous templates', function () {
-    $this->expectException(\InvalidArgumentException::class);
+    $this->expectException(InvalidArgumentException::class);
 
     $template = "Hello @php exec('whoami'); @endphp";
     $this->renderer->render($template, ['name' => 'User']);
@@ -264,7 +270,7 @@ it('notification renderer rejects invalid templates', function () {
 });
 
 it('notification model render uses secure renderer', function () {
-    $notification = \Foundry\Models\Notification::factory()->create([
+    $notification = Notification::factory()->create([
         'type' => 'test',
         'subject' => 'Test Subject',
         'content' => 'Hello @if(true) {{ $name }} @endif',
@@ -279,7 +285,7 @@ it('notification model render uses secure renderer', function () {
 });
 
 it('notification model validate detects dangerous templates', function () {
-    $notification = \Foundry\Models\Notification::factory()->create([
+    $notification = Notification::factory()->create([
         'type' => 'test',
         'subject' => 'Test',
         'content' => '@php exec("whoami"); @endphp',
@@ -293,14 +299,14 @@ it('notification model validate detects dangerous templates', function () {
 });
 
 it('blocks multiple dangerous functions in one template', function () {
-    $this->expectException(\InvalidArgumentException::class);
+    $this->expectException(InvalidArgumentException::class);
 
     $template = "{{ exec('ls') }} and {{ system('whoami') }}";
     $this->compiler->compileString($template);
 });
 
 it('blocks case insensitive functions', function () {
-    $this->expectException(\InvalidArgumentException::class);
+    $this->expectException(InvalidArgumentException::class);
 
     $template = "{{ EXEC('ls') }}";
     $this->compiler->compileString($template);

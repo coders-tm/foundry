@@ -1,6 +1,9 @@
 <?php
 
-uses(Foundry\Tests\TestCase::class);
+use Foundry\Services\ShortcodeProcessor;
+use Foundry\Tests\TestCase;
+
+uses(TestCase::class);
 
 it('exposes array keys as shortcodes', function () {
     $data = [
@@ -11,7 +14,7 @@ it('exposes array keys as shortcodes', function () {
         ],
     ];
 
-    $processor = new \Foundry\Services\ShortcodeProcessor;
+    $processor = new ShortcodeProcessor;
     $replacements = $processor->process($data);
 
     $message = 'Public: {{PUBLIC}}, Secret: {{SECRET_KEY}}, Nested: {{NESTED_PASSWORD}}';

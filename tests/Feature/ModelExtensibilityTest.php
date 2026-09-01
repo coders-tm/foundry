@@ -1,41 +1,48 @@
 <?php
 
-uses(Foundry\Tests\BaseTestCase::class);
+use Foundry\Models\Order\DiscountLine;
+use Foundry\Models\Redeem;
+use Foundry\Models\Subscription;
+use Foundry\Tests\BaseTestCase;
+use Workbench\App\Models\Coupon;
+use Workbench\App\Models\Plan;
+
+uses(BaseTestCase::class);
 
 it('coupon model can be configured', function () {
-    \Foundry\Foundry::useCouponModel(\Workbench\App\Models\Coupon::class);
+    Foundry\Foundry::useCouponModel(Coupon::class);
 
-    $this->assertEquals(\Workbench\App\Models\Coupon::class, \Foundry\Foundry::$couponModel);
+    $this->assertEquals(Coupon::class, Foundry\Foundry::$couponModel);
 });
 
 it('subscription coupon relationship uses configured model', function () {
-    \Foundry\Foundry::useCouponModel(\Workbench\App\Models\Coupon::class);
+    Foundry\Foundry::useCouponModel(Coupon::class);
 
-    $subscription = new \Foundry\Models\Subscription;
+    $subscription = new Subscription;
 
-    $this->assertEquals(\Workbench\App\Models\Coupon::class, $subscription->coupon()->getRelated()::class);
+    $this->assertEquals(Coupon::class, $subscription->coupon()->getRelated()::class);
 });
 
 it('redeem coupon relationship uses configured model', function () {
-    \Foundry\Foundry::useCouponModel(\Workbench\App\Models\Coupon::class);
+    Foundry\Foundry::useCouponModel(Coupon::class);
 
-    $redeem = new \Foundry\Models\Redeem;
+    $redeem = new Redeem;
 
-    $this->assertEquals(\Workbench\App\Models\Coupon::class, $redeem->coupon()->getRelated()::class);
+    $this->assertEquals(Coupon::class, $redeem->coupon()->getRelated()::class);
 });
 
 it('discount line coupon relationship uses configured model', function () {
-    \Foundry\Foundry::useCouponModel(\Workbench\App\Models\Coupon::class);
+    Foundry\Foundry::useCouponModel(Coupon::class);
 
-    $discountLine = new \Foundry\Models\Order\DiscountLine;
+    $discountLine = new DiscountLine;
 
-    $this->assertEquals(\Workbench\App\Models\Coupon::class, $discountLine->coupon()->getRelated()::class);
+    $this->assertEquals(Coupon::class, $discountLine->coupon()->getRelated()::class);
 });
 
 it('extended subscription can override can apply coupon without type error', function () {
-    \Foundry\Foundry::useCouponModel(\Workbench\App\Models\Coupon::class);
+    Foundry\Foundry::useCouponModel(Coupon::class);
 
-    $mockSubscription = new class extends \Foundry\Models\Subscription
+    $mockSubscription = new class extends Subscription
     {
         public function canApplyCoupon($coupon = null)
         {
@@ -43,24 +50,24 @@ it('extended subscription can override can apply coupon without type error', fun
         }
     };
 
-    $this->assertInstanceOf(\Foundry\Models\Subscription::class, $mockSubscription);
+    $this->assertInstanceOf(Subscription::class, $mockSubscription);
 });
 
 it('workbench extended subscription model can be instantiated', function () {
-    \Foundry\Foundry::useCouponModel(\Workbench\App\Models\Coupon::class);
-    \Foundry\Foundry::useSubscriptionModel(\Workbench\App\Models\Subscription::class);
+    Foundry\Foundry::useCouponModel(Coupon::class);
+    Foundry\Foundry::useSubscriptionModel(Workbench\App\Models\Subscription::class);
 
-    $subscription = new \Workbench\App\Models\Subscription;
+    $subscription = new Workbench\App\Models\Subscription;
 
-    $this->assertInstanceOf(\Workbench\App\Models\Subscription::class, $subscription);
-    $this->assertInstanceOf(\Foundry\Models\Subscription::class, $subscription);
+    $this->assertInstanceOf(Workbench\App\Models\Subscription::class, $subscription);
+    $this->assertInstanceOf(Subscription::class, $subscription);
 
     $this->assertTrue(method_exists($subscription, 'canApplyCoupon'));
     $this->assertTrue(method_exists($subscription, 'hasSpecialCoupon'));
 });
 
 it('plan model can be configured', function () {
-    \Foundry\Foundry::usePlanModel(\Workbench\App\Models\Plan::class);
+    Foundry\Foundry::usePlanModel(Plan::class);
 
-    $this->assertEquals(\Workbench\App\Models\Plan::class, \Foundry\Foundry::$planModel);
+    $this->assertEquals(Plan::class, Foundry\Foundry::$planModel);
 });

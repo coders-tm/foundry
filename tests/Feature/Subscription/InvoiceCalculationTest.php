@@ -1,69 +1,72 @@
 <?php
 
-uses(\Foundry\Tests\Feature\FeatureTestCase::class);
+use Foundry\Foundry;
+use Foundry\Models\Tax;
+use Foundry\Tests\Feature\FeatureTestCase;
+
+uses(FeatureTestCase::class);
 
 beforeEach(function () {
-    
-    
+
     // Remove any existing tax rates to avoid conflicts
-    \Foundry\Models\Tax::truncate();
-    
+    Tax::truncate();
+
     // Seed a 10% tax rate for United States
-    \Foundry\Models\Tax::create([
-    'label' => 'GST',
-    'code' => 'US',
-    'rate' => 10,
-    'state' => '*',
-    'priority' => 1,
-    'compounded' => false,
+    Tax::create([
+        'label' => 'GST',
+        'code' => 'US',
+        'rate' => 10,
+        'state' => '*',
+        'priority' => 1,
+        'compounded' => false,
     ]);
-    
+
     // Fallback for any other country if needed
-    \Foundry\Models\Tax::create([
-    'label' => 'Tax',
-    'code' => '*',
-    'rate' => 10,
-    'state' => '*',
-    'priority' => 1,
-    'compounded' => false,
+    Tax::create([
+        'label' => 'Tax',
+        'code' => '*',
+        'rate' => 10,
+        'state' => '*',
+        'priority' => 1,
+        'compounded' => false,
     ]);
 });
 
 it('upcoming invoice calculations', function () {
     // 1. Setup: Create a plan with price $100
-    $plan = \Foundry\Foundry::$planModel::factory()->create([
-    'price' => 100.00,
-    'label' => 'Monthly Plan',
-    'interval' => 'month',
-    'interval_count' => 1,
+    $plan = Foundry::$planModel::factory()->create([
+        'price' => 100.00,
+        'label' => 'Monthly Plan',
+        'interval' => 'month',
+        'interval_count' => 1,
     ]);
-    
+
     // 2. Setup: Create a coupon with 20% discount
-    $coupon = \Foundry\Foundry::$couponModel::factory()->create([
-    'name' => 'Save 20',
-    'value' => 20,
-    'discount_type' => 'percentage',
-    'promotion_code' => 'SAVE20',
+    $coupon = Foundry::$couponModel::factory()->create([
+        'name' => 'Save 20',
+        'value' => 20,
+        'discount_type' => 'percentage',
+        'promotion_code' => 'SAVE20',
     ]);
-    
+
     // 3. Setup: Create a user and subscription with the coupon
-    $user = \Foundry\Foundry::$userModel::factory()->withAddress(['country' => 'United States'])->create();
-    
-    $subscription = \Foundry\Foundry::$subscriptionModel::factory()->create([
-    'user_id' => $user->id,
-    'plan_id' => $plan->id,
-    'coupon_id' => $coupon->id,
+    $user = Foundry::$userModel::factory()->withAddress(['country' => 'United States'])->create();
+
+    $subscription = Foundry::$subscriptionModel::factory()->create([
+        'user_id' => $user->id,
+        'plan_id' => $plan->id,
+        'coupon_id' => $coupon->id,
     ]);
-    
+
     $subscription->refresh();
-    
+
     // 4. Action: Get upcoming invoice
     $upcomingInvoice = $subscription->upcomingInvoice();
-    
+
     // 5. Verification:
     // Expected: Subtotal 100, Discount 20, Grand Total 80 + Tax (8) = 88
     $this->assertNotNull($upcomingInvoice);
-    
+
     // Asserting the values that the user EXPECTS (which are currently different)
     $this->assertEquals(100.00, $upcomingInvoice->sub_total, 'Sub total should be the gross amount ($100)');
     $this->assertEquals(8.00, $upcomingInvoice->tax_total, 'Tax total should be correct ($8)');
@@ -73,41 +76,41 @@ it('upcoming invoice calculations', function () {
 
 it('generated invoice calculations', function () {
     // 1. Setup: Create a plan with price $100
-    $plan = \Foundry\Foundry::$planModel::factory()->create([
-    'price' => 100.00,
-    'label' => 'Monthly Plan',
-    'interval' => 'month',
-    'interval_count' => 1,
+    $plan = Foundry::$planModel::factory()->create([
+        'price' => 100.00,
+        'label' => 'Monthly Plan',
+        'interval' => 'month',
+        'interval_count' => 1,
     ]);
-    
+
     // 2. Setup: Create a coupon with $15 fixed discount
-    $coupon = \Foundry\Foundry::$couponModel::factory()->create([
-    'name' => 'Save 15',
-    'value' => 15,
-    'discount_type' => 'fixed',
-    'promotion_code' => 'SAVE15',
+    $coupon = Foundry::$couponModel::factory()->create([
+        'name' => 'Save 15',
+        'value' => 15,
+        'discount_type' => 'fixed',
+        'promotion_code' => 'SAVE15',
     ]);
-    
+
     // 3. Setup: Create a user and subscription
-    $user = \Foundry\Foundry::$userModel::factory()->withAddress(['country' => 'United States'])->create();
-    
+    $user = Foundry::$userModel::factory()->withAddress(['country' => 'United States'])->create();
+
     /** @var Subscription $subscription */
-    $subscription = \Foundry\Foundry::$subscriptionModel::factory()->create([
-    'user_id' => $user->id,
-    'plan_id' => $plan->id,
-    'coupon_id' => $coupon->id,
+    $subscription = Foundry::$subscriptionModel::factory()->create([
+        'user_id' => $user->id,
+        'plan_id' => $plan->id,
+        'coupon_id' => $coupon->id,
     ]);
-    
+
     $subscription->refresh();
-    
+
     // 4. Action: Generate invoice
     $invoice = $subscription->generateInvoice();
-    
+
     foreach ($invoice->line_items as $item) {
-    $this->assertEquals(1, $item->quantity, 'Line item quantity should be 1');
-    $this->assertTrue($item->taxable, 'Line item should be taxable');
+        $this->assertEquals(1, $item->quantity, 'Line item quantity should be 1');
+        $this->assertTrue($item->taxable, 'Line item should be taxable');
     }
-    
+
     // 5. Verification:
     $this->assertNotNull($invoice);
     $this->assertEquals(100.00, $invoice->sub_total, 'Stored sub_total should be the gross amount ($100)');

@@ -1,9 +1,16 @@
 <?php
 
-uses(Foundry\Tests\TestCase::class);
+use Foundry\Http\Middleware\ResolveIpAddress;
+use Foundry\Tests\TestCase;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+use Stevebauman\Location\Facades\Location;
+use Stevebauman\Location\Position;
+
+uses(TestCase::class);
 
 beforeEach(function () {
-    \Illuminate\Support\Facades\Route::middleware(\Foundry\Http\Middleware\ResolveIpAddress::class)->get('/_test/ip-resolution', function () {
+    Route::middleware(ResolveIpAddress::class)->get('/_test/ip-resolution', function () {
         return response()->json([
             'ip_location' => request()->attributes->get('ip_location'),
         ]);
@@ -12,12 +19,12 @@ beforeEach(function () {
 
 it('resolves ip location', function () {
     $ip = '8.8.8.8';
-    $position = new \Stevebauman\Location\Position;
+    $position = new Position;
     $position->ip = $ip;
     $position->countryCode = 'US';
     $position->countryName = 'United States';
 
-    \Stevebauman\Location\Facades\Location::shouldReceive('get')
+    Location::shouldReceive('get')
         ->twice()
         ->with($ip)
         ->andReturn($position);
@@ -39,7 +46,7 @@ it('resolves ip location', function () {
             ],
         ]);
 
-    $request = new \Illuminate\Http\Request;
+    $request = new Request;
     $request->attributes->set('ip_location', (object) ['countryCode' => 'US']);
     $this->assertEquals('US', $request->ipLocation('countryCode'));
     $this->assertEquals('Default', $request->ipLocation('invalid', 'Default'));
@@ -49,10 +56,10 @@ it('resolves ip from cloudflare header', function () {
     $cloudflareEdgeIp = '104.18.0.1';
     $realClientIp = '203.0.113.5';
 
-    $position = new \Stevebauman\Location\Position;
+    $position = new Position;
     $position->countryCode = 'AU';
 
-    \Stevebauman\Location\Facades\Location::shouldReceive('get')
+    Location::shouldReceive('get')
         ->once()
         ->with($realClientIp)
         ->andReturn($position);
@@ -73,15 +80,15 @@ it('ignores cf connecting ip when remote addr is not cloudflare', function () {
     $attackerIp = '203.0.113.99';
     $spoofedIp = '8.8.8.8';
 
-    $position = new \Stevebauman\Location\Position;
+    $position = new Position;
     $position->countryCode = 'XX';
 
-    \Stevebauman\Location\Facades\Location::shouldReceive('get')
+    Location::shouldReceive('get')
         ->once()
         ->with($attackerIp)
         ->andReturn($position);
 
-    \Stevebauman\Location\Facades\Location::shouldReceive('get')
+    Location::shouldReceive('get')
         ->with($spoofedIp)
         ->never();
 

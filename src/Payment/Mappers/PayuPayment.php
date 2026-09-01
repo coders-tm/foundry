@@ -2,8 +2,8 @@
 
 namespace Foundry\Payment\Mappers;
 
-use Foundry\Models\Payment;
 use DateTime;
+use Foundry\Models\Payment;
 use Foundry\Services\PaymentProvider;
 
 class PayuPayment extends AbstractPayment

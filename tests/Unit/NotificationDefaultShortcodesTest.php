@@ -1,9 +1,12 @@
 <?php
 
-uses(Foundry\Tests\TestCase::class);
+use Foundry\Services\NotificationTemplateRenderer;
+use Foundry\Tests\TestCase;
+
+uses(TestCase::class);
 
 beforeEach(function () {
-    $this->renderer = new \Foundry\Services\NotificationTemplateRenderer;
+    $this->renderer = new NotificationTemplateRenderer;
 });
 
 it('renders default app shortcodes', function () {
@@ -47,7 +50,7 @@ BLADE;
 });
 
 it('merges custom app shortcodes', function () {
-    \Foundry\Foundry::$appShortCodes = [
+    Foundry\Foundry::$appShortCodes = [
         'company' => [
             'name' => 'Acme Corp',
             'phone' => '+1-555-0123',
@@ -61,13 +64,13 @@ it('merges custom app shortcodes', function () {
     $this->assertStringContainsString('Company: Acme Corp', $result);
     $this->assertStringContainsString('Phone: +1-555-0123', $result);
 
-    \Foundry\Foundry::$appShortCodes = [];
+    Foundry\Foundry::$appShortCodes = [];
 });
 
 it('custom app shortcodes can override defaults', function () {
     config(['app.name' => 'Default App']);
 
-    \Foundry\Foundry::$appShortCodes = [
+    Foundry\Foundry::$appShortCodes = [
         'app' => [
             'name' => 'Override App',
         ],
@@ -79,11 +82,11 @@ it('custom app shortcodes can override defaults', function () {
 
     $this->assertStringContainsString('Legacy: Override App', $result);
 
-    \Foundry\Foundry::$appShortCodes = [];
+    Foundry\Foundry::$appShortCodes = [];
 });
 
 it('custom app shortcodes can add new nested data', function () {
-    \Foundry\Foundry::$appShortCodes = [
+    Foundry\Foundry::$appShortCodes = [
         'company' => [
             'name' => 'Acme Corporation',
             'phone' => '+1-555-0123',
@@ -97,7 +100,7 @@ it('custom app shortcodes can add new nested data', function () {
     $this->assertStringContainsString('Contact Acme Corporation', $result);
     $this->assertStringContainsString('at +1-555-0123', $result);
 
-    \Foundry\Foundry::$appShortCodes = [];
+    Foundry\Foundry::$appShortCodes = [];
 });
 
 it('default shortcodes used as fallback when not in user data', function () {
@@ -139,7 +142,7 @@ it('billing page shortcode renders correctly', function () {
 });
 
 it('custom app shortcodes support both scalar and nested', function () {
-    \Foundry\Foundry::$appShortCodes = [
+    Foundry\Foundry::$appShortCodes = [
         'company' => [
             'name' => 'Acme Corporation',
             'address' => '123 Main St',
@@ -158,5 +161,5 @@ BLADE;
     $this->assertStringContainsString('123 Main St', $result);
     $this->assertStringContainsString('Tagline: Excellence in Everything', $result);
 
-    \Foundry\Foundry::$appShortCodes = [];
+    Foundry\Foundry::$appShortCodes = [];
 });

@@ -1,9 +1,12 @@
 <?php
 
-uses(Foundry\Tests\TestCase::class);
+use Foundry\Services\NotificationTemplateRenderer;
+use Foundry\Tests\TestCase;
+
+uses(TestCase::class);
 
 beforeEach(function () {
-    $this->renderer = app(\Foundry\Services\NotificationTemplateRenderer::class);
+    $this->renderer = app(NotificationTemplateRenderer::class);
 });
 
 it('renders legacy uppercase shortcodes for backward compatibility', function () {

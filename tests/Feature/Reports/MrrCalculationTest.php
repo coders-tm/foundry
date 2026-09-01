@@ -1,13 +1,21 @@
 <?php
 
-uses(\Foundry\Tests\TestCase::class);
+use Carbon\Carbon;
+use Foundry\Foundry;
+use Foundry\Models\Order;
+use Foundry\Models\Subscription;
+use Foundry\Models\Subscription\Plan;
+use Foundry\Services\Metrics\MetricsService;
+use Foundry\Tests\TestCase;
+
+uses(TestCase::class);
 
 it('calculate mrr excludes free forever', function () {
     // Arrange
-    $date = \Carbon\Carbon::now();
-    $plan = \Foundry\Models\Subscription\Plan::factory()->create(['price' => 100]);
+    $date = Carbon::now();
+    $plan = Plan::factory()->create(['price' => 100]);
 
-    $sub = \Foundry\Models\Subscription::factory()->create([
+    $sub = Subscription::factory()->create([
         'plan_id' => $plan->id,
         'status' => 'active',
         'is_free_forever' => 1,
@@ -16,17 +24,17 @@ it('calculate mrr excludes free forever', function () {
     ]);
 
     // Create a paid order just in case, but it should be ignored
-    \Foundry\Models\Order::factory()->create([
+    Order::factory()->create([
         'orderable_id' => $sub->id,
-        'orderable_type' => (new \Foundry\Foundry::$subscriptionModel)->getMorphClass(),
-        'payment_status' => \Foundry\Models\Order::STATUS_PAID,
+        'orderable_type' => (new Foundry::$subscriptionModel)->getMorphClass(),
+        'payment_status' => Order::STATUS_PAID,
         'grand_total' => 100,
         'tax_total' => 0,
         'created_at' => $date->copy()->subDay(),
     ]);
 
     // Act
-    $metrics = new \Foundry\Services\Metrics\MetricsService([]);
+    $metrics = new MetricsService([]);
     $result = $metrics->only(['mrr']);
     $mrr = $result['mrr']['raw_current'];
 
@@ -36,10 +44,10 @@ it('calculate mrr excludes free forever', function () {
 
 it('calculate mrr uses latest paid order minus tax', function () {
     // Arrange
-    $date = \Carbon\Carbon::now();
-    $plan = \Foundry\Models\Subscription\Plan::factory()->create(['price' => 100]);
+    $date = Carbon::now();
+    $plan = Plan::factory()->create(['price' => 100]);
 
-    $sub = \Foundry\Models\Subscription::factory()->create([
+    $sub = Subscription::factory()->create([
         'plan_id' => $plan->id,
         'status' => 'active',
         'is_free_forever' => 0,
@@ -48,10 +56,10 @@ it('calculate mrr uses latest paid order minus tax', function () {
     ]);
 
     // Old order
-    \Foundry\Models\Order::factory()->create([
+    Order::factory()->create([
         'orderable_id' => $sub->id,
-        'orderable_type' => (new \Foundry\Foundry::$subscriptionModel)->getMorphClass(),
-        'payment_status' => \Foundry\Models\Order::STATUS_PAID,
+        'orderable_type' => (new Foundry::$subscriptionModel)->getMorphClass(),
+        'payment_status' => Order::STATUS_PAID,
         'grand_total' => 80, // Maybe an old price
         'tax_total' => 0,
         'created_at' => $date->copy()->subMonths(2),
@@ -61,10 +69,10 @@ it('calculate mrr uses latest paid order minus tax', function () {
     // Subscription is $100.
     // Discount $20 -> $80.
     // Tax $8 -> $88 Total.
-    \Foundry\Models\Order::factory()->create([
+    Order::factory()->create([
         'orderable_id' => $sub->id,
-        'orderable_type' => (new \Foundry\Foundry::$subscriptionModel)->getMorphClass(),
-        'payment_status' => \Foundry\Models\Order::STATUS_PAID,
+        'orderable_type' => (new Foundry::$subscriptionModel)->getMorphClass(),
+        'payment_status' => Order::STATUS_PAID,
         'grand_total' => 88,
         'tax_total' => 8,
         'discount_total' => 20,
@@ -72,7 +80,7 @@ it('calculate mrr uses latest paid order minus tax', function () {
     ]);
 
     // Act
-    $metrics = new \Foundry\Services\Metrics\MetricsService([]);
+    $metrics = new MetricsService([]);
     $mrr = $metrics->only(['mrr'])['mrr']['raw_current'];
 
     // Assert: 88 (grand) - 8 (tax) = 80 per month
@@ -81,26 +89,26 @@ it('calculate mrr uses latest paid order minus tax', function () {
 
 it('calculate mrr normalizes intervals', function () {
     // Arrange
-    $date = \Carbon\Carbon::now();
+    $date = Carbon::now();
 
     // Annual subscription: $1200 / year -> $100 MRR
-    $sub = \Foundry\Models\Subscription::factory()->create([
+    $sub = Subscription::factory()->create([
         'status' => 'active',
         'billing_interval' => 'year',
         'billing_interval_count' => 1,
     ]);
 
-    \Foundry\Models\Order::factory()->create([
+    Order::factory()->create([
         'orderable_id' => $sub->id,
-        'orderable_type' => (new \Foundry\Foundry::$subscriptionModel)->getMorphClass(),
-        'payment_status' => \Foundry\Models\Order::STATUS_PAID,
+        'orderable_type' => (new Foundry::$subscriptionModel)->getMorphClass(),
+        'payment_status' => Order::STATUS_PAID,
         'grand_total' => 1200,
         'tax_total' => 0,
         'created_at' => $date->copy()->subDay(),
     ]);
 
     // Act
-    $metrics = new \Foundry\Services\Metrics\MetricsService([]);
+    $metrics = new MetricsService([]);
     $mrr = $metrics->only(['mrr'])['mrr']['raw_current'];
 
     // Assert
