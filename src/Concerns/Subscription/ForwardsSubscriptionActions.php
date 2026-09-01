@@ -71,9 +71,9 @@ trait ForwardsSubscriptionActions
     /**
      * Renew the subscription.
      */
-    public function renew(): self
+    public function renew(bool $charge = true): self
     {
-        return app(RenewSubscription::class)->execute($this);
+        return app(RenewSubscription::class)->execute($this, $charge);
     }
 
     /**

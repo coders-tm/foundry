@@ -509,3 +509,164 @@ it('renew advances credit resets at', function () {
         'credit_resets_at should have advanced after renewal'
     );
 });
+
+it('early renew extends expires_at for active subscription without resetting credits', function () {
+    Carbon::setTestNow(Carbon::parse('2026-06-01 12:00:00'));
+
+    $user = (\Foundry\Foundry::$subscriptionUserModel)::factory()->create();
+    $plan = (\Foundry\Foundry::$planModel)::factory()->create([
+        'price' => 1000,
+        'interval' => 'month',
+        'interval_count' => 1,
+        'trial_days' => 0,
+    ]);
+
+    $subscription = $user->newSubscription('default', $plan);
+    $subscription->save();
+    $subscription->paymentConfirmation();
+
+    $this->assertTrue($subscription->active());
+    $this->assertTrue($subscription->expires_at->eq(Carbon::parse('2026-07-01 12:00:00')));
+
+    $subscription->renew(false);
+
+    $subscription->refresh();
+    $this->assertTrue($subscription->expires_at->eq(Carbon::parse('2026-08-01 12:00:00')),
+        "expires_at: expected 2026-08-01 12:00:00 got {$subscription->expires_at}"
+    );
+    $this->assertEquals(\Foundry\Contracts\SubscriptionStatus::ACTIVE, $subscription->status);
+});
+
+it('early renew preserves feature usage for active subscription', function () {
+    Carbon::setTestNow(Carbon::parse('2026-06-01 12:00:00'));
+
+    $user = (\Foundry\Foundry::$subscriptionUserModel)::factory()->create();
+    $plan = (\Foundry\Foundry::$planModel)::factory()->create([
+        'price' => 1000,
+        'interval' => 'month',
+        'interval_count' => 1,
+        'trial_days' => 0,
+    ]);
+
+    $subscription = $user->newSubscription('default', $plan);
+    $subscription->save();
+    $subscription->paymentConfirmation();
+
+    $feature = $subscription->features()->create([
+        'slug' => 'api-calls',
+        'label' => 'API Calls',
+        'type' => 'integer',
+        'resetable' => 1,
+        'value' => 1000,
+        'used' => 0,
+    ]);
+
+    $subscription->recordFeatureUsage('api-calls', 500);
+    $this->assertEquals(500, $subscription->getFeatureUsage('api-calls'));
+
+    $subscription->renew(false);
+
+    $subscription->refresh();
+    $this->assertEquals(500, $subscription->getFeatureUsage('api-calls'),
+        'Credits should NOT be reset for active subscription on early renew'
+    );
+});
+
+it('early renew does not advance credit_resets_at for active subscription', function () {
+    Carbon::setTestNow(Carbon::parse('2026-06-01 12:00:00'));
+
+    $user = (\Foundry\Foundry::$subscriptionUserModel)::factory()->create();
+    $plan = (\Foundry\Foundry::$planModel)::factory()->create([
+        'price' => 1000,
+        'interval' => 'month',
+        'interval_count' => 1,
+        'trial_days' => 0,
+    ]);
+
+    $subscription = $user->newSubscription('default', $plan);
+    $subscription->save();
+    $subscription->paymentConfirmation();
+
+    $originalCreditReset = $subscription->credit_resets_at->copy();
+
+    $subscription->renew(false);
+
+    $subscription->refresh();
+    $this->assertTrue(
+        $subscription->credit_resets_at->eq($originalCreditReset),
+        'credit_resets_at should NOT change for active subscription on early renew'
+    );
+});
+
+it('expired subscription renew resets credits and advances credit_resets_at', function () {
+    Carbon::setTestNow(Carbon::parse('2026-06-01 12:00:00'));
+
+    $user = (\Foundry\Foundry::$subscriptionUserModel)::factory()->create();
+    $plan = (\Foundry\Foundry::$planModel)::factory()->create([
+        'price' => 1000,
+        'interval' => 'month',
+        'interval_count' => 1,
+        'trial_days' => 0,
+    ]);
+
+    $subscription = $user->newSubscription('default', $plan);
+    $subscription->save();
+    $subscription->paymentConfirmation();
+
+    $feature = $subscription->features()->create([
+        'slug' => 'api-calls',
+        'label' => 'API Calls',
+        'type' => 'integer',
+        'resetable' => 1,
+        'value' => 1000,
+        'used' => 0,
+    ]);
+
+    $subscription->recordFeatureUsage('api-calls', 500);
+    $originalCreditReset = $subscription->credit_resets_at->copy();
+
+    // Expire the subscription
+    Carbon::setTestNow(Carbon::parse('2026-07-15 12:00:00'));
+    $subscription->update([
+        'status' => \Foundry\Contracts\SubscriptionStatus::EXPIRED,
+        'expires_at' => Carbon::now()->subDay(),
+    ]);
+
+    $this->assertTrue($subscription->fresh()->expired());
+
+    $subscription->renew(false);
+
+    $subscription->refresh();
+    $this->assertEquals(0, $subscription->getFeatureUsage('api-calls'),
+        'Credits should be reset for expired subscription'
+    );
+    $this->assertNotNull($subscription->credit_resets_at);
+    $this->assertTrue(
+        $subscription->credit_resets_at->gt($originalCreditReset),
+        'credit_resets_at should advance after expired renewal'
+    );
+});
+
+it('early renew clears ends_at and trial_ends_at', function () {
+    Carbon::setTestNow(Carbon::parse('2026-06-01 12:00:00'));
+
+    $user = (\Foundry\Foundry::$subscriptionUserModel)::factory()->create();
+    $plan = (\Foundry\Foundry::$planModel)::factory()->create([
+        'price' => 1000,
+        'interval' => 'month',
+        'interval_count' => 1,
+        'trial_days' => 14,
+    ]);
+
+    $subscription = $user->newSubscription('default', $plan);
+    $subscription->save();
+
+    $this->assertTrue($subscription->onTrial());
+    $this->assertNotNull($subscription->trial_ends_at);
+
+    $subscription->renew(false);
+
+    $subscription->refresh();
+    $this->assertNull($subscription->ends_at, 'ends_at should be cleared');
+    $this->assertNull($subscription->trial_ends_at, 'trial_ends_at should be cleared');
+});

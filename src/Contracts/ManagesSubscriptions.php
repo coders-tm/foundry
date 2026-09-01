@@ -77,7 +77,7 @@ interface ManagesSubscriptions
     /**
      * Renew the subscription period.
      */
-    public function renew(): self;
+    public function renew(bool $charge = true): self;
 
     /**
      * Specify the number of days of the trial.

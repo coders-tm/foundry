@@ -15,10 +15,16 @@ class RenewSubscription
     /**
      * Renew subscription period.
      *
+     * @param  bool  $charge  Whether to charge for renewal (true) or advance without charge (false)
+     *
      * @throws \LogicException
      */
-    public function execute(Subscription $subscription): Subscription
+    public function execute(Subscription $subscription, bool $charge = true): Subscription
     {
+        if (! $charge) {
+            return $this->executeNoCharge($subscription);
+        }
+
         $subscription->assertRenewable();
 
         if ($subscription->next_plan) {
@@ -136,6 +142,40 @@ class RenewSubscription
 
             // Dispatch event
             event(new SubscriptionExpired($subscription));
+        }
+
+        return $subscription;
+    }
+
+    /**
+     * Renew subscription without charging (advance renewal / early renew).
+     *
+     * Extends expires_at to the next billing period. If the subscription was already expired,
+     * also resets feature usages and advances credit_resets_at. If still active, credits
+     * and credit_resets_at are preserved unchanged.
+     */
+    protected function executeNoCharge(Subscription $subscription): Subscription
+    {
+        $startDate = $subscription->expires_at ?? Carbon::now();
+        $period = new Period(
+            $subscription->getBillingInterval(),
+            $subscription->getBillingIntervalCount(),
+            $startDate
+        );
+
+        $isExpired = $subscription->expired();
+
+        $subscription->fill([
+            'status' => SubscriptionStatus::ACTIVE,
+            'expires_at' => $period->getEndDate(),
+            'ends_at' => null,
+            'trial_ends_at' => null,
+            'cancels_at' => null,
+        ])->save();
+
+        if ($isExpired) {
+            $subscription->resetUsagesForRenewal();
+            $subscription->advanceCreditResetsAt()->save();
         }
 
         return $subscription;
