@@ -1,7 +1,5 @@
 <?php
 
-namespace Foundry\Tests\Feature;
-
 use Foundry\Contracts\Currencyable;
 use Foundry\Facades\Currency;
 use Foundry\Models\ExchangeRate;
@@ -9,328 +7,270 @@ use Foundry\Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Config;
-use PHPUnit\Framework\Attributes\Test;
 
-class CurrencyInitializeTest extends TestCase
-{
-    use RefreshDatabase;
+uses(TestCase::class)->use(RefreshDatabase::class);
 
-    protected function setUp(): void
+beforeEach(function () {
+    Config::set('app.currency', 'USD');
+
+    ExchangeRate::updateOrCreate(['currency' => 'EUR'], ['rate' => 0.85]);
+    ExchangeRate::updateOrCreate(['currency' => 'GBP'], ['rate' => 0.73]);
+});
+
+it('initializes with valid currency', function () {
+    Currency::initialize('EUR');
+
+    expect(Currency::code())->toBe('EUR');
+    expect(Currency::rate())->toBe(0.85);
+});
+
+it('initializes with invalid currency falls back to base', function () {
+    Currency::initialize('ZZZ');
+
+    expect(Currency::code())->toBe('USD');
+    expect(Currency::rate())->toBe(1.0);
+});
+
+it('initializes with base currency', function () {
+    Currency::initialize('USD');
+
+    expect(Currency::code())->toBe('USD');
+    expect(Currency::rate())->toBe(1.0);
+});
+
+it('initializes without parameter uses base', function () {
+    Currency::initialize();
+
+    expect(Currency::code())->toBe('USD');
+    expect(Currency::rate())->toBe(1.0);
+});
+
+it('revert returns to base currency', function () {
+    Currency::initialize('EUR');
+    expect(Currency::code())->toBe('EUR');
+
+    Currency::revert();
+
+    expect(Currency::code())->toBe('USD');
+    expect(Currency::rate())->toBe(1.0);
+});
+
+it('initializes case insensitively', function () {
+    Currency::initialize('eur');
+
+    expect(Currency::code())->toBe('EUR');
+    expect(Currency::rate())->toBe(0.85);
+});
+
+it('initializes chainable', function () {
+    $result = Currency::initialize('GBP');
+
+    expect($result)->toBeInstanceOf(\Foundry\Services\Currency::class);
+    expect(Currency::code())->toBe('GBP');
+});
+
+it('converts amounts', function () {
+    Currency::initialize('EUR');
+
+    expect(Currency::convert(100))->toBe(85.0);
+});
+
+it('checks is base', function () {
+    expect(Currency::isBase())->toBeTrue();
+
+    Currency::initialize('EUR');
+    expect(Currency::isBase())->toBeFalse();
+
+    Currency::revert();
+    expect(Currency::isBase())->toBeTrue();
+});
+
+it('formats amounts', function () {
+    Currency::initialize('EUR');
+
+    $formatted = Currency::format(100);
+
+    expect($formatted)->toBeString();
+    expect($formatted)->toContain('85');
+});
+
+it('converts array with single field', function () {
+    Currency::initialize('EUR');
+
+    $data = new class
     {
-        parent::setUp();
+        public $id = 1;
 
-        Config::set('app.currency', 'USD');
+        public $name = 'Test Product';
 
-        // Create some exchange rates
-        ExchangeRate::updateOrCreate(['currency' => 'EUR'], ['rate' => 0.85]);
-        ExchangeRate::updateOrCreate(['currency' => 'GBP'], ['rate' => 0.73]);
-    }
+        public $price = 100;
 
-    #[Test]
-    public function test_initialize_with_valid_currency()
+        public function toArray()
+        {
+            return [
+                'id' => $this->id,
+                'name' => $this->name,
+                'price' => $this->price,
+            ];
+        }
+    };
+
+    $result = Currency::toArray($data, ['price']);
+
+    expect($result)->toBeArray();
+    expect($result)->toHaveKeys(['id', 'name', 'price', 'currency']);
+    expect($result['id'])->toBe(1);
+    expect($result['name'])->toBe('Test Product');
+    expect($result['price'])->toBe(85.0);
+    expect($result['currency'])->toBe('EUR');
+});
+
+it('converts array with multiple fields', function () {
+    Currency::initialize('GBP');
+
+    $data = new class
     {
-        Currency::initialize('EUR');
+        public $id = 1;
 
-        $this->assertEquals('EUR', Currency::code());
-        $this->assertEquals(0.85, Currency::rate());
-    }
+        public $price = 100;
 
-    #[Test]
-    public function test_initialize_with_invalid_currency_falls_back_to_base()
+        public $discount = 20;
+
+        public $total = 80;
+
+        public function toArray()
+        {
+            return [
+                'id' => $this->id,
+                'price' => $this->price,
+                'discount' => $this->discount,
+                'total' => $this->total,
+            ];
+        }
+    };
+
+    $result = Currency::toArray($data, ['price', 'discount', 'total']);
+
+    expect($result)->toHaveKeys(['id', 'price', 'discount', 'total', 'currency']);
+    expect($result['id'])->toBe(1);
+    expect($result['price'])->toBe(73.0);
+    expect($result['discount'])->toBe(14.6);
+    expect($result['total'])->toBe(58.4);
+    expect($result['currency'])->toBe('GBP');
+});
+
+it('converts array with model', function () {
+    Currency::initialize('EUR');
+
+    $model = new class
     {
-        // Try to initialize with non-existent currency
-        Currency::initialize('ZZZ');
+        public $id = 123;
 
-        // Should fallback to base currency (USD)
-        $this->assertEquals('USD', Currency::code());
-        $this->assertEquals(1.0, Currency::rate());
-    }
+        public $price = 100;
 
-    #[Test]
-    public function test_initialize_with_base_currency()
+        public $sale_price = 80;
+
+        public function toArray()
+        {
+            return [
+                'id' => $this->id,
+                'price' => $this->price,
+                'sale_price' => $this->sale_price,
+            ];
+        }
+    };
+
+    $result = Currency::toArray($model, ['price', 'sale_price']);
+
+    expect($result)->toHaveKeys(['id', 'price', 'sale_price', 'currency']);
+    expect($result['id'])->toBe(123);
+    expect($result['price'])->toBe(85.0);
+    expect($result['sale_price'])->toBe(68.0);
+    expect($result['currency'])->toBe('EUR');
+});
+
+it('transforms currencyable model', function () {
+    Currency::initialize('EUR');
+
+    $model = new class implements Currencyable
     {
-        Currency::initialize('USD');
+        public $id = 1;
 
-        $this->assertEquals('USD', Currency::code());
-        $this->assertEquals(1.0, Currency::rate());
-    }
+        public $name = 'Premium Plan';
 
-    #[Test]
-    public function test_initialize_without_parameter_uses_base()
-    {
-        Currency::initialize();
+        public $price = 100;
 
-        $this->assertEquals('USD', Currency::code());
-        $this->assertEquals(1.0, Currency::rate());
-    }
+        public $freeze_fee = 10;
 
-    #[Test]
-    public function test_revert_returns_to_base_currency()
-    {
-        // First set to EUR
-        Currency::initialize('EUR');
-        $this->assertEquals('EUR', Currency::code());
+        public function toArray()
+        {
+            return [
+                'id' => $this->id,
+                'name' => $this->name,
+                'price' => $this->price,
+                'freeze_fee' => $this->freeze_fee,
+            ];
+        }
 
-        // Then revert to base
-        Currency::revert();
+        public function getCurrencyFields(): array
+        {
+            return ['price', 'freeze_fee'];
+        }
+    };
 
-        $this->assertEquals('USD', Currency::code());
-        $this->assertEquals(1.0, Currency::rate());
-    }
+    $result = Currency::transform($model);
 
-    #[Test]
-    public function test_initialize_is_case_insensitive()
-    {
-        Currency::initialize('eur');
+    expect($result)->toBeArray();
+    expect($result['id'])->toBe(1);
+    expect($result['name'])->toBe('Premium Plan');
+    expect($result['price'])->toBe(85.0);
+    expect($result['freeze_fee'])->toBe(8.5);
+    expect($result['currency'])->toBe('EUR');
+});
 
-        $this->assertEquals('EUR', Currency::code());
-        $this->assertEquals(0.85, Currency::rate());
-    }
+it('transforms collection', function () {
+    Currency::initialize('GBP');
 
-    #[Test]
-    public function test_initialize_chainable()
-    {
-        $result = Currency::initialize('GBP');
-
-        // Should return the service instance (chainable)
-        $this->assertInstanceOf(\Foundry\Services\Currency::class, $result);
-        $this->assertEquals('GBP', Currency::code());
-    }
-
-    #[Test]
-    public function test_convert_method()
-    {
-        Currency::initialize('EUR');
-
-        // 100 USD * 0.85 = 85 EUR
-        $this->assertEquals(85.0, Currency::convert(100));
-    }
-
-    #[Test]
-    public function test_is_base_method()
-    {
-        // Default is base currency
-        $this->assertTrue(Currency::isBase());
-
-        // After initializing to different currency
-        Currency::initialize('EUR');
-        $this->assertFalse(Currency::isBase());
-
-        // After reverting
-        Currency::revert();
-        $this->assertTrue(Currency::isBase());
-    }
-
-    #[Test]
-    public function test_format_method()
-    {
-        Currency::initialize('EUR');
-
-        $formatted = Currency::format(100);
-        // Should contain the converted amount formatted
-        $this->assertIsString($formatted);
-        $this->assertStringContainsString('85', $formatted);
-    }
-
-    #[Test]
-    public function test_to_array_with_single_field()
-    {
-        Currency::initialize('EUR');
-
-        // Create a mock model with toArray() method
-        $data = new class
+    $collection = collect([
+        new class implements Currencyable
         {
             public $id = 1;
 
-            public $name = 'Test Product';
-
             public $price = 100;
 
             public function toArray()
             {
-                return [
-                    'id' => $this->id,
-                    'name' => $this->name,
-                    'price' => $this->price,
-                ];
-            }
-        };
-
-        $result = Currency::toArray($data, ['price']);
-
-        $this->assertIsArray($result);
-        $this->assertArrayHasKey('id', $result);
-        $this->assertArrayHasKey('name', $result);
-        $this->assertArrayHasKey('price', $result);
-        $this->assertArrayHasKey('currency', $result);
-        $this->assertEquals(1, $result['id']);
-        $this->assertEquals('Test Product', $result['name']);
-        $this->assertEquals(85.0, $result['price']); // 100 * 0.85 (converted)
-        $this->assertEquals('EUR', $result['currency']);
-    }
-
-    #[Test]
-    public function test_to_array_with_multiple_fields()
-    {
-        Currency::initialize('GBP');
-
-        $data = new class
-        {
-            public $id = 1;
-
-            public $price = 100;
-
-            public $discount = 20;
-
-            public $total = 80;
-
-            public function toArray()
-            {
-                return [
-                    'id' => $this->id,
-                    'price' => $this->price,
-                    'discount' => $this->discount,
-                    'total' => $this->total,
-                ];
-            }
-        };
-
-        $result = Currency::toArray($data, ['price', 'discount', 'total']);
-
-        $this->assertArrayHasKey('id', $result);
-        $this->assertArrayHasKey('price', $result);
-        $this->assertArrayHasKey('discount', $result);
-        $this->assertArrayHasKey('total', $result);
-        $this->assertArrayHasKey('currency', $result);
-
-        $this->assertEquals(1, $result['id']);
-        $this->assertEquals(73.0, $result['price']); // 100 * 0.73
-        $this->assertEquals(14.6, $result['discount']); // 20 * 0.73
-        $this->assertEquals(58.4, $result['total']); // 80 * 0.73
-        $this->assertEquals('GBP', $result['currency']);
-    }
-
-    #[Test]
-    public function test_to_array_with_model()
-    {
-        Currency::initialize('EUR');
-
-        // Create a simple mock model
-        $model = new class
-        {
-            public $id = 123;
-
-            public $price = 100;
-
-            public $sale_price = 80;
-
-            public function toArray()
-            {
-                return [
-                    'id' => $this->id,
-                    'price' => $this->price,
-                    'sale_price' => $this->sale_price,
-                ];
-            }
-        };
-
-        $result = Currency::toArray($model, ['price', 'sale_price']);
-
-        $this->assertArrayHasKey('id', $result);
-        $this->assertEquals(123, $result['id']);
-        $this->assertEquals(85.0, $result['price']);
-        $this->assertEquals(68.0, $result['sale_price']);
-        $this->assertEquals('EUR', $result['currency']);
-    }
-
-    #[Test]
-    public function test_transform_with_currencyable_model()
-    {
-        Currency::initialize('EUR');
-
-        // Create a mock Currencyable model
-        $model = new class implements Currencyable
-        {
-            public $id = 1;
-
-            public $name = 'Premium Plan';
-
-            public $price = 100;
-
-            public $freeze_fee = 10;
-
-            public function toArray()
-            {
-                return [
-                    'id' => $this->id,
-                    'name' => $this->name,
-                    'price' => $this->price,
-                    'freeze_fee' => $this->freeze_fee,
-                ];
+                return ['id' => $this->id, 'price' => $this->price];
             }
 
             public function getCurrencyFields(): array
             {
-                return ['price', 'freeze_fee'];
+                return ['price'];
             }
-        };
+        },
+        new class implements Currencyable
+        {
+            public $id = 2;
 
-        $result = Currency::transform($model);
+            public $price = 200;
 
-        $this->assertIsArray($result);
-        $this->assertEquals(1, $result['id']);
-        $this->assertEquals('Premium Plan', $result['name']);
-        $this->assertEquals(85.0, $result['price']); // 100 * 0.85
-        $this->assertEquals(8.5, $result['freeze_fee']); // 10 * 0.85
-        $this->assertEquals('EUR', $result['currency']);
-    }
-
-    #[Test]
-    public function test_transform_with_collection()
-    {
-        Currency::initialize('GBP');
-
-        $collection = collect([
-            new class implements Currencyable
+            public function toArray()
             {
-                public $id = 1;
+                return ['id' => $this->id, 'price' => $this->price];
+            }
 
-                public $price = 100;
-
-                public function toArray()
-                {
-                    return ['id' => $this->id, 'price' => $this->price];
-                }
-
-                public function getCurrencyFields(): array
-                {
-                    return ['price'];
-                }
-            },
-            new class implements Currencyable
+            public function getCurrencyFields(): array
             {
-                public $id = 2;
+                return ['price'];
+            }
+        },
+    ]);
 
-                public $price = 200;
+    $result = Currency::transform($collection);
 
-                public function toArray()
-                {
-                    return ['id' => $this->id, 'price' => $this->price];
-                }
-
-                public function getCurrencyFields(): array
-                {
-                    return ['price'];
-                }
-            },
-        ]);
-
-        $result = Currency::transform($collection);
-
-        $this->assertInstanceOf(Collection::class, $result);
-        $this->assertCount(2, $result);
-        $this->assertEquals(73.0, $result[0]['price']); // 100 * 0.73
-        $this->assertEquals(146.0, $result[1]['price']); // 200 * 0.73
-        $this->assertEquals('GBP', $result[0]['currency']);
-    }
-}
+    expect($result)->toBeInstanceOf(Collection::class);
+    expect($result)->toHaveCount(2);
+    expect($result[0]['price'])->toBe(73.0);
+    expect($result[1]['price'])->toBe(146.0);
+    expect($result[0]['currency'])->toBe('GBP');
+});
