@@ -21,7 +21,7 @@ class ResetSubscriptionsUsages extends Command
      *
      * @var string
      */
-    protected $description = 'Rest the subscription usages when it is active';
+    protected $description = 'Reset the subscription usages for credit reset schedules';
 
     /**
      * Execute the console command.
@@ -30,24 +30,26 @@ class ResetSubscriptionsUsages extends Command
      */
     public function handle()
     {
-        $subscriptions = Foundry::$subscriptionModel::query()
+        $creditResetSubscriptions = Foundry::$subscriptionModel::query()
             ->active()
-            ->where('expires_at', '<=', now());
+            ->whereNotNull('credit_resets_at')
+            ->where('credit_resets_at', '<=', now())
+            ->where('expires_at', '>', now());
 
-        foreach ($subscriptions->cursor() as $subscription) {
+        foreach ($creditResetSubscriptions->cursor() as $subscription) {
             try {
-                event(new ResetFeatureUsages($subscription, $subscription->usagesToArray()));
+                $this->resetSubscriptionUsages($subscription);
 
-                $subscription->resetUsages();
+                $subscription->advanceCreditResetsAt()->save();
 
                 $subscription->logs()->create([
-                    'type' => 'usages-reset',
-                    'message' => 'Usages has been reset successfully!',
+                    'type' => 'credit-reset',
+                    'message' => 'Credit usage has been reset and next reset date advanced.',
                 ]);
 
-                $this->info("Usages of subscription #{$subscription->id} has been reset!");
+                $this->info("Credit usage of subscription #{$subscription->id} has been reset!");
             } catch (\Throwable $e) {
-                $message = "Usages of subscription #{$subscription->id} unable to reset! {$e->getMessage()}";
+                $message = "Subscription #{$subscription->id} unable to reset credits! {$e->getMessage()}";
 
                 $subscription->logs()->create([
                     'type' => 'usages-reset',
@@ -60,5 +62,22 @@ class ResetSubscriptionsUsages extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Reset usages for a subscription and dispatch event.
+     */
+    protected function resetSubscriptionUsages($subscription): void
+    {
+        event(new ResetFeatureUsages($subscription, $subscription->usagesToArray()));
+
+        $subscription->resetUsages();
+
+        $subscription->logs()->create([
+            'type' => 'usages-reset',
+            'message' => 'Usages has been reset successfully!',
+        ]);
+
+        $this->info("Usages of subscription #{$subscription->id} has been reset!");
     }
 }

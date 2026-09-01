@@ -58,7 +58,14 @@ trait ManagesSubscriptions
             $billingStartDate
         );
 
-        return new Foundry::$subscriptionModel([
+        $creditStartDate = $isTrial ? $billingStartDate : ($period->getStartDate() ?? now());
+        $creditPeriod = new Period(
+            $plan->interval->value,
+            $plan->interval_count,
+            $creditStartDate
+        );
+
+        $subscription = new Foundry::$subscriptionModel([
             'type' => $type,
             'plan_id' => $plan->getKey(),
             'status' => $isTrial ? SubscriptionStatus::TRIALING : SubscriptionStatus::PENDING,
@@ -69,6 +76,10 @@ trait ManagesSubscriptions
             'billing_interval_count' => $plan->interval_count,
             $this->getForeignKey() => $this->getKey(),
         ]);
+
+        $subscription->credit_resets_at = $creditPeriod->getEndDate();
+
+        return $subscription;
     }
 
     /**
