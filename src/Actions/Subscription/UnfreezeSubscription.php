@@ -21,9 +21,9 @@ class UnfreezeSubscription
         // Calculate freeze duration for logging
         $freezeDuration = $subscription->frozen_at->diffInDays(now());
 
-        // Extend contract end date if this is a contract subscription
-        if ($subscription->isContract() && $subscription->total_cycles) {
-            $this->extendContractForFreeze($subscription, $freezeDuration);
+        // Extend expires_at to compensate for the freeze period
+        if ($subscription->expires_at) {
+            $subscription->expires_at = $subscription->expires_at->addDays($freezeDuration);
         }
 
         // Reactivate subscription
@@ -39,22 +39,5 @@ class UnfreezeSubscription
         ]);
 
         return $subscription;
-    }
-
-    /**
-     * Extend contract end date to compensate for freeze period.
-     *
-     * @param  int  $freezeDays  Number of days the subscription was frozen
-     */
-    protected function extendContractForFreeze(Subscription $subscription, int $freezeDays): void
-    {
-        if (! $subscription->expires_at) {
-            return;
-        }
-
-        // Extend expires_at by the freeze duration
-        $subscription->expires_at = $subscription->expires_at->addDays($freezeDays);
-
-        // Note: We don't save here as the calling method will save
     }
 }

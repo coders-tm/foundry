@@ -62,15 +62,13 @@ class SubscriptionFreezeTest extends TestCase
         $this->assertNull($subscription->freeze_fee);
     }
 
-    public function test_freeze_extends_contract_end_date()
+    public function test_freeze_extends_expires_at()
     {
-        // Create contract plan
+        // Create plan
         $plan = Plan::factory()->create([
             'price' => 10000,
             'interval' => 'month',
             'interval_count' => 1,
-            'is_contract' => true,
-            'contract_cycles' => 12,
         ]);
 
         $user = User::factory()->create();
@@ -97,11 +95,11 @@ class SubscriptionFreezeTest extends TestCase
         // Unfreeze
         $subscription->unfreeze();
 
-        // Contract end should be extended by 60 days
+        // expires_at should be extended by 60 days
         $this->assertEquals(
             $originalExpiresAt->addDays(60)->format('Y-m-d'),
             $subscription->expires_at->format('Y-m-d'),
-            'Contract end date should be extended by freeze duration'
+            'expires_at should be extended by freeze duration'
         );
     }
 

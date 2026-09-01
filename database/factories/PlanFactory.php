@@ -31,25 +31,12 @@ class PlanFactory extends Factory
             'default_interval' => $interval,
             'interval' => $interval,
             'interval_count' => $this->faker->numberBetween(1, 12),
-            'is_contract' => false, // Default to non-contract
-            'contract_cycles' => null, // Null = unlimited for non-contract plans
             'allow_freeze' => true, // Default to allowing freeze
             'freeze_fee' => null, // Null = use global config
             'grace_period_days' => 0, // Default: no grace period (expires immediately)
             'price' => $this->faker->randomFloat(2, 10, 1000),
             'trial_days' => $this->faker->numberBetween(0, 30),
         ];
-    }
-
-    /**
-     * Indicate that the plan is a contract plan with a specific number of cycles.
-     */
-    public function contract(int $contractCycles = 12): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'is_contract' => true,
-            'contract_cycles' => $contractCycles,
-        ]);
     }
 
     /**

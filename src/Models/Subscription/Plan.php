@@ -30,8 +30,6 @@ class Plan extends Model implements Currencyable
         'default_interval',
         'interval',
         'interval_count',
-        'is_contract',
-        'contract_cycles',
         'allow_freeze',
         'freeze_fee',
         'grace_period_days',
@@ -51,10 +49,8 @@ class Plan extends Model implements Currencyable
 
     protected $casts = [
         'is_active' => 'boolean',
-        'is_contract' => 'boolean',
         'allow_freeze' => 'boolean',
         'interval_count' => 'integer',
-        'contract_cycles' => 'integer',
         'trial_days' => 'integer',
         'grace_period_days' => 'integer',
         'freeze_fee' => 'decimal:2',
@@ -87,40 +83,6 @@ class Plan extends Model implements Currencyable
         );
 
         return $period->getEndDate();
-    }
-
-    /**
-     * Calculate the contract end date from a given start date
-     */
-    public function getContractEndDate(?Carbon $dateFrom = null): Carbon
-    {
-        $period = new Period(
-            $this->interval->value,
-            $this->interval_count,
-            $dateFrom ?? now()
-        );
-
-        return $period->getEndDate();
-    }
-
-    /**
-     * Calculate total billing cycles for the contract
-     */
-    public function getTotalBillingCycles(): ?int
-    {
-        if (! $this->is_contract) {
-            return null; // Unlimited cycles for non-contract plans
-        }
-
-        return $this->contract_cycles;
-    }
-
-    /**
-     * Check if this is a contract plan
-     */
-    public function isContract(): bool
-    {
-        return $this->is_contract;
     }
 
     protected function featureLines(): Attribute

@@ -14,7 +14,6 @@ return new class extends Migration
         Schema::create('subscriptions', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('type');
-            $table->string('provider')->nullable()->index();
             $table->boolean('auto_renewal_enabled')->default(false);
             $table->integer('quantity')->nullable();
             $table->foreignUuid('user_id')->nullable();
@@ -24,8 +23,6 @@ return new class extends Migration
             $table->json('metadata')->nullable();
             $table->string('billing_interval')->nullable()->comment('Billing cycle frequency (day, week, month, year)');
             $table->unsignedInteger('billing_interval_count')->nullable()->comment('Billing interval count (e.g., 2 for bi-weekly)');
-            $table->unsignedInteger('total_cycles')->nullable()->comment('Total number of billing cycles for contract');
-            $table->unsignedInteger('current_cycle')->default(0)->comment('Current billing cycle number');
             $table->string('status')->nullable()->index();
             $table->boolean('is_downgrade')->default(false);
             $table->timestamp('trial_ends_at')->nullable();

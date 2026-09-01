@@ -46,8 +46,6 @@ class SwapSubscriptionPlan
             'canceled_at' => null,
             'billing_interval' => $newPlan->interval->value,
             'billing_interval_count' => $newPlan->interval_count,
-            'total_cycles' => $newPlan->contract_cycles,
-            'current_cycle' => 0, // Reset cycle counter when swapping plans
         ])->save();
 
         // Sync features from the new plan (this will also reset usage)

@@ -51,22 +51,7 @@ class RenewSubscription
             $startDate
         );
 
-        // Check if this renewal would exceed contract end date for contract plans
         $newExpiresAt = $period->getEndDate();
-        if ($subscription->isContract()) {
-            // Calculate the actual contract end date from the original start
-            $contractPeriod = new Period(
-                $subscription->plan->interval->value,
-                $subscription->plan->interval_count,
-                $subscription->created_at ?? $subscription->starts_at
-            );
-            $contractEndDate = $contractPeriod->getEndDate();
-
-            // If the new billing period would exceed contract end, cap it at contract end
-            if ($newExpiresAt->gt($contractEndDate)) {
-                $newExpiresAt = $contractEndDate;
-            }
-        }
 
         // Calculate grace period end date from NOW (not from the new expires_at)
         // The grace period starts now since payment is due now
@@ -180,7 +165,6 @@ class RenewSubscription
                 'subscription_id' => $subscription->id,
                 'plan_id' => $subscription->plan_id,
                 'invoice_id' => $invoice->id,
-                'cycle' => $subscription->current_cycle,
             ]
         );
 

@@ -113,7 +113,6 @@ class SubscriptionController extends Controller
 
         $upgrade = $downgrade = false;
         $paymentMethod = PaymentMethod::find($request->payment_method);
-        $provider = $paymentMethod?->provider;
 
         if ($request->filled('subscription')) {
             $subscription = Subscription::find($request->subscription);
@@ -153,8 +152,7 @@ class SubscriptionController extends Controller
                 }
             } else {
                 $subscription = $user->newSubscription('default', $plan->id)
-                    ->withCoupon($request->promotion_code)
-                    ->setProvider($provider);
+                    ->withCoupon($request->promotion_code);
 
                 if ($trial_end && $trial_end->isFuture()) {
                     $subscription->trialUntil($trial_end);
@@ -366,13 +364,6 @@ class SubscriptionController extends Controller
         // Check access for users
         if (is_user()) {
             $this->assertUserSubscriptionAccess($subscription);
-
-            // Users cannot cancel contracts
-            if ($subscription->isContract()) {
-                throw ValidationException::withMessages([
-                    'subscription' => __('Contract subscriptions cannot be cancelled until the end of their term. Please contact support for assistance.'),
-                ]);
-            }
         }
 
         if ($request->input('immediately', false)) {

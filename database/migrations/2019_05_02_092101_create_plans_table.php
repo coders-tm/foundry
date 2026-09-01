@@ -25,8 +25,6 @@ return new class extends Migration
             $table->string('default_interval')->default('month');
             $table->string('interval')->default('month')->index();
             $table->unsignedInteger('interval_count')->default(1);
-            $table->boolean('is_contract')->default(false)->comment('Whether this is a contract plan requiring multiple billing cycles');
-            $table->unsignedInteger('contract_cycles')->nullable()->comment('Total number of billing cycles required for contract (null = unlimited)');
             $table->boolean('allow_freeze')->default(true)->comment('Whether this plan allows membership freeze');
             $table->double('freeze_fee', 10, 2)->nullable()->comment('Fee charged per billing cycle during freeze (null = use global config)');
             $table->unsignedInteger('grace_period_days')->default(0)->comment('Number of grace period days before subscription expires after non-payment (0 = expires immediately)');

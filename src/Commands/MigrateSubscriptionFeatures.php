@@ -201,8 +201,6 @@ class MigrateSubscriptionFeatures extends Command
             return false;
         }
 
-        $updated = false;
-
         // Only migrate if subscription doesn't already have billing intervals set
         if (is_null($subscription->billing_interval)) {
             $plan = $subscription->plan;
@@ -210,20 +208,13 @@ class MigrateSubscriptionFeatures extends Command
             // Set billing intervals from plan's interval
             $subscription->billing_interval = $plan->interval->value;
             $subscription->billing_interval_count = $plan->interval_count;
-            $updated = true;
 
-            // Initialize contract cycles if plan is a contract
-            if ($plan->is_contract && is_null($subscription->total_cycles)) {
-                $subscription->total_cycles = $plan->contract_cycles;
-                $updated = true;
-            }
+            $subscription->save();
 
-            if ($updated) {
-                $subscription->save();
-            }
+            return true;
         }
 
-        return $updated;
+        return false;
     }
 
     /**

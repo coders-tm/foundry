@@ -264,40 +264,6 @@ class SubscriptionMetrics extends MetricsCalculator
     }
 
     /**
-     * Get subscriptions with active contracts
-     */
-    public function getContractCount(): int
-    {
-        return $this->remember('contract_count', function () {
-            $range = $this->getDateRange();
-
-            return Foundry::$subscriptionModel::query()
-                ->whereNotNull('total_cycles')
-                ->where('total_cycles', '>', 0)
-                ->when(true, fn ($q) => $this->applyActiveSubscriptionFilter($q, $range['end']))
-                ->count();
-        });
-    }
-
-    /**
-     * Get subscriptions with contracts ending in next 30 days
-     */
-    public function getContractsEndingSoon(): int
-    {
-        return $this->remember('contracts_ending_soon', function () {
-            $range = $this->getDateRange();
-            $next30Days = $range['end']->copy()->addDays(30);
-
-            return Foundry::$subscriptionModel::query()
-                ->whereNotNull('total_cycles')
-                ->where('total_cycles', '>', 0)
-                ->whereNotNull('expires_at')
-                ->whereBetween('expires_at', [$range['end'], $next30Days])
-                ->count();
-        });
-    }
-
-    /**
      * Get renewal forecast for next 30 days
      */
     public function getRenewalForecast(): array
@@ -465,8 +431,6 @@ class SubscriptionMetrics extends MetricsCalculator
             'growth_rate' => fn () => $this->getGrowthRate(),
             'frozen_count' => fn () => $this->getFrozenCount(),
             'pending_release_count' => fn () => $this->getPendingReleaseCount(),
-            'contract_count' => fn () => $this->getContractCount(),
-            'contracts_ending_soon' => fn () => $this->getContractsEndingSoon(),
             'renewal_forecast' => fn () => $this->getRenewalForecast(),
             'plan_changes' => fn () => $this->getPlanChangeMetrics(),
             'expiring_today' => fn () => $this->getExpiringTodayCount(),

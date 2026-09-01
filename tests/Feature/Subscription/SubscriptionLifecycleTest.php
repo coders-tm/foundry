@@ -426,32 +426,6 @@ class SubscriptionLifecycleTest extends TestCase
     }
 
     /**
-     * Test cannot renew subscription that has reached contract limit.
-     */
-    public function test_cannot_renew_beyond_contract_cycles()
-    {
-        $user = (Foundry::$subscriptionUserModel)::factory()->create();
-        $plan = (Foundry::$planModel)::factory()->create(['price' => 1000, 'trial_days' => 0]);
-
-        $subscription = $user->newSubscription('default', $plan->id)
-            ->contractCycles(1)
-            ->saveAndInvoice([], true);
-
-        $subscription->paymentConfirmation();
-        $subscription->renew(); // Completes contract and cancels
-
-        // Verify it's canceled
-        $this->assertEquals(SubscriptionStatus::CANCELED, $subscription->status);
-        $this->assertTrue($subscription->contractComplete());
-
-        // Try to renew again - should throw exception because it's ended
-        $this->expectException(\LogicException::class);
-        $this->expectExceptionMessage('Unable to renew canceled ended subscription');
-
-        $subscription->renew();
-    }
-
-    /**
      * Test renewing a subscription clears the trial_ends_at date.
      */
     public function test_renew_clears_trial_ends_at()
@@ -576,12 +550,10 @@ class SubscriptionLifecycleTest extends TestCase
             'interval_count' => 1,
             'price' => 1000,
         ]);
-        $quarterlyContractPlan = (Foundry::$planModel)::factory()->create([
+        $quarterlyPlan = (Foundry::$planModel)::factory()->create([
             'interval' => 'month',
             'interval_count' => 3,
             'price' => 2500,
-            'is_contract' => true,
-            'contract_cycles' => 4,
         ]);
         $user = (Foundry::$subscriptionUserModel)::factory()->create();
 
@@ -591,15 +563,13 @@ class SubscriptionLifecycleTest extends TestCase
             'plan_id' => $monthlyPlan->id,
             'billing_interval' => 'month',
             'billing_interval_count' => 1,
-            'total_cycles' => null,
-            'current_cycle' => 3,
             'status' => SubscriptionStatus::ACTIVE,
             'starts_at' => Carbon::parse('2025-01-01'),
             'expires_at' => Carbon::parse('2025-04-01'),
         ]);
         $subscription->save();
 
-        $subscription->next_plan = $quarterlyContractPlan->id;
+        $subscription->next_plan = $quarterlyPlan->id;
         $subscription->is_downgrade = true;
         $subscription->save();
 
@@ -608,9 +578,7 @@ class SubscriptionLifecycleTest extends TestCase
 
         $this->assertEquals('month', $subscription->billing_interval);
         $this->assertEquals(3, $subscription->billing_interval_count);
-        $this->assertEquals(4, $subscription->total_cycles);
-        $this->assertEquals(1, $subscription->current_cycle);
-        $this->assertEquals($quarterlyContractPlan->id, $subscription->plan_id);
+        $this->assertEquals($quarterlyPlan->id, $subscription->plan_id);
 
         $expectedExpiresAt = Carbon::parse('2025-04-01')->addMonths(3);
         $this->assertEquals($expectedExpiresAt->format('Y-m-d'), $subscription->expires_at->format('Y-m-d'));

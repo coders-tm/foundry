@@ -48,14 +48,11 @@ class Subscription extends Model implements ManagesSubscriptions, SubscriptionSt
         'canceled_at',
         'frozen_at',
         'release_at',
-        'provider',
         'metadata',
         'is_downgrade',
         'is_free_forever',
         'billing_interval',
         'billing_interval_count',
-        'total_cycles',
-        'current_cycle',
         'auto_renewal_enabled',
         'latest_order_id',
     ];
@@ -81,8 +78,6 @@ class Subscription extends Model implements ManagesSubscriptions, SubscriptionSt
         'metadata' => 'json',
         'is_free_forever' => 'boolean',
         'billing_interval_count' => 'integer',
-        'total_cycles' => 'integer',
-        'current_cycle' => 'integer',
         'auto_renewal_enabled' => 'boolean',
     ];
 
@@ -146,19 +141,6 @@ class Subscription extends Model implements ManagesSubscriptions, SubscriptionSt
     }
 
     /**
-     * Set the payment provider for the subscription.
-     *
-     * @param  string  $provider
-     * @return $this
-     */
-    public function setProvider($provider)
-    {
-        $this->provider = $provider;
-
-        return $this;
-    }
-
-    /**
      * Set the status for the subscription.
      *
      * @param  string  $status
@@ -198,15 +180,6 @@ class Subscription extends Model implements ManagesSubscriptions, SubscriptionSt
         $this->generateInvoice(true, $force);
 
         return $this;
-    }
-
-    /**
-     * Check if this subscription is contract-based.
-     * A subscription is considered contract-based when it has a defined total_cycles.
-     */
-    public function isContractBased(): bool
-    {
-        return ! is_null($this->total_cycles) && $this->total_cycles > 0;
     }
 
     /**
@@ -475,29 +448,7 @@ class Subscription extends Model implements ManagesSubscriptions, SubscriptionSt
             'billing_interval_count' => $count,
         ]);
 
-        if ($this->plan?->isContract() && is_null($this->total_cycles)) {
-            $this->total_cycles = $this->plan->contract_cycles;
-            $this->current_cycle = 0;
-        }
-
         return $this;
-    }
-
-    public function contractCycles(?int $cycles): self
-    {
-        $this->total_cycles = $cycles;
-        $this->current_cycle = 0;
-
-        return $this;
-    }
-
-    public function contractComplete(): bool
-    {
-        if (! $this->total_cycles) {
-            return false;
-        }
-
-        return $this->current_cycle >= $this->total_cycles;
     }
 
     public function setPeriodFromDate(Carbon $dateFrom): self
@@ -528,11 +479,6 @@ class Subscription extends Model implements ManagesSubscriptions, SubscriptionSt
     public function getBillingIntervalCount(): int
     {
         return $this->billing_interval_count ?? $this->plan?->interval_count ?? 1;
-    }
-
-    public function isContract(): bool
-    {
-        return $this->plan && $this->plan->isContract();
     }
 
     public function setStartsAt($date): self

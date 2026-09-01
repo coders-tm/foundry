@@ -25,7 +25,6 @@ class SubscriptionsRenew extends Command
      * This command handles subscription renewals which includes:
      * - Generating invoices for the next billing cycle
      * - Resetting feature usages (credits) based on billing interval
-     * - Tracking contract cycles for contract-based plans
      * - Setting grace periods for payment
      *
      * @var string
@@ -73,7 +72,6 @@ class SubscriptionsRenew extends Command
                 // 1. Resets feature usages (credits reset on each billing cycle)
                 // 2. Generates invoice for next period
                 // 3. Updates subscription dates based on billing interval
-                // 4. Tracks billing cycles for contract plans
                 $subscription->renew();
 
                 // Dispatch the SubscriptionRenewed event
@@ -82,15 +80,13 @@ class SubscriptionsRenew extends Command
                 // Dispatch the ResetFeatureUsages event (for notification purposes)
                 event(new ResetFeatureUsages($subscription, $usagesBeforeRenewal));
 
-                // Log the renewal action with details
-                $cycleInfo = $subscription->total_cycles ? "{$subscription->current_cycle}/{$subscription->total_cycles}" : $subscription->current_cycle;
-
+                // Log the renewal action
                 $subscription->logs()->create([
                     'type' => 'renew',
-                    'message' => "Subscription renewed successfully! Cycle {$cycleInfo}. Credits reset.",
+                    'message' => 'Subscription renewed successfully! Credits reset.',
                 ]);
 
-                $this->info("Subscription #{$subscription->id} renewed! ({$cycleInfo}, Credits reset)");
+                $this->info("Subscription #{$subscription->id} renewed! Credits reset");
                 $renewedCount++;
             } catch (\Throwable $e) {
                 $message = "Subscription #{$subscription->id} unable to renew! {$e->getMessage()}";
