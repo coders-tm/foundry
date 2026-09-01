@@ -533,6 +533,16 @@ class Subscription extends Model implements ManagesSubscriptions, SubscriptionSt
         return $this->plan_id === $plan;
     }
 
+    public function getPrice(?string $billingInterval = null): float
+    {
+        $plan = $this->plan;
+        $interval = $billingInterval ?? $this->getBillingInterval();
+
+        return $interval === 'year'
+            ? (float) ($plan?->yearly_fee ?? $plan?->price)
+            : (float) ($plan?->price ?? 0);
+    }
+
     public function plan(): BelongsTo
     {
         return $this->belongsTo(Foundry::$planModel);

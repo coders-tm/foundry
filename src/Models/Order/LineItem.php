@@ -15,6 +15,7 @@ class LineItem extends Model implements Currencyable
 
     protected $fillable = [
         'title',
+        'description',
         'variant_title',
         'sku',
         'price',

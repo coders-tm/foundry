@@ -1,149 +1,119 @@
 <?php
 
-namespace Foundry\Tests\Feature;
-
 use Foundry\Models\Admin;
 use Foundry\Models\User;
 use Foundry\Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use PHPUnit\Framework\Attributes\Test;
 
-class AdminWalletTest extends TestCase
-{
-    use RefreshDatabase;
+uses(TestCase::class);
+uses(RefreshDatabase::class);
 
-    protected User $user;
+beforeEach(function () {
+    $this->user = \Foundry\Models\User::factory()->create();
 
-    protected Admin $admin;
+    $this->admin = \Foundry\Models\Admin::factory()->create([
+        'is_super_admin' => true,
+    ]);
+});
 
-    protected function setUp(): void
-    {
-        parent::setUp();
+it('can view user wallet balance', function () {
+    $this->user->creditWallet(150.00, 'test', 'Test balance');
 
-        // Create test user
-        $this->user = User::factory()->create();
+    $response = $this->actingAs($this->admin, 'admin')
+        ->getJson("/admin/users/{$this->user->id}/wallet/balance");
 
-        // Create admin user
-        $this->admin = Admin::factory()->create([
-            'is_super_admin' => true,
+    $response->assertStatus(200)
+        ->assertJson([
+            'balance' => 150,
+            'currency' => 'USD',
         ]);
-    }
+});
 
-    #[Test]
-    public function admin_can_view_user_wallet_balance()
-    {
-        $this->user->creditWallet(150.00, 'test', 'Test balance');
+it('can view user wallet transactions', function () {
+    $this->user->creditWallet(100.00, 'test', 'First transaction');
+    $this->user->creditWallet(50.00, 'test', 'Second transaction');
+    $this->user->debitWallet(25.00, 'test', 'Third transaction');
 
-        $response = $this->actingAs($this->admin, 'admin')
-            ->getJson("/admin/users/{$this->user->id}/wallet/balance");
+    $response = $this->actingAs($this->admin, 'admin')
+        ->getJson("/admin/users/{$this->user->id}/wallet/transactions");
 
-        $response->assertStatus(200)
-            ->assertJson([
-                'balance' => 150,
-                'currency' => 'USD',
-            ]);
-    }
+    $response->assertStatus(200)
+        ->assertJsonCount(3, 'data');
+});
 
-    #[Test]
-    public function admin_can_view_user_wallet_transactions()
-    {
-        $this->user->creditWallet(100.00, 'test', 'First transaction');
-        $this->user->creditWallet(50.00, 'test', 'Second transaction');
-        $this->user->debitWallet(25.00, 'test', 'Third transaction');
+it('can credit user wallet', function () {
+    $response = $this->actingAs($this->admin, 'admin')
+        ->postJson("/admin/users/{$this->user->id}/wallet/credit", [
+            'amount' => 100.00,
+            'description' => 'Admin credit',
+        ]);
 
-        $response = $this->actingAs($this->admin, 'admin')
-            ->getJson("/admin/users/{$this->user->id}/wallet/transactions");
+    $response->assertStatus(200)
+        ->assertJson([
+            'message' => 'Wallet credited successfully',
+            'balance' => 100,
+        ]);
 
-        $response->assertStatus(200)
-            ->assertJsonCount(3, 'data');
-    }
+    $this->assertEquals(100, $this->user->fresh()->getWalletBalance());
+});
 
-    #[Test]
-    public function admin_can_credit_user_wallet()
-    {
-        $response = $this->actingAs($this->admin, 'admin')
-            ->postJson("/admin/users/{$this->user->id}/wallet/credit", [
-                'amount' => 100.00,
-                'description' => 'Admin credit',
-            ]);
+it('can debit user wallet', function () {
+    $this->user->creditWallet(200.00, 'test', 'Initial balance');
 
-        $response->assertStatus(200)
-            ->assertJson([
-                'message' => 'Wallet credited successfully',
-                'balance' => 100,
-            ]);
+    $response = $this->actingAs($this->admin, 'admin')
+        ->postJson("/admin/users/{$this->user->id}/wallet/debit", [
+            'amount' => 50.00,
+            'description' => 'Admin debit',
+        ]);
 
-        $this->assertEquals(100, $this->user->fresh()->getWalletBalance());
-    }
+    $response->assertStatus(200)
+        ->assertJson([
+            'message' => 'Wallet debited successfully',
+            'balance' => 150,
+        ]);
 
-    #[Test]
-    public function admin_can_debit_user_wallet()
-    {
-        $this->user->creditWallet(200.00, 'test', 'Initial balance');
+    $this->assertEquals(150, $this->user->fresh()->getWalletBalance());
+});
 
-        $response = $this->actingAs($this->admin, 'admin')
-            ->postJson("/admin/users/{$this->user->id}/wallet/debit", [
-                'amount' => 50.00,
-                'description' => 'Admin debit',
-            ]);
+it('cannot debit more than wallet balance', function () {
+    $this->user->creditWallet(50.00, 'test', 'Initial balance');
 
-        $response->assertStatus(200)
-            ->assertJson([
-                'message' => 'Wallet debited successfully',
-                'balance' => 150,
-            ]);
+    $response = $this->actingAs($this->admin, 'admin')
+        ->postJson("/admin/users/{$this->user->id}/wallet/debit", [
+            'amount' => 100.00,
+            'description' => 'Admin debit',
+        ]);
 
-        $this->assertEquals(150, $this->user->fresh()->getWalletBalance());
-    }
+    $response->assertStatus(422)
+        ->assertJsonValidationErrors(['amount']);
+});
 
-    #[Test]
-    public function admin_cannot_debit_more_than_wallet_balance()
-    {
-        $this->user->creditWallet(50.00, 'test', 'Initial balance');
+it('requires valid amount for credit', function () {
+    $response = $this->actingAs($this->admin, 'admin')
+        ->postJson("/admin/users/{$this->user->id}/wallet/credit", [
+            'amount' => -50.00,
+        ]);
 
-        $response = $this->actingAs($this->admin, 'admin')
-            ->postJson("/admin/users/{$this->user->id}/wallet/debit", [
-                'amount' => 100.00,
-                'description' => 'Admin debit',
-            ]);
+    $response->assertStatus(422)
+        ->assertJsonValidationErrors(['amount']);
+});
 
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors(['amount']);
-    }
+it('requires valid amount for debit', function () {
+    $response = $this->actingAs($this->admin, 'admin')
+        ->postJson("/admin/users/{$this->user->id}/wallet/debit", [
+            'amount' => 0,
+        ]);
 
-    #[Test]
-    public function admin_credit_requires_valid_amount()
-    {
-        $response = $this->actingAs($this->admin, 'admin')
-            ->postJson("/admin/users/{$this->user->id}/wallet/credit", [
-                'amount' => -50.00,
-            ]);
+    $response->assertStatus(422)
+        ->assertJsonValidationErrors(['amount']);
+});
 
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors(['amount']);
-    }
+it('prevents non admin from accessing admin wallet routes', function () {
+    /** @var User $otherUser */
+    $otherUser = \Foundry\Models\User::factory()->create();
 
-    #[Test]
-    public function admin_debit_requires_valid_amount()
-    {
-        $response = $this->actingAs($this->admin, 'admin')
-            ->postJson("/admin/users/{$this->user->id}/wallet/debit", [
-                'amount' => 0,
-            ]);
+    $response = $this->actingAs($otherUser, 'user')
+        ->getJson("/admin/users/{$this->user->id}/wallet/balance");
 
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors(['amount']);
-    }
-
-    #[Test]
-    public function non_admin_cannot_access_admin_wallet_routes()
-    {
-        /** @var User $otherUser */
-        $otherUser = User::factory()->create();
-
-        $response = $this->actingAs($otherUser, 'user')
-            ->getJson("/admin/users/{$this->user->id}/wallet/balance");
-
-        $response->assertStatus(401);
-    }
-}
+    $response->assertStatus(401);
+});

@@ -84,7 +84,13 @@ trait ManagesInvoices
         $fromDate = Carbon::parse($period->getStartDate())->format('M d, Y');
         $toDate = Carbon::parse($period->getEndDate())->format('M d, Y');
         $interval = $plan->interval->value;
-        $amount = $plan->formatPrice();
+        $billingInterval = $this->billing_interval ?? $interval;
+
+        $price = $billingInterval === 'year'
+            ? (float) ($plan->yearly_fee ?? $plan->price)
+            : (float) $plan->price;
+
+        $amount = format_amount($price);
 
         $title = "$plan->label (at $amount / $interval)";
 
@@ -96,7 +102,7 @@ trait ManagesInvoices
                     'description' => "$fromDate - $toDate",
                     'plan_id' => $plan->id,
                 ],
-                'price' => $plan->price,
+                'price' => $price,
                 'quantity' => 1,
                 'taxable' => true,
                 'discount' => $this->discount(),

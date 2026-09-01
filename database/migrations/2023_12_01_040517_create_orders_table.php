@@ -50,6 +50,7 @@ return new class extends Migration
             $table->string('itemable_type')->nullable();
             $table->uuid('itemable_id')->nullable();
             $table->string('title')->nullable();
+            $table->text('description')->nullable();
             $table->string('variant_title')->nullable();
             $table->string('sku')->nullable();
             $table->boolean('taxable')->default(true);

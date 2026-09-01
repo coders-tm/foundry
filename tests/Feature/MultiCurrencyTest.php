@@ -1,99 +1,59 @@
 <?php
 
-namespace Foundry\Tests\Feature;
+uses(Foundry\Tests\TestCase::class)->use(\Illuminate\Foundation\Testing\RefreshDatabase::class);
 
-use Foundry\Models\ExchangeRate;
-use Foundry\Models\Order;
-use Foundry\Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Config;
-use PHPUnit\Framework\Attributes\Test;
+beforeEach(function () {
+    \Illuminate\Support\Facades\Config::set('app.currency', 'USD');
 
-class MultiCurrencyTest extends TestCase
-{
-    use RefreshDatabase;
+    \Foundry\Models\ExchangeRate::updateOrCreate(
+        ['currency' => 'INR'],
+        ['rate' => 83.0]
+    );
+});
 
-    protected $baseCurrency = 'USD';
+it('exchange rate returns correct rate', function () {
+    $rate = \Foundry\Models\ExchangeRate::rateFor('INR');
+    $this->assertEquals(83.0, $rate);
+});
 
-    protected $testCurrency = 'INR';
+it('exchange rate returns one for base currency', function () {
+    $rate = \Foundry\Models\ExchangeRate::rateFor('USD');
+    $this->assertEquals(1.0, $rate);
+});
 
-    protected $exchangeRate = 83.0;
+it('exchange rate converts amount correctly', function () {
+    $converted = \Foundry\Models\ExchangeRate::convertAmount(100.00, 'USD', 'INR');
+    $this->assertEquals(8300.00, $converted);
 
-    protected function setUp(): void
-    {
-        parent::setUp();
+    $converted = \Foundry\Models\ExchangeRate::convertAmount(8300.00, 'INR', 'USD');
+    $this->assertEquals(100.00, $converted);
 
-        // Set base currency
-        Config::set('app.currency', $this->baseCurrency);
+    $converted = \Foundry\Models\ExchangeRate::convertAmount(100.00, 'USD', 'USD');
+    $this->assertEquals(100.00, $converted);
+});
 
-        // Create exchange rate
-        ExchangeRate::updateOrCreate(
-            ['currency' => $this->testCurrency],
-            ['rate' => $this->exchangeRate]
-        );
-    }
+it('order stores base values only', function () {
+    $order = \Foundry\Models\Order::factory()->create([
+        'grand_total' => 100.00,
+        'sub_total' => 80.00,
+        'tax_total' => 10.00,
+        'status' => 'pending',
+    ]);
 
-    #[Test]
-    public function test_exchange_rate_returns_correct_rate()
-    {
-        $rate = ExchangeRate::rateFor($this->testCurrency);
-        $this->assertEquals($this->exchangeRate, $rate);
-    }
+    $this->assertEquals(100.00, $order->grand_total);
+    $this->assertEquals(80.00, $order->sub_total);
 
-    #[Test]
-    public function test_exchange_rate_returns_one_for_base_currency()
-    {
-        $rate = ExchangeRate::rateFor($this->baseCurrency);
-        $this->assertEquals(1.0, $rate);
-    }
+    $this->assertNull($order->currency ?? null);
+    $this->assertNull($order->exchange_rate ?? null);
+});
 
-    #[Test]
-    public function test_exchange_rate_converts_amount_correctly()
-    {
-        // Convert Base to Target: 100 * 83 = 8300
-        $converted = ExchangeRate::convertAmount(100.00, $this->baseCurrency, $this->testCurrency);
-        $this->assertEquals(8300.00, $converted);
+it('get currency from country code', function () {
+    $currency = \Foundry\Models\ExchangeRate::getCurrencyFromCountryCode('IN');
+    $this->assertEquals('INR', $currency);
 
-        // Convert Target to Base: 8300 / 83 = 100
-        $converted = ExchangeRate::convertAmount(8300.00, $this->testCurrency, $this->baseCurrency);
-        $this->assertEquals(100.00, $converted);
+    $currency = \Foundry\Models\ExchangeRate::getCurrencyFromCountryCode('US');
+    $this->assertEquals('USD', $currency);
 
-        // Convert Base to Base: 100 -> 100
-        $converted = ExchangeRate::convertAmount(100.00, $this->baseCurrency, $this->baseCurrency);
-        $this->assertEquals(100.00, $converted);
-    }
-
-    #[Test]
-    public function test_order_stores_base_values_only()
-    {
-        $order = Order::factory()->create([
-            'grand_total' => 100.00,
-            'sub_total' => 80.00,
-            'tax_total' => 10.00,
-            'status' => 'pending',
-        ]);
-
-        // Should return base value
-        $this->assertEquals(100.00, $order->grand_total);
-        $this->assertEquals(80.00, $order->sub_total);
-
-        // Ensure no currency/exchange_rate fields
-        $this->assertNull($order->currency ?? null);
-        $this->assertNull($order->exchange_rate ?? null);
-    }
-
-    #[Test]
-    public function test_get_currency_from_country_code()
-    {
-        // This relies on league/iso3166 package being present and working
-        $currency = ExchangeRate::getCurrencyFromCountryCode('IN');
-        $this->assertEquals('INR', $currency);
-
-        $currency = ExchangeRate::getCurrencyFromCountryCode('US');
-        $this->assertEquals('USD', $currency);
-
-        // Invalid/Unknown -> Base Currency
-        $currency = ExchangeRate::getCurrencyFromCountryCode('XX');
-        $this->assertEquals($this->baseCurrency, $currency);
-    }
-}
+    $currency = \Foundry\Models\ExchangeRate::getCurrencyFromCountryCode('XX');
+    $this->assertEquals('USD', $currency);
+});

@@ -29,6 +29,7 @@ return new class extends Migration
             $table->double('freeze_fee', 10, 2)->nullable()->comment('Fee charged per billing cycle during freeze (null = use global config)');
             $table->unsignedInteger('grace_period_days')->default(0)->comment('Number of grace period days before subscription expires after non-payment (0 = expires immediately)');
             $table->double('price', 12, 2)->default(0.00);
+            $table->double('yearly_fee')->nullable();
             $table->unsignedInteger('trial_days')->nullable()->default(0);
             $table->{$this->jsonable()}('metadata')->nullable();
             $table->timestamps();

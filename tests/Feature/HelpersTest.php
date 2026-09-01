@@ -1,165 +1,138 @@
 <?php
 
-namespace Foundry\Tests\Feature;
+uses(\Foundry\Tests\Feature\FeatureTestCase::class);
 
-use App\Models\User;
-use Foundry\Facades\Settings;
-use Foundry\Models\Admin;
-use Foundry\Models\Tax;
-use Foundry\Notifications\NewAdminNotification;
-use Foundry\Repository\BaseRepository;
-use Illuminate\Notifications\AnonymousNotifiable;
-use Illuminate\Support\Facades\Notification;
+beforeEach(function () {
+    \Illuminate\Support\Facades\Route::get('/foo', function () {
+        if (is_user()) {
+            return guard();
+        }
 
-class HelpersTest extends FeatureTestCase
-{
-    protected function defineRoutes($router)
-    {
-        $router->get('/foo', function () {
-            if (is_user()) {
-                return guard();
-            }
+        return response(403);
+    })->middleware('auth:user');
 
-            return response(403);
-        })->middleware('auth:user');
+    \Illuminate\Support\Facades\Route::get('admin/email', function () {
+        return user('email');
+    })->middleware('auth:admin');
+});
 
-        $router->get('admin/email', function () {
-            return user('email');
-        })->middleware('auth:admin');
-    }
+it('guard function returns user guard', function () {
+    $user = \App\Models\User::factory()->create();
 
-    public function test_guard_function_returns_user_guard()
-    {
-        // Create the user
-        /** @var User $user */
-        $user = User::factory()->create();
+    $this->actingAs($user);
 
-        $this->actingAs($user);
+    $this->get('/foo')
+        ->assertStatus(200)
+        ->assertSee('user');
+});
 
-        // Make the request to the route
-        $this->get('/foo')
-            ->assertStatus(200)
-            ->assertSee('user');
-    }
+it('user function returns specific user property', function () {
+    $user = \Foundry\Models\Admin::factory()->create();
 
-    public function test_user_function_returns_specific_user_property()
-    {
-        // Create the user
-        /** @var Admin $user */
-        $user = Admin::factory()->create();
+    $this->actingAs($user, 'admin');
 
-        $this->actingAs($user, 'admin');
+    $this->get('/admin/email')
+        ->assertStatus(200)
+        ->assertSee($user->email);
+});
 
-        // Make the request to the route
-        $this->get('/admin/email')
-            ->assertStatus(200)
-            ->assertSee($user->email);
-    }
+it('settings', function () {
+    \Foundry\Facades\Settings::set('foo', ['bar' => 'baz']);
+    $this->assertEquals(['bar' => 'baz'], settings('foo'));
+});
 
-    public function test_settings()
-    {
-        Settings::set('foo', ['bar' => 'baz']);
-        $this->assertEquals(['bar' => 'baz'], settings('foo'));
-    }
+it('admin notify', function () {
+    \Illuminate\Support\Facades\Notification::fake();
 
-    public function test_admin_notify()
-    {
-        Notification::fake();
+    $admin = \Foundry\Models\Admin::factory()->create();
 
-        $admin = Admin::factory()->create();
+    admin_notify(new \Foundry\Notifications\NewAdminNotification($admin, 'password'));
 
-        admin_notify(new NewAdminNotification($admin, 'password'));
+    \Illuminate\Support\Facades\Notification::assertSentTo(
+        new \Illuminate\Notifications\AnonymousNotifiable,
+        \Foundry\Notifications\NewAdminNotification::class,
+        function ($notification, $channels) {
+            return get_class($notification) === \Foundry\Notifications\NewAdminNotification::class;
+        }
+    );
+});
 
-        Notification::assertSentTo(
-            new AnonymousNotifiable,
-            NewAdminNotification::class,
-            function ($notification, $channels) {
-                return get_class($notification) === NewAdminNotification::class;
-            }
-        );
-    }
+it('country taxes', function () {
+    $repository = new class extends \Foundry\Repository\BaseRepository {};
 
-    public function test_country_taxes()
-    {
-        $repository = new class extends BaseRepository {};
+    \Foundry\Models\Tax::create([
+        'country' => 'United States',
+        'label' => 'VAT',
+        'code' => 'US',
+        'state' => '*',
+        'rate' => 10,
+        'priority' => 0,
+    ]);
 
-        Tax::create([
-            'country' => 'United States',
-            'label' => 'VAT',
-            'code' => 'US',
-            'state' => '*',
-            'rate' => 10,
-            'priority' => 0,
-        ]);
+    \Foundry\Models\Tax::create([
+        'country' => 'United States',
+        'label' => 'VAT',
+        'code' => 'US',
+        'state' => 'California',
+        'rate' => 15,
+        'priority' => 1,
+    ]);
 
-        Tax::create([
-            'country' => 'United States',
-            'label' => 'VAT',
-            'code' => 'US',
-            'state' => 'California',
-            'rate' => 15,
-            'priority' => 1,
-        ]);
+    $this->assertNotEmpty($repository->countryTaxes('US'));
+    $this->assertNotEmpty($repository->countryTaxes('US', 'California'));
+});
 
-        $this->assertNotEmpty($repository->countryTaxes('US'));
-        $this->assertNotEmpty($repository->countryTaxes('US', 'California'));
-    }
+it('default tax', function () {
+    $repository = new class extends \Foundry\Repository\BaseRepository {};
 
-    public function test_default_tax()
-    {
-        $repository = new class extends BaseRepository {};
+    \Foundry\Models\Tax::create([
+        'country' => 'United Kingdom',
+        'label' => 'VAT',
+        'code' => 'UK',
+        'state' => '*',
+        'rate' => 10,
+        'priority' => 0,
+    ]);
 
-        Tax::create([
-            'country' => 'United Kingdom',
-            'label' => 'VAT',
-            'code' => 'UK',
-            'state' => '*',
-            'rate' => 10,
-            'priority' => 0,
-        ]);
+    \Foundry\Models\Tax::create([
+        'country' => 'United Kingdom',
+        'label' => 'VAT',
+        'code' => 'UK',
+        'state' => 'England',
+        'rate' => 15,
+        'priority' => 0,
+    ]);
 
-        Tax::create([
-            'country' => 'United Kingdom',
-            'label' => 'VAT',
-            'code' => 'UK',
-            'state' => 'England',
-            'rate' => 15,
-            'priority' => 0,
-        ]);
+    $this->assertNotEmpty($repository->useDefaultTax()->tax_lines);
+});
 
-        $this->assertNotEmpty($repository->useDefaultTax()->tax_lines);
-    }
+it('rest of world tax', function () {
+    $repository = new class extends \Foundry\Repository\BaseRepository {};
 
-    public function test_rest_of_world_tax()
-    {
-        $repository = new class extends BaseRepository {};
+    \Foundry\Models\Tax::create([
+        'country' => 'Rest of World',
+        'label' => 'VAT',
+        'code' => '*',
+        'state' => '*',
+        'rate' => 10,
+        'priority' => 0,
+    ]);
 
-        Tax::create([
-            'country' => 'Rest of World',
-            'label' => 'VAT',
-            'code' => '*',
-            'state' => '*',
-            'rate' => 10,
-            'priority' => 0,
-        ]);
+    $this->assertNotEmpty($repository->restOfWorldTax());
+});
 
-        $this->assertNotEmpty($repository->restOfWorldTax());
-    }
+it('billing address tax', function () {
+    $repository = new class extends \Foundry\Repository\BaseRepository {};
 
-    public function test_billing_address_tax()
-    {
-        $repository = new class extends BaseRepository {};
+    \Foundry\Models\Tax::create([
+        'country' => 'Rest of World',
+        'label' => 'VAT',
+        'code' => '*',
+        'state' => '*',
+        'rate' => 10,
+        'priority' => 0,
+    ]);
 
-        Tax::create([
-            'country' => 'Rest of World',
-            'label' => 'VAT',
-            'code' => '*',
-            'state' => '*',
-            'rate' => 10,
-            'priority' => 0,
-        ]);
-
-        $this->assertNotEmpty($repository->getBillingAddressTax(['country' => 'United States']));
-        $this->assertNotEmpty($repository->getBillingAddressTax(['country' => 'Canada']));
-    }
-}
+    $this->assertNotEmpty($repository->getBillingAddressTax(['country' => 'United States']));
+    $this->assertNotEmpty($repository->getBillingAddressTax(['country' => 'Canada']));
+});

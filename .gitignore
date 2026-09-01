@@ -7,6 +7,7 @@
 
 composer.lock
 /phpunit.xml
+/phpunit.log
 .phpunit.result.cache
 example
 /backup_*
@@ -18,4 +19,3 @@ example
 testbench-output.log
 /tools
 tests.log
-tests/Unit/ResponseOptimizerTest.php

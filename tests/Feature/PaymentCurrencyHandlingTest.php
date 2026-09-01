@@ -1,79 +1,47 @@
 <?php
 
-namespace Tests\Feature;
+uses(\Foundry\Tests\Feature\FeatureTestCase::class)->use(\Illuminate\Foundation\Testing\RefreshDatabase::class);
 
-use Foundry\Models\ExchangeRate;
-use Foundry\Models\Order;
-use Foundry\Models\Payment;
-use Foundry\Models\User;
-use Foundry\Payment\Payable;
-use Foundry\Services\PaymentProvider;
-use Foundry\Tests\Feature\FeatureTestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Config;
-use PHPUnit\Framework\Attributes\Test;
+beforeEach(function () {
+    \Illuminate\Support\Facades\Config::set('app.currency', 'USD');
+});
 
-class PaymentCurrencyHandlingTest extends FeatureTestCase
-{
-    use RefreshDatabase;
+it('stores correct gateway amount and currency in payment metadata', function () {
+    \Foundry\Models\ExchangeRate::updateOrCreate(
+        ['currency' => 'EUR'],
+        ['rate' => 0.85]
+    );
 
-    protected function setUp(): void
-    {
-        parent::setUp();
+    $user = \Foundry\Models\User::factory()->create();
 
-        // Setup currencies (Base: USD)
-        Config::set('app.currency', 'USD');
-    }
+    $order = \Foundry\Models\Order::factory()->create([
+        'customer_id' => $user->id,
+        'grand_total' => 100.00,
+        'billing_address' => [
+            'country' => 'Germany',
+            'country_code' => 'DE',
+        ],
+    ]);
 
-    #[Test]
-    public function it_stores_correct_gateway_amount_and_currency_in_payment_metadata()
-    {
-        // Create Exchange Rate: 1 USD = 0.85 EUR
-        ExchangeRate::updateOrCreate(
-            ['currency' => 'EUR'],
-            ['rate' => 0.85]
-        );
+    $payable = \Foundry\Payment\Payable::fromOrder($order);
 
-        // Create User
-        $user = User::factory()->create();
+    $this->assertEquals('EUR', $payable->getCurrency());
+    $this->assertEquals(85.00, $payable->getGatewayAmount());
 
-        // Create Order (100 USD) with EUR billing address
-        $order = Order::factory()->create([
-            'customer_id' => $user->id,
-            'grand_total' => 100.00,
-            'billing_address' => [
-                'country' => 'Germany',
-                'country_code' => 'DE', // Germany uses EUR
-            ],
-        ]);
+    $payment = \Foundry\Models\Payment::createForOrder($order, [
+        'provider' => \Foundry\Services\PaymentProvider::STRIPE,
+        'transaction_id' => 'tx_123456',
+        'amount' => $payable->getGrandTotal(),
+        'status' => 'completed',
+        'metadata' => [
+            'gateway_amount' => $payable->getGatewayAmount(),
+            'gateway_currency' => $payable->getCurrency(),
+        ],
+    ]);
 
-        // Verify Payable conversion
-        $payable = Payable::fromOrder($order);
+    $this->assertEquals(100.00, $payment->amount, 'Payment amount should be in Base Currency');
+    $this->assertEquals(85.00, $payment->metadata['gateway_amount'], 'Metadata should store Gateway Amount');
 
-        // Assert Payable logic - should detect EUR from billing address country
-        $this->assertEquals('EUR', $payable->getCurrency());
-        // 100 USD * 0.85 = 85.00 EUR
-        $this->assertEquals(85.00, $payable->getGatewayAmount());
-
-        // Simulate Payment Creation (as done in PaymentController/Order)
-        // Create a Payment record mimicking the result of a processor
-        $payment = Payment::createForOrder($order, [
-            'provider' => PaymentProvider::STRIPE,
-            'transaction_id' => 'tx_123456',
-            'amount' => $payable->getGrandTotal(), // Base Amount (100)
-            'status' => 'completed',
-            'metadata' => [
-                'gateway_amount' => $payable->getGatewayAmount(),
-                'gateway_currency' => $payable->getCurrency(),
-            ],
-        ]);
-
-        // Assert Payment Record
-        $this->assertEquals(100.00, $payment->amount, 'Payment amount should be in Base Currency');
-        $this->assertEquals(85.00, $payment->metadata['gateway_amount'], 'Metadata should store Gateway Amount');
-
-        // Assert Order Paid Total is updated (in Base Currency)
-        $order->refresh();
-        $this->assertEquals(100.00, $order->paid_total);
-    }
-}
+    $order->refresh();
+    $this->assertEquals(100.00, $order->paid_total);
+});

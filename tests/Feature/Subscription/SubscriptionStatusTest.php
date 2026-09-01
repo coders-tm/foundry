@@ -1,151 +1,128 @@
 <?php
 
-namespace Foundry\Tests\Feature\Subscription;
+uses(\Foundry\Tests\TestCase::class);
 
-use Foundry\Contracts\SubscriptionStatus;
-use Foundry\Exceptions\SubscriptionUpdateFailure;
-use Foundry\Models\Subscription;
-use Foundry\Models\Subscription\Plan;
-use Foundry\Tests\TestCase;
-use InvalidArgumentException;
+it('we can check if a subscription is incomplete', function () {
+    $subscription = new Subscription([
+    'status' => \Foundry\Contracts\SubscriptionStatus::INCOMPLETE,
+    ]);
+    
+    $this->assertTrue($subscription->incomplete());
+    $this->assertFalse($subscription->expired());
+    $this->assertFalse($subscription->active());
+});
 
-class SubscriptionStatusTest extends TestCase
-{
-    public function test_we_can_check_if_a_subscription_is_incomplete()
-    {
-        $subscription = new Subscription([
-            'status' => SubscriptionStatus::INCOMPLETE,
-        ]);
+it('we can check if a subscription is expired', function () {
+    $subscription = new Subscription([
+    'status' => \Foundry\Contracts\SubscriptionStatus::EXPIRED,
+    ]);
+    
+    $this->assertFalse($subscription->incomplete());
+    $this->assertTrue($subscription->expired());
+    $this->assertFalse($subscription->active());
+});
 
-        $this->assertTrue($subscription->incomplete());
-        $this->assertFalse($subscription->expired());
-        $this->assertFalse($subscription->active());
-    }
+it('we can check if a subscription is active', function () {
+    $subscription = new Subscription([
+    'status' => \Foundry\Contracts\SubscriptionStatus::ACTIVE,
+    ]);
+    
+    $this->assertFalse($subscription->incomplete());
+    $this->assertFalse($subscription->expired());
+    $this->assertTrue($subscription->active());
+});
 
-    public function test_we_can_check_if_a_subscription_is_expired()
-    {
-        $subscription = new Subscription([
-            'status' => SubscriptionStatus::EXPIRED,
-        ]);
+it('an incomplete subscription is not valid', function () {
+    $subscription = new Subscription([
+    'status' => \Foundry\Contracts\SubscriptionStatus::INCOMPLETE,
+    ]);
+    
+    $this->assertFalse($subscription->valid());
+});
 
-        $this->assertFalse($subscription->incomplete());
-        $this->assertTrue($subscription->expired());
-        $this->assertFalse($subscription->active());
-    }
+it('an expired subscription is not valid', function () {
+    $subscription = new Subscription([
+    'status' => \Foundry\Contracts\SubscriptionStatus::EXPIRED,
+    ]);
+    
+    $this->assertFalse($subscription->valid());
+});
 
-    public function test_we_can_check_if_a_subscription_is_active()
-    {
-        $subscription = new Subscription([
-            'status' => SubscriptionStatus::ACTIVE,
-        ]);
+it('an active subscription is valid', function () {
+    $subscription = new Subscription([
+    'status' => \Foundry\Contracts\SubscriptionStatus::ACTIVE,
+    ]);
+    
+    $this->assertTrue($subscription->valid());
+});
 
-        $this->assertFalse($subscription->incomplete());
-        $this->assertFalse($subscription->expired());
-        $this->assertTrue($subscription->active());
-    }
+it('payment is incomplete when status is incomplete', function () {
+    $subscription = new Subscription([
+    'status' => \Foundry\Contracts\SubscriptionStatus::INCOMPLETE,
+    ]);
+    
+    $this->assertTrue($subscription->hasIncompletePayment());
+});
 
-    public function test_an_incomplete_subscription_is_not_valid()
-    {
-        $subscription = new Subscription([
-            'status' => SubscriptionStatus::INCOMPLETE,
-        ]);
+it('payment is incomplete when status is expired', function () {
+    $subscription = new Subscription([
+    'status' => \Foundry\Contracts\SubscriptionStatus::EXPIRED,
+    ]);
+    
+    $this->assertTrue($subscription->hasIncompletePayment());
+});
 
-        $this->assertFalse($subscription->valid());
-    }
+it('payment is not incomplete when status is active', function () {
+    $subscription = new Subscription([
+    'status' => \Foundry\Contracts\SubscriptionStatus::ACTIVE,
+    ]);
+    
+    $this->assertFalse($subscription->hasIncompletePayment());
+});
 
-    public function test_an_expired_subscription_is_not_valid()
-    {
-        $subscription = new Subscription([
-            'status' => SubscriptionStatus::EXPIRED,
-        ]);
+it('incomplete subscriptions cannot be swapped', function () {
+    $plans = \Foundry\Models\Subscription\Plan::factory(2)->create()->pluck('id')->toArray();
+    $subscription = new Subscription([
+    'status' => \Foundry\Contracts\SubscriptionStatus::INCOMPLETE,
+    ]);
+    
+    $subscription->setRelation('plan', \Foundry\Models\Subscription\Plan::find($plans[0]));
+    
+    $this->expectException(\Foundry\Exceptions\SubscriptionUpdateFailure::class);
+    
+    $subscription->swap($plans[1]);
+});
 
-        $this->assertFalse($subscription->valid());
-    }
+it('extending a trial requires a date in the future', function () {
+    $this->expectException(\InvalidArgumentException::class);
+    
+    (new \Foundry\Models\Subscription)->extendTrial(now()->subDay());
+});
 
-    public function test_an_active_subscription_is_valid()
-    {
-        $subscription = new Subscription([
-            'status' => SubscriptionStatus::ACTIVE,
-        ]);
+it('it can determine if the subscription is on trial', function () {
+    $subscription = new \Foundry\Models\Subscription;
+    $subscription->setDateFormat('Y-m-d H:i:s');
+    $subscription->trial_ends_at = now()->addDay();
+    
+    $this->assertTrue($subscription->onTrial());
+    
+    $subscription = new \Foundry\Models\Subscription;
+    $subscription->setDateFormat('Y-m-d H:i:s');
+    $subscription->trial_ends_at = now()->subDay();
+    
+    $this->assertFalse($subscription->onTrial());
+});
 
-        $this->assertTrue($subscription->valid());
-    }
-
-    public function test_payment_is_incomplete_when_status_is_incomplete()
-    {
-        $subscription = new Subscription([
-            'status' => SubscriptionStatus::INCOMPLETE,
-        ]);
-
-        $this->assertTrue($subscription->hasIncompletePayment());
-    }
-
-    public function test_payment_is_incomplete_when_status_is_expired()
-    {
-        $subscription = new Subscription([
-            'status' => SubscriptionStatus::EXPIRED,
-        ]);
-
-        $this->assertTrue($subscription->hasIncompletePayment());
-    }
-
-    public function test_payment_is_not_incomplete_when_status_is_active()
-    {
-        $subscription = new Subscription([
-            'status' => SubscriptionStatus::ACTIVE,
-        ]);
-
-        $this->assertFalse($subscription->hasIncompletePayment());
-    }
-
-    public function test_incomplete_subscriptions_cannot_be_swapped()
-    {
-        $plans = Plan::factory(2)->create()->pluck('id')->toArray();
-        $subscription = new Subscription([
-            'status' => SubscriptionStatus::INCOMPLETE,
-        ]);
-
-        $subscription->setRelation('plan', Plan::find($plans[0]));
-
-        $this->expectException(SubscriptionUpdateFailure::class);
-
-        $subscription->swap($plans[1]);
-    }
-
-    public function test_extending_a_trial_requires_a_date_in_the_future()
-    {
-        $this->expectException(InvalidArgumentException::class);
-
-        (new Subscription)->extendTrial(now()->subDay());
-    }
-
-    public function test_it_can_determine_if_the_subscription_is_on_trial()
-    {
-        $subscription = new Subscription;
-        $subscription->setDateFormat('Y-m-d H:i:s');
-        $subscription->trial_ends_at = now()->addDay();
-
-        $this->assertTrue($subscription->onTrial());
-
-        $subscription = new Subscription;
-        $subscription->setDateFormat('Y-m-d H:i:s');
-        $subscription->trial_ends_at = now()->subDay();
-
-        $this->assertFalse($subscription->onTrial());
-    }
-
-    public function test_it_can_determine_if_a_trial_has_expired()
-    {
-        $subscription = new Subscription;
-        $subscription->setDateFormat('Y-m-d H:i:s');
-        $subscription->trial_ends_at = now()->subDay();
-
-        $this->assertTrue($subscription->onTrialExpired());
-
-        $subscription = new Subscription;
-        $subscription->setDateFormat('Y-m-d H:i:s');
-        $subscription->trial_ends_at = now()->addDay();
-
-        $this->assertFalse($subscription->onTrialExpired());
-    }
-}
+it('it can determine if a trial has expired', function () {
+    $subscription = new \Foundry\Models\Subscription;
+    $subscription->setDateFormat('Y-m-d H:i:s');
+    $subscription->trial_ends_at = now()->subDay();
+    
+    $this->assertTrue($subscription->onTrialExpired());
+    
+    $subscription = new \Foundry\Models\Subscription;
+    $subscription->setDateFormat('Y-m-d H:i:s');
+    $subscription->trial_ends_at = now()->addDay();
+    
+    $this->assertFalse($subscription->onTrialExpired());
+});

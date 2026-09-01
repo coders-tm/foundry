@@ -1,33 +1,23 @@
 <?php
 
-namespace Foundry\Tests\Unit\Notifications;
+uses(Foundry\Tests\TestCase::class);
 
-use App\Models\User;
-use Foundry\Models\Subscription;
-use Foundry\Notifications\SubscriptionCanceledNotification;
-use Foundry\Tests\TestCase;
-use Illuminate\Support\Facades\Notification;
+it('sends subscription canceled notification', function () {
+    \Illuminate\Support\Facades\Notification::fake();
 
-class SubscriptionCanceledNotificationTest extends TestCase
-{
-    public function test_subscription_canceled_notification()
-    {
-        Notification::fake();
+    $user = \App\Models\User::factory()->create();
+    $subscription = \Foundry\Models\Subscription::factory()->canceled()->create(['user_id' => $user->id]);
 
-        $user = User::factory()->create();
-        $subscription = Subscription::factory()->canceled()->create(['user_id' => $user->id]);
+    $notification = new \Foundry\Notifications\SubscriptionCanceledNotification($subscription);
 
-        $notification = new SubscriptionCanceledNotification($subscription);
+    \Illuminate\Support\Facades\Notification::send($user, $notification);
 
-        Notification::send($user, $notification);
-
-        Notification::assertSentTo(
-            $user,
-            SubscriptionCanceledNotification::class,
-            function ($notification, $channels) use ($subscription) {
-                return $notification->subject === $subscription->renderNotification('user:subscription-canceled')->subject &&
-                    $notification->message === $subscription->renderNotification('user:subscription-canceled')->content;
-            }
-        );
-    }
-}
+    \Illuminate\Support\Facades\Notification::assertSentTo(
+        $user,
+        \Foundry\Notifications\SubscriptionCanceledNotification::class,
+        function ($notification, $channels) use ($subscription) {
+            return $notification->subject === $subscription->renderNotification('user:subscription-canceled')->subject &&
+                $notification->message === $subscription->renderNotification('user:subscription-canceled')->content;
+        }
+    );
+});

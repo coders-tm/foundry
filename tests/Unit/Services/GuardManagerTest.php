@@ -1,99 +1,80 @@
 <?php
 
-namespace Foundry\Tests\Unit\Services;
+uses(Foundry\Tests\BaseTestCase::class);
 
-use Foundry\Facades\Guard;
-use Foundry\Tests\BaseTestCase;
-use Illuminate\Http\Request;
+it('resolves default context from request', function () {
+    $this->instance('request', \Illuminate\Http\Request::create('/admin'));
+    $this->assertEquals('admin', \Foundry\Facades\Guard::current());
 
-class GuardManagerTest extends BaseTestCase
-{
-    public function test_it_resolves_default_context_from_request()
-    {
-        $this->instance('request', Request::create('/admin'));
-        $this->assertEquals('admin', Guard::current());
+    \Foundry\Facades\Guard::forgetResolved();
+    $this->instance('request', \Illuminate\Http\Request::create('/dashboard'));
+    $this->assertEquals('user', \Foundry\Facades\Guard::current());
+});
 
-        Guard::forgetResolved();
-        $this->instance('request', Request::create('/dashboard'));
-        $this->assertEquals('user', Guard::current());
-    }
+it('can set and get request', function () {
+    $request = \Illuminate\Http\Request::create('/admin');
+    $this->instance('request', $request);
 
-    public function test_it_can_set_and_get_request()
-    {
-        $request = Request::create('/admin');
-        $this->instance('request', $request);
+    $this->assertSame($request, \Foundry\Facades\Guard::getRequest());
+    $this->assertTrue(\Foundry\Facades\Guard::is('admin'));
+});
 
-        $this->assertSame($request, Guard::getRequest());
-        $this->assertTrue(Guard::is('admin'));
-    }
+it('set request clears resolved state', function () {
+    $this->instance('request', \Illuminate\Http\Request::create('/admin'));
+    $this->assertEquals('admin', \Foundry\Facades\Guard::current());
 
-    public function test_set_request_clears_resolved_state()
-    {
-        $this->instance('request', Request::create('/admin'));
-        $this->assertEquals('admin', Guard::current());
+    \Foundry\Facades\Guard::forgetResolved();
+    $this->instance('request', \Illuminate\Http\Request::create('/dashboard'));
+    $this->assertEquals('user', \Foundry\Facades\Guard::current());
+});
 
-        Guard::forgetResolved();
-        $this->instance('request', Request::create('/dashboard'));
-        $this->assertEquals('user', Guard::current());
-    }
+it('supports custom resolvers', function () {
+    \Foundry\Facades\Guard::resolveUsing(fn () => 'custom');
 
-    public function test_it_supports_custom_resolvers()
-    {
-        Guard::resolveUsing(fn () => 'custom');
+    $this->assertEquals('custom', \Foundry\Facades\Guard::current());
+    $this->assertTrue(\Foundry\Facades\Guard::is('custom'));
+});
 
-        $this->assertEquals('custom', Guard::current());
-        $this->assertTrue(Guard::is('custom'));
-    }
+it('resolves values from config', function () {
+    config(['foundry.guards.admin.home' => '/custom-admin-home']);
 
-    public function test_it_resolves_values_from_config()
-    {
-        config(['foundry.guards.admin.home' => '/custom-admin-home']);
+    $this->instance('request', \Illuminate\Http\Request::create('/admin'));
+    $this->assertEquals('/custom-admin-home', \Foundry\Facades\Guard::home());
+});
 
-        $this->instance('request', Request::create('/admin'));
-        $this->assertEquals('/custom-admin-home', Guard::home());
-    }
+it('falls back to hardcoded defaults', function () {
+    $this->instance('request', \Illuminate\Http\Request::create('/admin'));
 
-    public function test_it_falls_back_to_hardcoded_defaults()
-    {
-        $this->instance('request', Request::create('/admin'));
+    $this->assertEquals('/admin', \Foundry\Facades\Guard::home());
+    $this->assertEquals('admin.login', \Foundry\Facades\Guard::loginRoute());
+});
 
-        // These should come from defaultValue() match block
-        $this->assertEquals('/admin', Guard::home());
-        $this->assertEquals('admin.login', Guard::loginRoute());
-    }
+it('explicit request does not poison global state', function () {
+    $globalRequest = \Illuminate\Http\Request::create('/dashboard');
 
-    public function test_explicit_request_does_not_poison_global_state()
-    {
-        $globalRequest = Request::create('/dashboard');
+    $this->assertEquals('user', \Foundry\Facades\Guard::current());
 
-        $this->assertEquals('user', Guard::current());
+    $explicitRequest = \Illuminate\Http\Request::create('/admin');
+    $this->assertEquals('admin', \Foundry\Facades\Guard::current($explicitRequest));
 
-        $explicitRequest = Request::create('/admin');
-        $this->assertEquals('admin', Guard::current($explicitRequest));
+    $this->assertEquals('user', \Foundry\Facades\Guard::current());
+});
 
-        // Context should still be 'user' for the global state
-        $this->assertEquals('user', Guard::current());
-    }
+it('forget resolved works', function () {
+    $this->instance('request', \Illuminate\Http\Request::create('/admin'));
+    \Foundry\Facades\Guard::current();
 
-    public function test_forget_resolved_works()
-    {
-        $this->instance('request', Request::create('/admin'));
-        Guard::current(); // Resolve it ('admin')
+    \Foundry\Facades\Guard::forgetResolved();
 
-        Guard::forgetResolved();
+    config(['foundry.admin_prefix' => 'portal']);
 
-        // Change the prefix to something else so /admin no longer matches
-        config(['foundry.admin_prefix' => 'portal']);
+    $this->assertEquals('user', \Foundry\Facades\Guard::current());
+});
 
-        $this->assertEquals('user', Guard::current());
-    }
+it('aliases work', function () {
+    $this->instance('request', \Illuminate\Http\Request::create('/admin'));
 
-    public function test_aliases_work()
-    {
-        $this->instance('request', Request::create('/admin'));
-
-        $this->assertEquals('admin', Guard::current());
-        $this->assertEquals('admin', Guard::key());
-        $this->assertEquals('admin', Guard::context());
-    }
-}
+    $this->assertEquals('admin', \Foundry\Facades\Guard::current());
+    $this->assertEquals('admin', \Foundry\Facades\Guard::key());
+    $this->assertEquals('admin', \Foundry\Facades\Guard::context());
+});

@@ -1,121 +1,92 @@
 <?php
 
-namespace Tests\Feature;
+uses(Foundry\Tests\TestCase::class);
 
-use Foundry\Http\Middleware\ResolveIpAddress;
-use Foundry\Tests\TestCase;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
-use PHPUnit\Framework\Attributes\Test;
-use Stevebauman\Location\Facades\Location;
-use Stevebauman\Location\Position;
+beforeEach(function () {
+    \Illuminate\Support\Facades\Route::middleware(\Foundry\Http\Middleware\ResolveIpAddress::class)->get('/_test/ip-resolution', function () {
+        return response()->json([
+            'ip_location' => request()->attributes->get('ip_location'),
+        ]);
+    });
+});
 
-class ResolveIpAddressMiddlewareTest extends TestCase
-{
-    protected function setUp(): void
-    {
-        parent::setUp();
+it('resolves ip location', function () {
+    $ip = '8.8.8.8';
+    $position = new \Stevebauman\Location\Position;
+    $position->ip = $ip;
+    $position->countryCode = 'US';
+    $position->countryName = 'United States';
 
-        // Define a test route using the middleware
-        Route::middleware(ResolveIpAddress::class)->get('/_test/ip-resolution', function () {
-            return response()->json([
-                'ip_location' => request()->attributes->get('ip_location'),
-            ]);
-        });
-    }
+    \Stevebauman\Location\Facades\Location::shouldReceive('get')
+        ->twice()
+        ->with($ip)
+        ->andReturn($position);
 
-    #[Test]
-    public function it_resolves_ip_location()
-    {
-        $ip = '8.8.8.8';
-        $position = new Position;
-        $position->ip = $ip;
-        $position->countryCode = 'US';
-        $position->countryName = 'United States';
+    $this->getJson('/_test/ip-resolution', ['REMOTE_ADDR' => $ip])
+        ->assertOk()
+        ->assertJson([
+            'ip_location' => [
+                'ip' => $ip,
+                'countryCode' => 'US',
+            ],
+        ]);
 
-        // Mock Location service to expect two calls (one per request, as caching is disabled)
-        Location::shouldReceive('get')
-            ->twice()
-            ->with($ip)
-            ->andReturn($position);
+    $this->getJson('/_test/ip-resolution', ['REMOTE_ADDR' => $ip])
+        ->assertOk()
+        ->assertJson([
+            'ip_location' => [
+                'countryCode' => 'US',
+            ],
+        ]);
 
-        // First request: should call Location service
-        $this->getJson('/_test/ip-resolution', ['REMOTE_ADDR' => $ip])
-            ->assertOk()
-            ->assertJson([
-                'ip_location' => [
-                    'ip' => $ip,
-                    'countryCode' => 'US',
-                ],
-            ]);
+    $request = new \Illuminate\Http\Request;
+    $request->attributes->set('ip_location', (object) ['countryCode' => 'US']);
+    $this->assertEquals('US', $request->ipLocation('countryCode'));
+    $this->assertEquals('Default', $request->ipLocation('invalid', 'Default'));
+});
 
-        // Second request: should call Location service again
-        $this->getJson('/_test/ip-resolution', ['REMOTE_ADDR' => $ip])
-            ->assertOk()
-            ->assertJson([
-                'ip_location' => [
-                    'countryCode' => 'US',
-                ],
-            ]);
+it('resolves ip from cloudflare header', function () {
+    $cloudflareEdgeIp = '104.18.0.1';
+    $realClientIp = '203.0.113.5';
 
-        // Verify macro usage
-        $request = new Request;
-        $request->attributes->set('ip_location', (object) ['countryCode' => 'US']);
-        $this->assertEquals('US', $request->ipLocation('countryCode'));
-        $this->assertEquals('Default', $request->ipLocation('invalid', 'Default'));
-    }
+    $position = new \Stevebauman\Location\Position;
+    $position->countryCode = 'AU';
 
-    #[Test]
-    public function it_resolves_ip_from_cloudflare_header()
-    {
-        // 1.1.1.1 is a Cloudflare IP (104.16.0.0/13 range used for edge nodes).
-        // We simulate: REMOTE_ADDR = a real Cloudflare edge IP, CF-Connecting-IP = real client IP.
-        $cloudflareEdgeIp = '104.18.0.1'; // falls inside 104.16.0.0/13
-        $realClientIp = '203.0.113.5';
+    \Stevebauman\Location\Facades\Location::shouldReceive('get')
+        ->once()
+        ->with($realClientIp)
+        ->andReturn($position);
 
-        $position = new Position;
-        $position->countryCode = 'AU';
+    $this->getJson('/_test/ip-resolution', [
+        'REMOTE_ADDR' => $cloudflareEdgeIp,
+        'HTTP_CF_CONNECTING_IP' => $realClientIp,
+    ])
+        ->assertOk()
+        ->assertJson([
+            'ip_location' => [
+                'countryCode' => 'AU',
+            ],
+        ]);
+});
 
-        Location::shouldReceive('get')
-            ->once()
-            ->with($realClientIp)
-            ->andReturn($position);
+it('ignores cf connecting ip when remote addr is not cloudflare', function () {
+    $attackerIp = '203.0.113.99';
+    $spoofedIp = '8.8.8.8';
 
-        $this->getJson('/_test/ip-resolution', [
-            'REMOTE_ADDR' => $cloudflareEdgeIp,
-            'HTTP_CF_CONNECTING_IP' => $realClientIp,
-        ])
-            ->assertOk()
-            ->assertJson([
-                'ip_location' => [
-                    'countryCode' => 'AU',
-                ],
-            ]);
-    }
+    $position = new \Stevebauman\Location\Position;
+    $position->countryCode = 'XX';
 
-    #[Test]
-    public function it_ignores_cf_connecting_ip_when_remote_addr_is_not_cloudflare()
-    {
-        // Attacker sends a spoofed CF-Connecting-IP from a non-Cloudflare IP.
-        $attackerIp = '203.0.113.99';
-        $spoofedIp = '8.8.8.8';
+    \Stevebauman\Location\Facades\Location::shouldReceive('get')
+        ->once()
+        ->with($attackerIp)
+        ->andReturn($position);
 
-        $position = new Position;
-        $position->countryCode = 'XX'; // should never be used
+    \Stevebauman\Location\Facades\Location::shouldReceive('get')
+        ->with($spoofedIp)
+        ->never();
 
-        // Location::get should be called with the REAL remote addr, not the spoofed one
-        Location::shouldReceive('get')
-            ->once()
-            ->with($attackerIp)
-            ->andReturn($position);
-
-        Location::shouldReceive('get')
-            ->with($spoofedIp)
-            ->never();
-
-        $this->getJson('/_test/ip-resolution', [
-            'REMOTE_ADDR' => $attackerIp,
-            'HTTP_CF_CONNECTING_IP' => $spoofedIp,
-        ])->assertOk();
-    }
-}
+    $this->getJson('/_test/ip-resolution', [
+        'REMOTE_ADDR' => $attackerIp,
+        'HTTP_CF_CONNECTING_IP' => $spoofedIp,
+    ])->assertOk();
+});

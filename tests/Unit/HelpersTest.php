@@ -1,293 +1,235 @@
 <?php
 
-namespace Foundry\Tests\Unit;
+uses(Foundry\Tests\BaseTestCase::class);
 
-use App\Models\User;
-use Foundry\Models\Admin;
-use Foundry\Repository\BaseRepository;
-use Foundry\Tests\BaseTestCase;
-use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Optional;
+beforeEach(function () {
+    \Illuminate\Support\Facades\Config::set('app.name', 'AppName');
+    \Illuminate\Support\Facades\Config::set('app.url', env('APP_URL', 'http://localhost'));
+    \Illuminate\Support\Facades\Config::set('foundry.admin_url', env('FOUNDRY_ADMIN_URL', 'http://localhost/admin'));
+    \Illuminate\Support\Facades\Config::set('foundry.admin_prefix', env('FOUNDRY_ADMIN_PREFIX', 'admin'));
+    \Illuminate\Support\Facades\Config::set('recaptcha.site_key', env('RECAPTCHA_SITE_KEY'));
 
-class HelpersTest extends BaseTestCase
+    $user = \App\Models\User::factory()->make();
+    $user->guard ??= 'user';
+    $user->id ??= 1;
+    $user->first_name = 'Test';
+    $user->last_name = 'User';
+
+    request()->server->set('REQUEST_URI', '/');
+
+    $this->actingAs($user, $user->guard);
+});
+
+afterEach(function () {
+    \Illuminate\Support\Facades\Config::set('app.name', 'AppName');
+    \Illuminate\Support\Facades\Config::set('app.url', env('APP_URL', 'http://localhost'));
+    \Illuminate\Support\Facades\Config::set('foundry.admin_url', env('FOUNDRY_ADMIN_URL', 'http://localhost/admin'));
+    \Illuminate\Support\Facades\Config::set('foundry.admin_prefix', env('FOUNDRY_ADMIN_PREFIX', 'admin'));
+    \Illuminate\Support\Facades\Config::set('recaptcha.site_key', env('RECAPTCHA_SITE_KEY'));
+});
+
+function mockRequest($user = null, $path = '/')
 {
-    protected function setUp(): void
-    {
-        parent::setUp();
+    $user = $user ?? \App\Models\User::factory()->make();
+    $user->guard ??= 'user';
+    $user->id ??= 1;
+    $user->first_name = 'Test';
+    $user->last_name = 'User';
 
-        $this->resetConfig();
-        $this->mockRequest();
-    }
+    $uri = ltrim($path, '/');
+    request()->server->set('REQUEST_URI', '/'.$uri);
 
-    protected function tearDown(): void
-    {
-        parent::tearDown();
-        $this->resetConfig();
-    }
-
-    protected function resetConfig()
-    {
-        Config::set('app.name', 'AppName');
-        Config::set('app.url', env('APP_URL', 'http://localhost'));
-        Config::set('foundry.admin_url', env('FOUNDRY_ADMIN_URL', 'http://localhost/admin'));
-        Config::set('foundry.admin_prefix', env('FOUNDRY_ADMIN_PREFIX', 'admin'));
-        Config::set('recaptcha.site_key', env('RECAPTCHA_SITE_KEY'));
-    }
-
-    protected function mockRequest($user = null, $path = '/')
-    {
-        $user = $user ?? User::factory()->make();
-        $user->guard ??= 'user';
-        $user->id ??= 1;
-        $user->first_name = 'Test';
-        $user->last_name = 'User';
-
-        $uri = ltrim($path, '/');
-        request()->server->set('REQUEST_URI', '/'.$uri);
-
-        $this->actingAs($user, $user->guard);
-    }
-
-    public function test_guard_function_returns_user_guard()
-    {
-        $this->mockRequest();
-        $this->assertEquals('user', guard());
-    }
-
-    public function test_guard_function_returns_null_if_no_user()
-    {
-        $this->actingAsGuest();
-        $this->assertEquals('user', guard());
-    }
-
-    public function test_guard_function_checks_single_guard()
-    {
-        $this->mockRequest();
-        $this->assertTrue(guard('user'));
-        $this->assertFalse(guard('admin'));
-    }
-
-    public function test_guard_function_checks_multiple_guards()
-    {
-        $this->mockRequest();
-        $this->assertTrue(guard('user', 'admin'));
-        $this->assertTrue(guard('admin', 'user'));
-        $this->assertFalse(guard('admin', 'superadmin'));
-    }
-
-    public function test_user_function_returns_user_object()
-    {
-        $user = user();
-        $this->assertNotNull($user);
-        $this->assertEquals(1, $user->id);
-        $this->assertEquals('Test User', $user->name);
-    }
-
-    public function test_user_function_returns_specific_user_property()
-    {
-        $name = user('name');
-        $this->assertEquals('Test User', $name);
-
-        $id = user('id');
-        $this->assertEquals(1, $id);
-    }
-
-    public function test_user_function_returns_null_if_no_user()
-    {
-        $this->actingAsGuest();
-
-        $user = user();
-        $this->assertNull($user);
-
-        $name = user('name');
-        $this->assertNull($name);
-    }
-
-    public function test_is_user_function_returns_true_for_user_guard()
-    {
-        $user = User::factory()->make();
-        $user->guard = 'user';
-        $this->mockRequest($user);
-        $this->assertTrue(is_user());
-    }
-
-    public function test_is_user_function_returns_false_for_non_user_guard()
-    {
-        $user = Admin::factory()->make();
-        $user->guard = 'admin';
-        $this->mockRequest($user, 'admin');
-
-        $this->assertFalse(is_user());
-    }
-
-    public function test_is_user_function_returns_false_if_no_user()
-    {
-        $this->actingAsGuest();
-        $this->assertFalse(is_user());
-    }
-
-    public function test_is_admin_function_returns_true_for_admin_guard()
-    {
-        $user = Admin::factory()->make();
-        $user->guard = 'admin';
-        $this->mockRequest($user, 'admin');
-
-        $this->assertTrue(is_admin());
-    }
-
-    public function test_is_admin_function_returns_false_for_non_admin_guard()
-    {
-        $user = User::factory()->make();
-        $user->guard = 'user';
-        $this->mockRequest($user);
-        $this->assertFalse(is_admin());
-    }
-
-    public function test_is_admin_function_returns_false_if_no_user()
-    {
-        $this->actingAsGuest();
-        $this->assertFalse(is_admin());
-    }
-
-    public function test_app_url_with_relative_path()
-    {
-        $this->assertEquals('http://localhost/about', app_url('about'));
-    }
-
-    public function test_app_url_with_absolute_path()
-    {
-        $this->assertEquals('http://localhost/about', app_url('/about'));
-    }
-
-    public function test_admin_url_with_default_path()
-    {
-        $this->assertEquals('http://localhost/admin', admin_url());
-        $this->assertEquals('http://localhost/admin/dashboard', admin_url('dashboard'));
-        $this->assertEquals('http://localhost/admin/dashboard', admin_url('/dashboard'));
-    }
-
-    public function test_app_url_with_default_path()
-    {
-        $this->assertEquals('http://localhost', app_url());
-        $this->assertEquals('http://localhost/dashboard', app_url('dashboard'));
-        $this->assertEquals('http://localhost/dashboard', app_url('/dashboard'));
-    }
-
-    public function test_user_route_with_default_prefix()
-    {
-        $this->assertEquals('/', user_route());
-        $this->assertEquals('/dashboard', user_route('dashboard'));
-        $this->assertEquals('/dashboard', user_route('/dashboard'));
-    }
-
-    public function test_admin_route_with_default_prefix()
-    {
-        $this->assertEquals('/admin', admin_route());
-        $this->assertEquals('/admin/dashboard', admin_route('dashboard'));
-        $this->assertEquals('/admin/dashboard', admin_route('/dashboard'));
-    }
-
-    public function test_is_active()
-    {
-        // Simulate a request to 'home'
-        $this->get('home');
-
-        // Call the function with a matching route
-        $result = is_active('home');
-
-        // Assert the result is 'active'
-        $this->assertEquals('active', $result);
-    }
-
-    public function test_is_active_returns_empty_for_non_matching_route()
-    {
-        // Simulate a request to 'dashboard'
-        $this->get('dashboard');
-
-        // Call the function with a non-matching route
-        $result = is_active('home');
-
-        // Assert the result is an empty string
-        $this->assertEquals('', $result);
-    }
-
-    public function test_is_active_handles_multiple_routes()
-    {
-        // Simulate a request to 'about'
-        $this->get('about');
-
-        // Call the function with multiple routes
-        $result = is_active('home', 'about', 'contact');
-
-        // Assert the result is 'active' for a matching route
-        $this->assertEquals('active', $result);
-
-        // Call the function with no matching routes
-        $result = is_active('services', 'portfolio');
-
-        // Assert the result is an empty string
-        $this->assertEquals('', $result);
-    }
-
-    public function test_has_recaptcha()
-    {
-        Config::set('recaptcha.site_key', 'site_key');
-        $this->assertTrue(has_recaptcha());
-    }
-
-    public function test_string_to_hex()
-    {
-        $this->assertEquals('#000d05', string_to_hex('A'));
-    }
-
-    public function test_string_to_hsl()
-    {
-        $this->assertEquals('hsl(65, 35%, 65%)', string_to_hsl('A'));
-    }
-
-    public function test_model_log_name()
-    {
-        $model = new class
-        {
-            public $logName = 'Custom Log Name';
-        };
-        $this->assertEquals('Custom Log Name', model_log_name($model));
-    }
-
-    public function test_format_amount()
-    {
-        $this->assertEquals('$100.00', format_amount(100, 'USD', 'en'));
-    }
-
-    public function test_currency_symbol()
-    {
-        $currenciesMock = \Mockery::mock('Symfony\Polyfill\Intl\Icu\Currencies');
-        $currenciesMock->shouldReceive('getSymbol')->with('USD')->andReturn('$');
-        $this->assertEquals('$', currency_symbol('USD'));
-    }
-
-    public function test_get_lang_code()
-    {
-        $this->assertEquals('en', get_lang_code('en-US'));
-    }
-
-    public function test_app_lang()
-    {
-        $this->assertEquals('en', app_lang());
-    }
-
-    public function test_replace_short_code()
-    {
-        $this->assertEquals('Welcome to AppName', replace_short_code('Welcome to {{APP_NAME}}'));
-    }
-
-    public function test_has()
-    {
-        $this->assertInstanceOf(Optional::class, has(null));
-    }
-
-    public function test_get_country_code()
-    {
-        $this->assertEquals('*', BaseRepository::getCountryCode(null));
-    }
+    test()->actingAs($user, $user->guard);
 }
+
+it('guard function returns user guard', function () {
+    mockRequest();
+    $this->assertEquals('user', guard());
+});
+
+it('guard function returns null if no user', function () {
+    $this->actingAsGuest();
+    $this->assertEquals('user', guard());
+});
+
+it('guard function checks single guard', function () {
+    mockRequest();
+    $this->assertTrue(guard('user'));
+    $this->assertFalse(guard('admin'));
+});
+
+it('guard function checks multiple guards', function () {
+    mockRequest();
+    $this->assertTrue(guard('user', 'admin'));
+    $this->assertTrue(guard('admin', 'user'));
+    $this->assertFalse(guard('admin', 'superadmin'));
+});
+
+it('user function returns user object', function () {
+    $user = user();
+    $this->assertNotNull($user);
+    $this->assertEquals(1, $user->id);
+    $this->assertEquals('Test User', $user->name);
+});
+
+it('user function returns specific user property', function () {
+    $name = user('name');
+    $this->assertEquals('Test User', $name);
+
+    $id = user('id');
+    $this->assertEquals(1, $id);
+});
+
+it('user function returns null if no user', function () {
+    $this->actingAsGuest();
+
+    $user = user();
+    $this->assertNull($user);
+
+    $name = user('name');
+    $this->assertNull($name);
+});
+
+it('is user function returns true for user guard', function () {
+    $user = \App\Models\User::factory()->make();
+    $user->guard = 'user';
+    mockRequest($user);
+    $this->assertTrue(is_user());
+});
+
+it('is user function returns false for non user guard', function () {
+    $user = \Foundry\Models\Admin::factory()->make();
+    $user->guard = 'admin';
+    mockRequest($user, 'admin');
+
+    $this->assertFalse(is_user());
+});
+
+it('is user function returns false if no user', function () {
+    $this->actingAsGuest();
+    $this->assertFalse(is_user());
+});
+
+it('is admin function returns true for admin guard', function () {
+    $user = \Foundry\Models\Admin::factory()->make();
+    $user->guard = 'admin';
+    mockRequest($user, 'admin');
+
+    $this->assertTrue(is_admin());
+});
+
+it('is admin function returns false for non admin guard', function () {
+    $user = \App\Models\User::factory()->make();
+    $user->guard = 'user';
+    mockRequest($user);
+    $this->assertFalse(is_admin());
+});
+
+it('is admin function returns false if no user', function () {
+    $this->actingAsGuest();
+    $this->assertFalse(is_admin());
+});
+
+it('app url with relative path', function () {
+    $this->assertEquals('http://localhost/about', app_url('about'));
+});
+
+it('app url with absolute path', function () {
+    $this->assertEquals('http://localhost/about', app_url('/about'));
+});
+
+it('admin url with default path', function () {
+    $this->assertEquals('http://localhost/admin', admin_url());
+    $this->assertEquals('http://localhost/admin/dashboard', admin_url('dashboard'));
+    $this->assertEquals('http://localhost/admin/dashboard', admin_url('/dashboard'));
+});
+
+it('app url with default path', function () {
+    $this->assertEquals('http://localhost', app_url());
+    $this->assertEquals('http://localhost/dashboard', app_url('dashboard'));
+    $this->assertEquals('http://localhost/dashboard', app_url('/dashboard'));
+});
+
+it('user route with default prefix', function () {
+    $this->assertEquals('/', user_route());
+    $this->assertEquals('/dashboard', user_route('dashboard'));
+    $this->assertEquals('/dashboard', user_route('/dashboard'));
+});
+
+it('admin route with default prefix', function () {
+    $this->assertEquals('/admin', admin_route());
+    $this->assertEquals('/admin/dashboard', admin_route('dashboard'));
+    $this->assertEquals('/admin/dashboard', admin_route('/dashboard'));
+});
+
+it('is active', function () {
+    $this->get('home');
+    $result = is_active('home');
+    $this->assertEquals('active', $result);
+});
+
+it('is active returns empty for non matching route', function () {
+    $this->get('dashboard');
+    $result = is_active('home');
+    $this->assertEquals('', $result);
+});
+
+it('is active handles multiple routes', function () {
+    $this->get('about');
+    $result = is_active('home', 'about', 'contact');
+    $this->assertEquals('active', $result);
+
+    $result = is_active('services', 'portfolio');
+    $this->assertEquals('', $result);
+});
+
+it('has recaptcha', function () {
+    \Illuminate\Support\Facades\Config::set('recaptcha.site_key', 'site_key');
+    $this->assertTrue(has_recaptcha());
+});
+
+it('string to hex', function () {
+    $this->assertEquals('#000d05', string_to_hex('A'));
+});
+
+it('string to hsl', function () {
+    $this->assertEquals('hsl(65, 35%, 65%)', string_to_hsl('A'));
+});
+
+it('model log name', function () {
+    $model = new class
+    {
+        public $logName = 'Custom Log Name';
+    };
+    $this->assertEquals('Custom Log Name', model_log_name($model));
+});
+
+it('format amount', function () {
+    $this->assertEquals('$100.00', format_amount(100, 'USD', 'en'));
+});
+
+it('currency symbol', function () {
+    $currenciesMock = \Mockery::mock('Symfony\Polyfill\Intl\Icu\Currencies');
+    $currenciesMock->shouldReceive('getSymbol')->with('USD')->andReturn('$');
+    $this->assertEquals('$', currency_symbol('USD'));
+});
+
+it('get lang code', function () {
+    $this->assertEquals('en', get_lang_code('en-US'));
+});
+
+it('app lang', function () {
+    $this->assertEquals('en', app_lang());
+});
+
+it('replace short code', function () {
+    $this->assertEquals('Welcome to AppName', replace_short_code('Welcome to {{APP_NAME}}'));
+});
+
+it('has', function () {
+    $this->assertInstanceOf(\Illuminate\Support\Optional::class, has(null));
+});
+
+it('get country code', function () {
+    $this->assertEquals('*', \Foundry\Repository\BaseRepository::getCountryCode(null));
+});

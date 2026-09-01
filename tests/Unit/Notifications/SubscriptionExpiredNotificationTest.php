@@ -1,36 +1,26 @@
 <?php
 
-namespace Foundry\Tests\Notifications;
+uses(Foundry\Tests\TestCase::class);
 
-use App\Models\User;
-use Foundry\Models\Subscription;
-use Foundry\Notifications\SubscriptionExpiredNotification;
-use Foundry\Tests\TestCase;
-use Illuminate\Support\Facades\Notification;
+it('sends subscription expired notification', function () {
+    \Illuminate\Support\Facades\Notification::fake();
 
-class SubscriptionExpiredNotificationTest extends TestCase
-{
-    public function test_notification_construct()
-    {
-        Notification::fake();
+    $user = \App\Models\User::factory()->create();
+    $expiration = now()->subDay();
+    $subscription = \Foundry\Models\Subscription::factory()->create(['user_id' => $user->id, 'expires_at' => $expiration]);
 
-        $user = User::factory()->create();
-        $expiration = now()->subDay();
-        $subscription = Subscription::factory()->create(['user_id' => $user->id, 'expires_at' => $expiration]);
+    $this->assertEquals($subscription->expires_at->format('Y-m-d'), $expiration->format('Y-m-d'));
 
-        $this->assertEquals($subscription->expires_at->format('Y-m-d'), $expiration->format('Y-m-d'));
+    $notification = new \Foundry\Notifications\SubscriptionExpiredNotification($subscription);
 
-        $notification = new SubscriptionExpiredNotification($subscription);
+    \Illuminate\Support\Facades\Notification::send($user, $notification);
 
-        Notification::send($user, $notification);
-
-        Notification::assertSentTo(
-            $user,
-            SubscriptionExpiredNotification::class,
-            function ($notification, $channels) use ($subscription) {
-                return $notification->subject === $subscription->renderNotification('user:subscription-expired')->subject &&
-                    $notification->message === $subscription->renderNotification('user:subscription-expired')->content;
-            }
-        );
-    }
-}
+    \Illuminate\Support\Facades\Notification::assertSentTo(
+        $user,
+        \Foundry\Notifications\SubscriptionExpiredNotification::class,
+        function ($notification, $channels) use ($subscription) {
+            return $notification->subject === $subscription->renderNotification('user:subscription-expired')->subject &&
+                $notification->message === $subscription->renderNotification('user:subscription-expired')->content;
+        }
+    );
+});

@@ -1,54 +1,41 @@
 <?php
 
-namespace Foundry\Tests\Feature\Auth;
+uses(\Foundry\Tests\Feature\FeatureTestCase::class);
 
-use Foundry\Models\Admin;
-use Foundry\Tests\Feature\FeatureTestCase;
+it('can render login screen', function () {
+    $response = $this->get(route('admin.login'));
+    $response->assertOk();
+});
 
-class AuthenticationTest extends FeatureTestCase
-{
-    public function test_login_screen_can_be_rendered()
-    {
-        $response = $this->get(route('admin.login'));
+it('admins can authenticate using the login screen', function () {
+    $admin = \Foundry\Models\Admin::factory()->create(['is_active' => true]);
 
-        $response->assertOk();
-    }
+    $response = $this->post(route('admin.login.store'), [
+        'email' => $admin->email,
+        'password' => 'password',
+    ]);
 
-    public function test_admins_can_authenticate_using_the_login_screen()
-    {
-        /** @var Admin $admin */
-        $admin = Admin::factory()->create(['is_active' => true]);
+    $response->assertSessionHasNoErrors();
+    $this->assertAuthenticated('admin');
+    $response->assertRedirect(route('admin.dashboard', absolute: false));
+});
 
-        $response = $this->post(route('admin.login.store'), [
-            'email' => $admin->email,
-            'password' => 'password',
-        ]);
+it('admins cannot authenticate with invalid password', function () {
+    $admin = \Foundry\Models\Admin::factory()->create(['is_active' => true]);
 
-        $response->assertSessionHasNoErrors();
-        $this->assertAuthenticated('admin');
-        $response->assertRedirect(route('admin.dashboard', absolute: false));
-    }
+    $this->post(route('admin.login.store'), [
+        'email' => $admin->email,
+        'password' => 'wrong-password',
+    ]);
 
-    public function test_admins_can_not_authenticate_with_invalid_password()
-    {
-        $admin = Admin::factory()->create(['is_active' => true]);
+    $this->assertGuest('admin');
+});
 
-        $this->post(route('admin.login.store'), [
-            'email' => $admin->email,
-            'password' => 'wrong-password',
-        ]);
+it('admins can logout', function () {
+    $admin = \Foundry\Models\Admin::factory()->create(['is_active' => true]);
 
-        $this->assertGuest('admin');
-    }
+    $response = $this->actingAs($admin, 'admin')->post(route('admin.logout'));
 
-    public function test_admins_can_logout()
-    {
-        /** @var Admin $admin */
-        $admin = Admin::factory()->create(['is_active' => true]);
-
-        $response = $this->actingAs($admin, 'admin')->post(route('admin.logout'));
-
-        $this->assertGuest('admin');
-        $response->assertRedirect(route('admin.login'));
-    }
-}
+    $this->assertGuest('admin');
+    $response->assertRedirect(route('admin.login'));
+});

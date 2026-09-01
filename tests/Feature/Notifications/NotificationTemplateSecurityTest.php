@@ -1,34 +1,18 @@
 <?php
 
-namespace Foundry\Tests\Feature\Notifications;
+beforeEach(function () {
+    $this->renderer = new \Foundry\Services\NotificationTemplateRenderer;
+    $this->admin = \App\Models\Admin::factory()->create(['is_super_admin' => true]);
+    $this->actingAs($this->admin);
+});
 
-use App\Models\Admin;
-use Foundry\Models\Notification;
-use Foundry\Services\NotificationTemplateRenderer;
-use Foundry\Tests\TestCase;
-use PHPUnit\Framework\Attributes\Test;
+uses(\Foundry\Tests\TestCase::class);
 
-class NotificationTemplateSecurityTest extends TestCase
-{
-    protected NotificationTemplateRenderer $renderer;
-
-    protected \Foundry\Models\Admin $admin;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->renderer = new NotificationTemplateRenderer;
-        $this->admin = Admin::factory()->create(['is_super_admin' => true]);
-        $this->actingAs($this->admin);
-    }
-
-    #[Test]
-    public function it_renders_notification_with_blade_directives()
-    {
-        $notification = Notification::factory()->create([
-            'type' => 'test',
-            'subject' => 'Welcome {{ $userName }}',
-            'content' => <<<'BLADE'
+it('renders notification with blade directives', function () {
+    $notification = \Foundry\Models\Notification::factory()->create([
+        'type' => 'test',
+        'subject' => 'Welcome {{ $userName }}',
+        'content' => <<<'BLADE'
 Hello {{ $userName }},
 
 @if($hasPlan)
@@ -45,136 +29,116 @@ Your plan: {{ $planName }}
 
 {{ $greeting }} for joining us!
 BLADE
-        ]);
+    ]);
 
-        $result = $notification->render([
-            'userName' => 'John Doe',
-            'hasPlan' => true,
-            'planName' => 'Premium',
-            'features' => ['Feature 1', 'Feature 2', 'Feature 3'],
-        ]);
+    $result = $notification->render([
+        'userName' => 'John Doe',
+        'hasPlan' => true,
+        'planName' => 'Premium',
+        'features' => ['Feature 1', 'Feature 2', 'Feature 3'],
+    ]);
 
-        $this->assertStringContainsString('John Doe', $result['subject']);
-        $this->assertStringContainsString('John Doe', $result['content']);
-        $this->assertStringContainsString('Premium', $result['content']);
-        $this->assertStringContainsString('Feature 1', $result['content']);
-        $this->assertStringContainsString('Thank you', $result['content']);
-    }
+    $this->assertStringContainsString('John Doe', $result['subject']);
+    $this->assertStringContainsString('John Doe', $result['content']);
+    $this->assertStringContainsString('Premium', $result['content']);
+    $this->assertStringContainsString('Feature 1', $result['content']);
+    $this->assertStringContainsString('Thank you', $result['content']);
+});
 
-    #[Test]
-    public function it_blocks_dangerous_functions_in_notification_template()
-    {
-        $notification = Notification::factory()->create([
-            'type' => 'test',
-            'subject' => 'Test',
-            'content' => 'Hello {{ exec("whoami") }}',
-        ]);
+it('blocks dangerous functions in notification template', function () {
+    $notification = \Foundry\Models\Notification::factory()->create([
+        'type' => 'test',
+        'subject' => 'Test',
+        'content' => 'Hello {{ exec("whoami") }}',
+    ]);
 
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('not allowed for security reasons');
+    $this->expectException(\InvalidArgumentException::class);
+    $this->expectExceptionMessage('not allowed for security reasons');
 
-        $notification->render(['name' => 'Test']);
-    }
+    $notification->render(['name' => 'Test']);
+});
 
-    #[Test]
-    public function it_blocks_dangerous_functions_inside_php_directive()
-    {
-        $notification = Notification::factory()->create([
-            'type' => 'test',
-            'subject' => 'Test',
-            'content' => '@php exec("whoami"); @endphp',
-        ]);
+it('blocks dangerous functions inside php directive', function () {
+    $notification = \Foundry\Models\Notification::factory()->create([
+        'type' => 'test',
+        'subject' => 'Test',
+        'content' => '@php exec("whoami"); @endphp',
+    ]);
 
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('not allowed for security reasons');
+    $this->expectException(\InvalidArgumentException::class);
+    $this->expectExceptionMessage('not allowed for security reasons');
 
-        $notification->render(['name' => 'Test']);
-    }
+    $notification->render(['name' => 'Test']);
+});
 
-    #[Test]
-    public function it_masks_env_calls_in_notification_template()
-    {
-        $notification = Notification::factory()->create([
-            'type' => 'test',
-            'subject' => 'Test',
-            'content' => 'Config: {{ env("APP_KEY") }}',
-        ]);
+it('masks env calls in notification template', function () {
+    $notification = \Foundry\Models\Notification::factory()->create([
+        'type' => 'test',
+        'subject' => 'Test',
+        'content' => 'Config: {{ env("APP_KEY") }}',
+    ]);
 
-        $result = $notification->render([]);
+    $result = $notification->render([]);
 
-        // env() should be masked
-        $this->assertStringContainsString('****', $result['content']);
-        $this->assertStringNotContainsString('APP_KEY', $result['content']);
-    }
+    $this->assertStringContainsString('****', $result['content']);
+    $this->assertStringNotContainsString('APP_KEY', $result['content']);
+});
 
-    #[Test]
-    public function it_masks_settings_calls_in_notification_template()
-    {
-        $notification = Notification::factory()->create([
-            'type' => 'test',
-            'subject' => 'Test',
-            'content' => 'Setting: {{ settings("database.password") }}',
-        ]);
+it('masks settings calls in notification template', function () {
+    $notification = \Foundry\Models\Notification::factory()->create([
+        'type' => 'test',
+        'subject' => 'Test',
+        'content' => 'Setting: {{ settings("database.password") }}',
+    ]);
 
-        $result = $notification->render([]);
+    $result = $notification->render([]);
 
-        // settings() should be masked
-        $this->assertStringContainsString('****', $result['content']);
-    }
+    $this->assertStringContainsString('****', $result['content']);
+});
 
-    #[Test]
-    public function it_masks_sensitive_config_in_notification_template()
-    {
-        $notification = Notification::factory()->create([
-            'type' => 'test',
-            'subject' => 'Test',
-            'content' => 'Secret: {{ config("app.key") }}',
-        ]);
+it('masks sensitive config in notification template', function () {
+    $notification = \Foundry\Models\Notification::factory()->create([
+        'type' => 'test',
+        'subject' => 'Test',
+        'content' => 'Secret: {{ config("app.key") }}',
+    ]);
 
-        $result = $notification->render([]);
+    $result = $notification->render([]);
 
-        // Sensitive config should be masked
-        $this->assertStringContainsString('****', $result['content']);
-        $this->assertStringNotContainsString('app.key', $result['content']);
-    }
+    $this->assertStringContainsString('****', $result['content']);
+    $this->assertStringNotContainsString('app.key', $result['content']);
+});
 
-    #[Test]
-    public function it_allows_safe_config_in_notification_template()
-    {
-        $notification = Notification::factory()->create([
-            'type' => 'test',
-            'subject' => 'Test',
-            'content' => 'App: {{ config("app.name") }}',
-        ]);
+it('allows safe config in notification template', function () {
+    $notification = \Foundry\Models\Notification::factory()->create([
+        'type' => 'test',
+        'subject' => 'Test',
+        'content' => 'App: {{ config("app.name") }}',
+    ]);
 
-        $result = $notification->render([]);
+    $result = $notification->render([]);
 
-        // Non-sensitive config should work
-        $this->assertStringContainsString(config('app.name'), $result['content']);
-    }
+    $this->assertStringContainsString(config('app.name'), $result['content']);
+});
 
-    #[Test]
-    public function it_blocks_mutation_calls_in_notification_template()
-    {
-        $notification = Notification::factory()->create([
-            'type' => 'test',
-            'subject' => 'Test',
-            'content' => '@php config(["app.name" => "Hacked"]); @endphp',
-        ]);
+it('blocks mutation calls in notification template', function () {
+    $notification = \Foundry\Models\Notification::factory()->create([
+        'type' => 'test',
+        'subject' => 'Test',
+        'content' => '@php config(["app.name" => "Hacked"]); @endphp',
+    ]);
 
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('Mutation calls');
+    $this->expectException(\InvalidArgumentException::class);
+    $this->expectExceptionMessage('Mutation calls');
 
-        $notification->render([]);
-    }
+    $notification->render([]);
+});
 
-    #[Test]
-    public function it_validates_safe_notification_template()
-    {
-        $notification = Notification::factory()->create([
-            'type' => 'test',
-            'subject' => 'Welcome',
-            'content' => <<<'BLADE'
+it('validates safe notification template', function () {
+    $notification = \Foundry\Models\Notification::factory()->create([
+        'type' => 'test',
+        'subject' => 'Welcome',
+        'content' => <<<'BLADE'
 Hello {{ $name }},
 
 @if($premium)
@@ -187,34 +151,30 @@ Thank you for being a premium member!
 
 {{ $message }}
 BLADE
-        ]);
+    ]);
 
-        $result = $notification->validate();
+    $result = $notification->validate();
 
-        $this->assertTrue($result['subject']['valid']);
-        $this->assertTrue($result['content']['valid']);
-    }
+    $this->assertTrue($result['subject']['valid']);
+    $this->assertTrue($result['content']['valid']);
+});
 
-    #[Test]
-    public function it_validates_and_rejects_dangerous_notification_template()
-    {
-        $notification = Notification::factory()->create([
-            'type' => 'test',
-            'subject' => 'Welcome',
-            'content' => 'Hello {{ exec("whoami") }}',
-        ]);
+it('validates and rejects dangerous notification template', function () {
+    $notification = \Foundry\Models\Notification::factory()->create([
+        'type' => 'test',
+        'subject' => 'Welcome',
+        'content' => 'Hello {{ exec("whoami") }}',
+    ]);
 
-        $result = $notification->validate();
+    $result = $notification->validate();
 
-        $this->assertTrue($result['subject']['valid']);
-        $this->assertFalse($result['content']['valid']);
-        $this->assertArrayHasKey('error', $result['content']);
-    }
+    $this->assertTrue($result['subject']['valid']);
+    $this->assertFalse($result['content']['valid']);
+    $this->assertArrayHasKey('error', $result['content']);
+});
 
-    #[Test]
-    public function it_supports_shortcode_replacement_in_notifications()
-    {
-        $template = <<<'BLADE'
+it('supports shortcode replacement in notifications', function () {
+    $template = <<<'BLADE'
 Hello {{USER_FIRST_NAME}},
 
 Your subscription to {{ $plan->label }} is active.
@@ -226,24 +186,22 @@ Plan Price: {{ $plan->price }}
 Thank you!
 BLADE;
 
-        $result = $this->renderer->render($template, [
-            'user' => ['first_name' => 'John', 'email' => 'john@example.com'],
-            'plan' => ['label' => 'Premium Plan', 'price' => '$99/month'],
-            'showDetails' => true,
-        ]);
+    $result = $this->renderer->render($template, [
+        'user' => ['first_name' => 'John', 'email' => 'john@example.com'],
+        'plan' => ['label' => 'Premium Plan', 'price' => '$99/month'],
+        'showDetails' => true,
+    ]);
 
-        $this->assertStringContainsString('John', $result);
-        $this->assertStringContainsString('Premium Plan', $result);
-        $this->assertStringContainsString('$99/month', $result);
-    }
+    $this->assertStringContainsString('John', $result);
+    $this->assertStringContainsString('Premium Plan', $result);
+    $this->assertStringContainsString('$99/month', $result);
+});
 
-    #[Test]
-    public function it_allows_all_safe_blade_directives_in_notifications()
-    {
-        $notification = Notification::factory()->create([
-            'type' => 'test',
-            'subject' => 'Test Subject',
-            'content' => <<<'BLADE'
+it('allows all safe blade directives in notifications', function () {
+    $notification = \Foundry\Models\Notification::factory()->create([
+        'type' => 'test',
+        'subject' => 'Test Subject',
+        'content' => <<<'BLADE'
 @section('greeting')
 Hello {{ $name }}
 @endsection
@@ -276,54 +234,48 @@ This appears once
 {{ This is not parsed }}
 @endverbatim
 BLADE
-        ]);
+    ]);
 
-        $result = $notification->render([
-            'name' => 'John',
-            'items' => ['Item 1', 'Item 2'],
-            'premium' => false,
-            'bonus' => 'Free trial',
-        ]);
+    $result = $notification->render([
+        'name' => 'John',
+        'items' => ['Item 1', 'Item 2'],
+        'premium' => false,
+        'bonus' => 'Free trial',
+    ]);
 
-        $this->assertStringContainsString('Test Subject', $result['subject']);
-        $this->assertStringContainsString('John', $result['content']);
-        $this->assertStringContainsString('Item 1', $result['content']);
-        $this->assertStringContainsString('Upgrade to premium', $result['content']);
-        $this->assertStringContainsString('Free trial', $result['content']);
-    }
+    $this->assertStringContainsString('Test Subject', $result['subject']);
+    $this->assertStringContainsString('John', $result['content']);
+    $this->assertStringContainsString('Item 1', $result['content']);
+    $this->assertStringContainsString('Upgrade to premium', $result['content']);
+    $this->assertStringContainsString('Free trial', $result['content']);
+});
 
-    #[Test]
-    public function it_blocks_update_function_in_notification_template()
-    {
-        $notification = Notification::factory()->create([
-            'type' => 'test',
-            'subject' => 'Test',
-            'content' => '@php $user->update(["role" => "admin"]); @endphp',
-        ]);
+it('blocks update function in notification template', function () {
+    $notification = \Foundry\Models\Notification::factory()->create([
+        'type' => 'test',
+        'subject' => 'Test',
+        'content' => '@php $user->update(["role" => "admin"]); @endphp',
+    ]);
 
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('not allowed for security reasons');
+    $this->expectException(\InvalidArgumentException::class);
+    $this->expectExceptionMessage('not allowed for security reasons');
 
-        $notification->render(['user' => new \stdClass]);
-    }
+    $notification->render(['user' => new \stdClass]);
+});
 
-    #[Test]
-    public function it_masks_env_inside_php_blocks_in_notifications()
-    {
-        $notification = Notification::factory()->create([
-            'type' => 'test',
-            'subject' => 'Test',
-            'content' => <<<'BLADE'
+it('masks env inside php blocks in notifications', function () {
+    $notification = \Foundry\Models\Notification::factory()->create([
+        'type' => 'test',
+        'subject' => 'Test',
+        'content' => <<<'BLADE'
 @php
     $key = env("APP_KEY");
 @endphp
 Key: {{ $key }}
 BLADE
-        ]);
+    ]);
 
-        $result = $notification->render([]);
+    $result = $notification->render([]);
 
-        // env() should be masked even inside @php
-        $this->assertStringContainsString('****', $result['content']);
-    }
-}
+    $this->assertStringContainsString('****', $result['content']);
+});

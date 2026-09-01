@@ -1,204 +1,131 @@
 <?php
 
-namespace Foundry\Tests\Feature;
+uses(Foundry\Tests\TestCase::class);
 
-use Carbon\Carbon;
-use Foundry\Casts\AppTimezoneDate;
-use Foundry\Models\Subscription;
-use Foundry\Models\Subscription\Plan;
-use Foundry\Models\User;
-use Foundry\Tests\TestCase;
-use PHPUnit\Framework\Attributes\Test;
+beforeEach(function () {
+    config(['app.timezone' => 'Asia/Kolkata']);
 
-/**
- * Tests that datetime values are:
- *  - Stored in UTC in the database regardless of app timezone.
- *  - Serialized (JSON/array) in the app-configured timezone.
- *  - Accepted from the frontend as app-timezone strings and stored as UTC
- *    automatically (no per-field cast required).
- */
-class TimezoneConversionTest extends TestCase
-{
-    // IST is UTC+5:30
-    protected const APP_TIMEZONE = 'Asia/Kolkata';
+    $this->user = \Foundry\Models\User::factory()->create();
+    $this->plan = \Foundry\Models\Subscription\Plan::factory()->create(['interval' => 'month', 'interval_count' => 1]);
+});
 
-    protected User $user;
+afterEach(function () {
+    config(['app.timezone' => 'UTC']);
+});
 
-    protected Plan $plan;
+it('serialize date converts utc carbon to app timezone', function () {
+    $utcTime = \Carbon\Carbon::create(2024, 6, 15, 12, 0, 0, 'UTC');
 
-    protected function setUp(): void
-    {
-        parent::setUp();
+    $subscription = \Foundry\Models\Subscription::factory()->create([
+        'user_id' => $this->user->id,
+        'plan_id' => $this->plan->id,
+        'starts_at' => $utcTime,
+    ]);
 
-        config(['app.timezone' => self::APP_TIMEZONE]);
+    $data = $subscription->toArray();
 
-        $this->user = User::factory()->create();
-        $this->plan = Plan::factory()->create(['interval' => 'month', 'interval_count' => 1]);
-    }
+    $this->assertStringContainsString('17:30:00', $data['starts_at'],
+        'Serialized date should be in app timezone (IST 17:30), not UTC 12:00'
+    );
+    $this->assertStringContainsString('+05:30', $data['starts_at'],
+        'Serialized date should carry the IST offset'
+    );
+});
 
-    protected function tearDown(): void
-    {
-        config(['app.timezone' => 'UTC']);
-        parent::tearDown();
-    }
+it('serialize date keeps utc when app timezone is utc', function () {
+    config(['app.timezone' => 'UTC']);
 
-    // -------------------------------------------------------------------------
-    // serializeDate – UTC Carbon → app timezone in JSON output
-    // -------------------------------------------------------------------------
+    $utcTime = \Carbon\Carbon::create(2024, 6, 15, 12, 0, 0, 'UTC');
 
-    #[Test]
-    public function serialize_date_converts_utc_carbon_to_app_timezone(): void
-    {
-        // noon UTC → 17:30 IST
-        $utcTime = Carbon::create(2024, 6, 15, 12, 0, 0, 'UTC');
+    $subscription = \Foundry\Models\Subscription::factory()->create([
+        'user_id' => $this->user->id,
+        'plan_id' => $this->plan->id,
+        'starts_at' => $utcTime,
+    ]);
 
-        $subscription = Subscription::factory()->create([
-            'user_id' => $this->user->id,
-            'plan_id' => $this->plan->id,
-            'starts_at' => $utcTime,
-        ]);
+    $data = $subscription->toArray();
 
-        $data = $subscription->toArray();
+    $this->assertStringContainsString('12:00:00', $data['starts_at']);
+    $this->assertStringContainsString('+00:00', $data['starts_at']);
+});
 
-        $this->assertStringContainsString('17:30:00', $data['starts_at'],
-            'Serialized date should be in app timezone (IST 17:30), not UTC 12:00'
-        );
-        $this->assertStringContainsString('+05:30', $data['starts_at'],
-            'Serialized date should carry the IST offset'
-        );
-    }
+it('setting datetime string without timezone stores as utc', function () {
+    $subscription = \Foundry\Models\Subscription::factory()->create([
+        'user_id' => $this->user->id,
+        'plan_id' => $this->plan->id,
+        'starts_at' => '2024-06-15 17:30:00',
+    ]);
 
-    #[Test]
-    public function serialize_date_keeps_utc_when_app_timezone_is_utc(): void
-    {
-        config(['app.timezone' => 'UTC']);
+    $this->assertDatabaseHas('subscriptions', [
+        'id' => $subscription->id,
+        'starts_at' => '2024-06-15 12:00:00',
+    ]);
+});
 
-        $utcTime = Carbon::create(2024, 6, 15, 12, 0, 0, 'UTC');
+it('setting carbon utc instance stores as utc', function () {
+    $utcCarbon = \Carbon\Carbon::create(2024, 6, 15, 12, 0, 0, 'UTC');
 
-        $subscription = Subscription::factory()->create([
-            'user_id' => $this->user->id,
-            'plan_id' => $this->plan->id,
-            'starts_at' => $utcTime,
-        ]);
+    $subscription = \Foundry\Models\Subscription::factory()->create([
+        'user_id' => $this->user->id,
+        'plan_id' => $this->plan->id,
+        'starts_at' => $utcCarbon,
+    ]);
 
-        $data = $subscription->toArray();
+    $this->assertDatabaseHas('subscriptions', [
+        'id' => $subscription->id,
+        'starts_at' => '2024-06-15 12:00:00',
+    ]);
+});
 
-        $this->assertStringContainsString('12:00:00', $data['starts_at']);
-        $this->assertStringContainsString('+00:00', $data['starts_at']);
-    }
+it('setting carbon ist instance stores equivalent utc', function () {
+    $istCarbon = \Carbon\Carbon::create(2024, 6, 15, 12, 0, 0, 'Asia/Kolkata');
 
-    // -------------------------------------------------------------------------
-    // fromDateTime – app-timezone string input → UTC stored in DB
-    // -------------------------------------------------------------------------
+    $subscription = \Foundry\Models\Subscription::factory()->create([
+        'user_id' => $this->user->id,
+        'plan_id' => $this->plan->id,
+        'starts_at' => $istCarbon,
+    ]);
 
-    #[Test]
-    public function setting_datetime_string_without_timezone_stores_as_utc(): void
-    {
-        // Frontend sends "2024-06-15 17:30:00" (IST, no offset marker).
-        // fromDateTime() must interpret it as IST and store UTC 12:00:00.
-        $subscription = Subscription::factory()->create([
-            'user_id' => $this->user->id,
-            'plan_id' => $this->plan->id,
-            'starts_at' => '2024-06-15 17:30:00',
-        ]);
+    $this->assertDatabaseHas('subscriptions', [
+        'id' => $subscription->id,
+        'starts_at' => '2024-06-15 06:30:00',
+    ]);
+});
 
-        $this->assertDatabaseHas('subscriptions', [
-            'id' => $subscription->id,
-            'starts_at' => '2024-06-15 12:00:00',
-        ]);
-    }
+it('round trip preserves absolute moment', function () {
+    $subscription = \Foundry\Models\Subscription::factory()->create([
+        'user_id' => $this->user->id,
+        'plan_id' => $this->plan->id,
+        'starts_at' => '2024-06-15 17:30:00',
+    ]);
 
-    #[Test]
-    public function setting_carbon_utc_instance_stores_as_utc(): void
-    {
-        // Programmatic code passes an explicit UTC Carbon; must not be re-converted.
-        $utcCarbon = Carbon::create(2024, 6, 15, 12, 0, 0, 'UTC');
+    $fresh = $subscription->fresh();
 
-        $subscription = Subscription::factory()->create([
-            'user_id' => $this->user->id,
-            'plan_id' => $this->plan->id,
-            'starts_at' => $utcCarbon,
-        ]);
+    $serialized = $fresh->toArray()['starts_at'];
+    $this->assertStringContainsString('17:30:00', $serialized);
+    $this->assertStringContainsString('+05:30', $serialized);
 
-        $this->assertDatabaseHas('subscriptions', [
-            'id' => $subscription->id,
-            'starts_at' => '2024-06-15 12:00:00',
-        ]);
-    }
+    $this->assertDatabaseHas('subscriptions', [
+        'id' => $subscription->id,
+        'starts_at' => '2024-06-15 12:00:00',
+    ]);
+});
 
-    #[Test]
-    public function setting_carbon_ist_instance_stores_equivalent_utc(): void
-    {
-        // Carbon instance created in IST timezone.
-        // fromDateTime() must use its absolute moment → UTC 06:30.
-        $istCarbon = Carbon::create(2024, 6, 15, 12, 0, 0, 'Asia/Kolkata'); // IST 12:00 = UTC 06:30
+it('app timezone date cast converts input to utc', function () {
+    $cast = new \Foundry\Casts\AppTimezoneDate;
 
-        $subscription = Subscription::factory()->create([
-            'user_id' => $this->user->id,
-            'plan_id' => $this->plan->id,
-            'starts_at' => $istCarbon,
-        ]);
+    $this->assertEquals(
+        '2024-06-15 12:00:00',
+        $cast->set(null, 'field', '2024-06-15 17:30:00', [])
+    );
+});
 
-        $this->assertDatabaseHas('subscriptions', [
-            'id' => $subscription->id,
-            'starts_at' => '2024-06-15 06:30:00',
-        ]);
-    }
+it('app timezone date cast returns carbon in app timezone', function () {
+    $cast = new \Foundry\Casts\AppTimezoneDate;
 
-    // -------------------------------------------------------------------------
-    // Round-trip: store → retrieve → serialize
-    // -------------------------------------------------------------------------
+    $carbon = $cast->get(null, 'field', '2024-06-15 12:00:00', []);
 
-    #[Test]
-    public function round_trip_preserves_absolute_moment(): void
-    {
-        // Store via app-timezone string input (IST 17:30 = UTC 12:00)
-        $subscription = Subscription::factory()->create([
-            'user_id' => $this->user->id,
-            'plan_id' => $this->plan->id,
-            'starts_at' => '2024-06-15 17:30:00',
-        ]);
-
-        // Reload from DB
-        $fresh = $subscription->fresh();
-
-        // The serialized output must show IST 17:30 with +05:30 offset
-        $serialized = $fresh->toArray()['starts_at'];
-        $this->assertStringContainsString('17:30:00', $serialized);
-        $this->assertStringContainsString('+05:30', $serialized);
-
-        // The raw DB value must be UTC 12:00
-        $this->assertDatabaseHas('subscriptions', [
-            'id' => $subscription->id,
-            'starts_at' => '2024-06-15 12:00:00',
-        ]);
-    }
-
-    // -------------------------------------------------------------------------
-    // AppTimezoneDate explicit cast (still works when applied selectively)
-    // -------------------------------------------------------------------------
-
-    #[Test]
-    public function app_timezone_date_cast_converts_input_to_utc(): void
-    {
-        $cast = new AppTimezoneDate;
-
-        // IST 17:30 → UTC 12:00
-        $this->assertEquals(
-            '2024-06-15 12:00:00',
-            $cast->set(null, 'field', '2024-06-15 17:30:00', [])
-        );
-    }
-
-    #[Test]
-    public function app_timezone_date_cast_returns_carbon_in_app_timezone(): void
-    {
-        $cast = new AppTimezoneDate;
-
-        $carbon = $cast->get(null, 'field', '2024-06-15 12:00:00', []);
-
-        $this->assertInstanceOf(Carbon::class, $carbon);
-        $this->assertEquals('17:30:00', $carbon->format('H:i:s'));
-        $this->assertEquals('+05:30', $carbon->format('P'));
-    }
-}
+    $this->assertInstanceOf(\Carbon\Carbon::class, $carbon);
+    $this->assertEquals('17:30:00', $carbon->format('H:i:s'));
+    $this->assertEquals('+05:30', $carbon->format('P'));
+});

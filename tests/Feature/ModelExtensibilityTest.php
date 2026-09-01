@@ -1,108 +1,66 @@
 <?php
 
-namespace Foundry\Tests\Feature;
+uses(Foundry\Tests\BaseTestCase::class);
 
-use Foundry\Foundry;
-use Foundry\Models\Order\DiscountLine;
-use Foundry\Models\Redeem;
-use Foundry\Tests\BaseTestCase;
-use Workbench\App\Models\Coupon;
-use Workbench\App\Models\Plan;
-use Workbench\App\Models\Subscription;
+it('coupon model can be configured', function () {
+    \Foundry\Foundry::useCouponModel(\Workbench\App\Models\Coupon::class);
 
-class ModelExtensibilityTest extends BaseTestCase
-{
-    public function test_coupon_model_can_be_configured()
+    $this->assertEquals(\Workbench\App\Models\Coupon::class, \Foundry\Foundry::$couponModel);
+});
+
+it('subscription coupon relationship uses configured model', function () {
+    \Foundry\Foundry::useCouponModel(\Workbench\App\Models\Coupon::class);
+
+    $subscription = new \Foundry\Models\Subscription;
+
+    $this->assertEquals(\Workbench\App\Models\Coupon::class, $subscription->coupon()->getRelated()::class);
+});
+
+it('redeem coupon relationship uses configured model', function () {
+    \Foundry\Foundry::useCouponModel(\Workbench\App\Models\Coupon::class);
+
+    $redeem = new \Foundry\Models\Redeem;
+
+    $this->assertEquals(\Workbench\App\Models\Coupon::class, $redeem->coupon()->getRelated()::class);
+});
+
+it('discount line coupon relationship uses configured model', function () {
+    \Foundry\Foundry::useCouponModel(\Workbench\App\Models\Coupon::class);
+
+    $discountLine = new \Foundry\Models\Order\DiscountLine;
+
+    $this->assertEquals(\Workbench\App\Models\Coupon::class, $discountLine->coupon()->getRelated()::class);
+});
+
+it('extended subscription can override can apply coupon without type error', function () {
+    \Foundry\Foundry::useCouponModel(\Workbench\App\Models\Coupon::class);
+
+    $mockSubscription = new class extends \Foundry\Models\Subscription
     {
-        // Configure to use custom Coupon model
-        Foundry::useCouponModel(Coupon::class);
-
-        $this->assertEquals(Coupon::class, Foundry::$couponModel);
-    }
-
-    public function test_subscription_coupon_relationship_uses_configured_model()
-    {
-        // Configure to use custom Coupon model
-        Foundry::useCouponModel(Coupon::class);
-
-        $subscription = new \Foundry\Models\Subscription;
-
-        // Verify the coupon relationship uses the configured model
-        $this->assertEquals(Coupon::class, $subscription->coupon()->getRelated()::class);
-    }
-
-    public function test_redeem_coupon_relationship_uses_configured_model()
-    {
-        // Configure to use custom Coupon model
-        Foundry::useCouponModel(Coupon::class);
-
-        $redeem = new Redeem;
-
-        // Verify the coupon relationship uses the configured model
-        $this->assertEquals(Coupon::class, $redeem->coupon()->getRelated()::class);
-    }
-
-    public function test_discount_line_coupon_relationship_uses_configured_model()
-    {
-        // Configure to use custom Coupon model
-        Foundry::useCouponModel(Coupon::class);
-
-        $discountLine = new DiscountLine;
-
-        // Verify the coupon relationship uses the configured model
-        $this->assertEquals(Coupon::class, $discountLine->coupon()->getRelated()::class);
-    }
-
-    public function test_extended_subscription_can_override_can_apply_coupon_without_type_error()
-    {
-        // This test verifies that an extended subscription model can override
-        // the canApplyCoupon method without PHP type compatibility errors
-
-        // Configure to use custom Coupon model
-        Foundry::useCouponModel(Coupon::class);
-
-        // Create a mock extended subscription class that overrides canApplyCoupon
-        // This mimics what users do in their projects when extending the Subscription model
-        $mockSubscription = new class extends \Foundry\Models\Subscription
+        public function canApplyCoupon($coupon = null)
         {
-            // This override should not cause a type compatibility error
-            // because we removed the type hints from the base method
-            public function canApplyCoupon($coupon = null)
-            {
-                // Custom implementation could use app-specific Coupon model
-                return parent::canApplyCoupon($coupon);
-            }
-        };
+            return parent::canApplyCoupon($coupon);
+        }
+    };
 
-        // If we get here without a fatal error, the test passes
-        // The original issue would cause: "Declaration of ... must be compatible with ..."
-        $this->assertInstanceOf(\Foundry\Models\Subscription::class, $mockSubscription);
-    }
+    $this->assertInstanceOf(\Foundry\Models\Subscription::class, $mockSubscription);
+});
 
-    public function test_workbench_extended_subscription_model_can_be_instantiated()
-    {
-        // This tests the actual extended Subscription model in workbench/app/Models/Subscription.php
-        // which demonstrates a real-world example of extending the model
+it('workbench extended subscription model can be instantiated', function () {
+    \Foundry\Foundry::useCouponModel(\Workbench\App\Models\Coupon::class);
+    \Foundry\Foundry::useSubscriptionModel(\Workbench\App\Models\Subscription::class);
 
-        Foundry::useCouponModel(Coupon::class);
-        Foundry::useSubscriptionModel(Subscription::class);
+    $subscription = new \Workbench\App\Models\Subscription;
 
-        // Create an instance of the extended Subscription model
-        $subscription = new Subscription;
+    $this->assertInstanceOf(\Workbench\App\Models\Subscription::class, $subscription);
+    $this->assertInstanceOf(\Foundry\Models\Subscription::class, $subscription);
 
-        // Verify it's an instance of both the extended and base classes
-        $this->assertInstanceOf(Subscription::class, $subscription);
-        $this->assertInstanceOf(\Foundry\Models\Subscription::class, $subscription);
+    $this->assertTrue(method_exists($subscription, 'canApplyCoupon'));
+    $this->assertTrue(method_exists($subscription, 'hasSpecialCoupon'));
+});
 
-        // Verify it has the custom methods
-        $this->assertTrue(method_exists($subscription, 'canApplyCoupon'));
-        $this->assertTrue(method_exists($subscription, 'hasSpecialCoupon'));
-    }
+it('plan model can be configured', function () {
+    \Foundry\Foundry::usePlanModel(\Workbench\App\Models\Plan::class);
 
-    public function test_plan_model_can_be_configured()
-    {
-        Foundry::usePlanModel(Plan::class);
-
-        $this->assertEquals(Plan::class, Foundry::$planModel);
-    }
-}
+    $this->assertEquals(\Workbench\App\Models\Plan::class, \Foundry\Foundry::$planModel);
+});

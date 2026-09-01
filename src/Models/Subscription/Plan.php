@@ -34,6 +34,7 @@ class Plan extends Model implements Currencyable
         'freeze_fee',
         'grace_period_days',
         'price',
+        'yearly_fee',
         'trial_days',
         'setup_fee',
         'metadata',
@@ -42,6 +43,7 @@ class Plan extends Model implements Currencyable
     protected $appends = [
         'feature_lines',
         'price_formatted',
+        'yearly_price_formatted',
         'interval_label',
         'effective_price',
         'has_trial_period',
@@ -55,6 +57,7 @@ class Plan extends Model implements Currencyable
         'grace_period_days' => 'integer',
         'freeze_fee' => 'decimal:2',
         'setup_fee' => 'double',
+        'yearly_fee' => 'double',
         'interval' => PlanInterval::class,
         'metadata' => 'json',
     ];
@@ -96,6 +99,37 @@ class Plan extends Model implements Currencyable
     {
         return Attribute::make(
             get: fn () => $this->formatPrice(),
+        );
+    }
+
+    protected function yearlyFee(): Attribute
+    {
+        return Attribute::make(
+            get: function ($value) {
+                if ($value !== null) {
+                    return (float) $value;
+                }
+
+                $interval = $this->interval?->value ?? 'month';
+                $count = $this->interval_count ?? 1;
+
+                if ($interval === 'month') {
+                    return (float) (($this->price * 12) / $count);
+                } elseif ($interval === 'week') {
+                    return (float) (($this->price * 52) / $count);
+                } elseif ($interval === 'day') {
+                    return (float) (($this->price * 365) / $count);
+                }
+
+                return (float) ($this->price * 12);
+            }
+        );
+    }
+
+    protected function yearlyPriceFormatted(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->yearly_fee ? Currency::format($this->yearly_fee) : null,
         );
     }
 
@@ -144,7 +178,7 @@ class Plan extends Model implements Currencyable
 
     public function isFree(): bool
     {
-        return $this->price <= 0;
+        return $this->price <= 0 && ($this->yearly_fee === null || $this->yearly_fee <= 0);
     }
 
     public function hasTrial(): bool
@@ -259,7 +293,28 @@ class Plan extends Model implements Currencyable
      */
     public function getCurrencyFields(): array
     {
-        return ['price', 'freeze_fee', 'setup_fee'];
+        return ['price', 'yearly_fee', 'freeze_fee', 'setup_fee'];
+    }
+
+    public function getShortCodes(): array
+    {
+        return [
+            'id' => $this->id,
+            'label' => $this->label,
+            'trial_days' => $this->trial_days,
+            'setup_fee' => $this->setup_fee,
+            'freeze_fee' => $this->freeze_fee,
+            'allow_freeze' => $this->allow_freeze,
+            'is_active' => $this->is_active,
+            'currency_code' => $this->currency_code,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
+            'price' => $this->price_formatted,
+            'yearly_price' => $this->yearly_price_formatted,
+            'interval' => $this->interval_label,
+            'effective_price' => $this->effective_price,
+            'has_trial' => $this->has_trial_period,
+        ];
     }
 
     /**

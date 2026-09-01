@@ -1,247 +1,163 @@
 <?php
 
-namespace Foundry\Tests\Feature;
-
 use Carbon\Carbon;
 use Foundry\Tests\TestCase;
-use PHPUnit\Framework\Attributes\Test;
 use Workbench\App\Models\ClassSchedule;
 
-/**
- * Tests that ClassSchedule's startAt() / endAt() and datetime fields
- * correctly honour the app-configured timezone:
- *
- *  - date_at   is stored as a plain calendar date (no timezone shift).
- *  - start_at / end_at are TIME strings entered in the app timezone.
- *  - startAt() / endAt() return ATOM-formatted strings with the correct
- *    app-timezone offset.
- *  - sign_off_at (a full datetime) is stored as UTC and serialized in app tz.
- */
-class ClassScheduleTimezoneTest extends TestCase
-{
-    protected const APP_TIMEZONE = 'Asia/Kolkata'; // IST = UTC+5:30
+uses(TestCase::class);
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-        config(['app.timezone' => self::APP_TIMEZONE]);
-    }
+beforeEach(function () {
+    config(['app.timezone' => 'Asia/Kolkata']);
+});
 
-    protected function tearDown(): void
-    {
-        config(['app.timezone' => 'UTC']);
-        parent::tearDown();
-    }
+afterEach(function () {
+    config(['app.timezone' => 'UTC']);
+});
 
-    // -------------------------------------------------------------------------
-    // startAt()
-    // -------------------------------------------------------------------------
+it('returns app timezone formatted string for startAt', function () {
+    $schedule = ClassSchedule::factory()->create([
+        'date_at' => '2024-06-15',
+        'start_at' => '09:00',
+    ]);
 
-    #[Test]
-    public function start_at_returns_app_timezone_formatted_string(): void
-    {
-        $schedule = ClassSchedule::factory()->create([
-            'date_at' => '2024-06-15',
-            'start_at' => '09:00',
-        ]);
+    $startAt = $schedule->startAt();
 
-        $startAt = $schedule->startAt();
+    $this->assertNotNull($startAt);
+    $this->assertStringContainsString('09:00:00', $startAt,
+        'startAt() should show the time as entered (IST 09:00)'
+    );
+    $this->assertStringContainsString('+05:30', $startAt,
+        'startAt() should carry the IST timezone offset'
+    );
+});
 
-        $this->assertNotNull($startAt);
-        // The time string in IST must be 09:00
-        $this->assertStringContainsString('09:00:00', $startAt,
-            'startAt() should show the time as entered (IST 09:00)'
-        );
-        // The offset must match IST (+05:30)
-        $this->assertStringContainsString('+05:30', $startAt,
-            'startAt() should carry the IST timezone offset'
-        );
-    }
+it('returns null when date_at is null for startAt', function () {
+    $schedule = ClassSchedule::factory()->make([
+        'date_at' => null,
+        'start_at' => '09:00',
+    ]);
 
-    #[Test]
-    public function start_at_returns_null_when_date_at_is_null(): void
-    {
-        $schedule = ClassSchedule::factory()->make([
-            'date_at' => null,
-            'start_at' => '09:00',
-        ]);
+    $this->assertNull($schedule->startAt());
+});
 
-        $this->assertNull($schedule->startAt());
-    }
+it('returns null when start_at is null', function () {
+    $schedule = ClassSchedule::factory()->make([
+        'date_at' => '2024-06-15',
+        'start_at' => null,
+    ]);
 
-    #[Test]
-    public function start_at_returns_null_when_start_at_is_null(): void
-    {
-        $schedule = ClassSchedule::factory()->make([
-            'date_at' => '2024-06-15',
-            'start_at' => null,
-        ]);
+    $this->assertNull($schedule->startAt());
+});
 
-        $this->assertNull($schedule->startAt());
-    }
+it('returns app timezone formatted string for endAt', function () {
+    $schedule = ClassSchedule::factory()->create([
+        'date_at' => '2024-06-15',
+        'end_at' => '10:30',
+    ]);
 
-    // -------------------------------------------------------------------------
-    // endAt()
-    // -------------------------------------------------------------------------
+    $endAt = $schedule->endAt();
 
-    #[Test]
-    public function end_at_returns_app_timezone_formatted_string(): void
-    {
-        $schedule = ClassSchedule::factory()->create([
-            'date_at' => '2024-06-15',
-            'end_at' => '10:30',
-        ]);
+    $this->assertNotNull($endAt);
+    $this->assertStringContainsString('10:30:00', $endAt,
+        'endAt() should show the time as entered (IST 10:30)'
+    );
+    $this->assertStringContainsString('+05:30', $endAt);
+});
 
-        $endAt = $schedule->endAt();
+it('returns null when end_at is null', function () {
+    $schedule = ClassSchedule::factory()->make([
+        'date_at' => '2024-06-15',
+        'end_at' => null,
+    ]);
 
-        $this->assertNotNull($endAt);
-        $this->assertStringContainsString('10:30:00', $endAt,
-            'endAt() should show the time as entered (IST 10:30)'
-        );
-        $this->assertStringContainsString('+05:30', $endAt);
-    }
+    $this->assertNull($schedule->endAt());
+});
 
-    #[Test]
-    public function end_at_returns_null_when_end_at_is_null(): void
-    {
-        $schedule = ClassSchedule::factory()->make([
-            'date_at' => '2024-06-15',
-            'end_at' => null,
-        ]);
+it('calculates duration in minutes', function () {
+    $schedule = ClassSchedule::factory()->make([
+        'start_at' => '09:00',
+        'end_at' => '10:30',
+    ]);
 
-        $this->assertNull($schedule->endAt());
-    }
+    $this->assertEquals(90, $schedule->duration);
+});
 
-    // -------------------------------------------------------------------------
-    // Duration
-    // -------------------------------------------------------------------------
+it('has zero duration when times are null', function () {
+    $schedule = ClassSchedule::factory()->make([
+        'start_at' => null,
+        'end_at' => null,
+    ]);
 
-    #[Test]
-    public function duration_is_calculated_in_minutes(): void
-    {
-        $schedule = ClassSchedule::factory()->make([
-            'start_at' => '09:00',
-            'end_at' => '10:30',
-        ]);
+    $this->assertEquals(0, $schedule->duration);
+});
 
-        $this->assertEquals(90, $schedule->duration);
-    }
+it('stores date_at as calendar date without timezone shift', function () {
+    $schedule = ClassSchedule::factory()->create([
+        'date_at' => '2024-06-15',
+    ]);
 
-    #[Test]
-    public function duration_is_zero_when_times_are_null(): void
-    {
-        $schedule = ClassSchedule::factory()->make([
-            'start_at' => null,
-            'end_at' => null,
-        ]);
+    $this->assertDatabaseHas('class_schedules', [
+        'id' => $schedule->id,
+        'date_at' => '2024-06-15',
+    ]);
+});
 
-        $this->assertEquals(0, $schedule->duration);
-    }
+it('reads date_at back as same calendar date', function () {
+    $schedule = ClassSchedule::factory()->create([
+        'date_at' => '2024-06-15',
+    ]);
 
-    // -------------------------------------------------------------------------
-    // date_at – no timezone shift (calendar date stays unchanged)
-    // -------------------------------------------------------------------------
+    $fresh = $schedule->fresh();
 
-    #[Test]
-    public function date_at_is_stored_as_calendar_date_without_timezone_shift(): void
-    {
-        $schedule = ClassSchedule::factory()->create([
-            'date_at' => '2024-06-15',
-        ]);
+    $this->assertEquals('2024-06-15', $fresh->date_at->format('Y-m-d'));
+});
 
-        // The raw DB value must be the original calendar date regardless of IST
-        $this->assertDatabaseHas('class_schedules', [
-            'id' => $schedule->id,
-            'date_at' => '2024-06-15',
-        ]);
-    }
+it('stores sign_off_at app timezone input as utc', function () {
+    $schedule = ClassSchedule::factory()->create([
+        'sign_off_at' => '2024-06-15 17:30:00',
+    ]);
 
-    #[Test]
-    public function date_at_is_read_back_as_same_calendar_date(): void
-    {
-        $schedule = ClassSchedule::factory()->create([
-            'date_at' => '2024-06-15',
-        ]);
+    $this->assertDatabaseHas('class_schedules', [
+        'id' => $schedule->id,
+        'sign_off_at' => '2024-06-15 12:00:00',
+    ]);
+});
 
-        $fresh = $schedule->fresh();
+it('serializes sign_off_at in app timezone', function () {
+    $schedule = ClassSchedule::factory()->create([
+        'sign_off_at' => Carbon::create(2024, 6, 15, 12, 0, 0, 'UTC'),
+    ]);
 
-        $this->assertEquals('2024-06-15', $fresh->date_at->format('Y-m-d'));
-    }
+    $data = $schedule->fresh()->toArray();
 
-    // -------------------------------------------------------------------------
-    // sign_off_at – full datetime stored as UTC, serialized in app timezone
-    // -------------------------------------------------------------------------
+    $this->assertStringContainsString('17:30:00', $data['sign_off_at']);
+    $this->assertStringContainsString('+05:30', $data['sign_off_at']);
+});
 
-    #[Test]
-    public function sign_off_at_stores_app_timezone_input_as_utc(): void
-    {
-        // User submits IST 17:30 via the API (no timezone marker in the string)
-        $schedule = ClassSchedule::factory()->create([
-            'sign_off_at' => '2024-06-15 17:30:00',
-        ]);
+it('uses utc offset for start_at when app timezone is utc', function () {
+    config(['app.timezone' => 'UTC']);
 
-        // DB must hold UTC 12:00 (IST – 5:30)
-        $this->assertDatabaseHas('class_schedules', [
-            'id' => $schedule->id,
-            'sign_off_at' => '2024-06-15 12:00:00',
-        ]);
-    }
+    $schedule = ClassSchedule::factory()->create([
+        'date_at' => '2024-06-15',
+        'start_at' => '09:00',
+    ]);
 
-    #[Test]
-    public function sign_off_at_is_serialized_in_app_timezone(): void
-    {
-        // Store UTC noon directly (programmatic set via Carbon UTC instance)
-        $schedule = ClassSchedule::factory()->create([
-            'sign_off_at' => Carbon::create(2024, 6, 15, 12, 0, 0, 'UTC'),
-        ]);
+    $startAt = $schedule->startAt();
 
-        $data = $schedule->fresh()->toArray();
+    $this->assertStringContainsString('09:00:00', $startAt);
+    $this->assertStringContainsString('+00:00', $startAt);
+});
 
-        // Serialized output must be IST (17:30 +05:30)
-        $this->assertStringContainsString('17:30:00', $data['sign_off_at']);
-        $this->assertStringContainsString('+05:30', $data['sign_off_at']);
-    }
+it('preserves user entered time in round trip start_at', function () {
+    $schedule = ClassSchedule::factory()->create([
+        'date_at' => '2024-06-15',
+        'start_at' => '09:00',
+    ]);
 
-    // -------------------------------------------------------------------------
-    // startAt() / endAt() with UTC app timezone (no conversion)
-    // -------------------------------------------------------------------------
+    $fresh = ClassSchedule::find($schedule->id);
 
-    #[Test]
-    public function start_at_uses_utc_offset_when_app_timezone_is_utc(): void
-    {
-        config(['app.timezone' => 'UTC']);
+    $this->assertStringContainsString('09:00:00', $fresh->startAt());
+    $this->assertStringContainsString('+05:30', $fresh->startAt());
 
-        $schedule = ClassSchedule::factory()->create([
-            'date_at' => '2024-06-15',
-            'start_at' => '09:00',
-        ]);
-
-        $startAt = $schedule->startAt();
-
-        $this->assertStringContainsString('09:00:00', $startAt);
-        $this->assertStringContainsString('+00:00', $startAt);
-    }
-
-    // -------------------------------------------------------------------------
-    // Round-trip: set via app-tz string → read back → startAt() shows same time
-    // -------------------------------------------------------------------------
-
-    #[Test]
-    public function round_trip_start_at_preserves_user_entered_time(): void
-    {
-        // User submits date 2024-06-15 with class starting at 09:00 IST
-        $schedule = ClassSchedule::factory()->create([
-            'date_at' => '2024-06-15',
-            'start_at' => '09:00',
-        ]);
-
-        $fresh = ClassSchedule::find($schedule->id);
-
-        // startAt() must report the same time the user entered (09:00 IST)
-        $this->assertStringContainsString('09:00:00', $fresh->startAt());
-        $this->assertStringContainsString('+05:30', $fresh->startAt());
-
-        // The calendar date must not have drifted
-        $this->assertEquals('2024-06-15', $fresh->date_at->format('Y-m-d'));
-    }
-}
+    $this->assertEquals('2024-06-15', $fresh->date_at->format('Y-m-d'));
+});

@@ -13,10 +13,14 @@ return new class extends Migration
     {
         Schema::table('subscriptions', function (Blueprint $table) {
             // Rename canceled_at to cancels_at
-            $table->renameColumn('canceled_at', 'cancels_at');
+            if (! Schema::hasColumn('subscriptions', 'cancels_at')) {
+                $table->renameColumn('canceled_at', 'cancels_at');
+            }
 
             // Add credit_resets_at column
-            $table->timestamp('credit_resets_at')->nullable()->after('is_free_forever');
+           if (! Schema::hasColumn('subscriptions', 'credit_resets_at')) {
+                $table->timestamp('credit_resets_at')->nullable()->after('is_free_forever');
+           }
         });
     }
 

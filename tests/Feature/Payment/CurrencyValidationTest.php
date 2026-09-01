@@ -1,32 +1,16 @@
 <?php
 
-namespace Tests\Feature\Payment;
+uses(Foundry\Tests\BaseTestCase::class);
 
-use Foundry\Payment\Payable;
-use Foundry\Payment\Processors\StripeProcessor;
-use Foundry\Tests\BaseTestCase;
-use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
-use Mockery;
-use PHPUnit\Framework\Attributes\Test;
+it('validates currency for stripe processor', function () {
+    $processor = new \Foundry\Payment\Processors\StripeProcessor;
 
-class CurrencyValidationTest extends BaseTestCase
-{
-    #[Test]
-    public function it_validates_currency_for_stripe_processor()
-    {
-        // This test ensures we hooked it up correctly in StripeProcessor specifically
-        // It should fail BEFORE calling Stripe API
-        $processor = new StripeProcessor;
+    $payable = \Mockery::mock(\Foundry\Payment\Payable::class);
+    $payable->shouldReceive('getCurrency')->andReturn('XXX');
+    $payable->shouldReceive('getGatewayAmount')->andReturn(100);
+    $payable->shouldReceive('setCurrencies');
 
-        $payable = Mockery::mock(Payable::class);
-        $payable->shouldReceive('getCurrency')->andReturn('XXX'); // Invalid currency
-        $payable->shouldReceive('getGatewayAmount')->andReturn(100);
-        $payable->shouldReceive('setCurrencies'); // Allow this call as processors are now setting it
+    $this->expectException(\Illuminate\Validation\ValidationException::class);
 
-        $this->expectException(ValidationException::class);
-
-        // We know StripeProcessor calls validateCurrency first thing
-        $processor->setupPaymentIntent(new Request, $payable);
-    }
-}
+    $processor->setupPaymentIntent(new \Illuminate\Http\Request, $payable);
+});
