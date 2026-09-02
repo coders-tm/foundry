@@ -5,8 +5,7 @@ use Foundry\Models\User;
 use Foundry\Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(TestCase::class);
-uses(RefreshDatabase::class);
+uses(TestCase::class)->use(RefreshDatabase::class);
 
 beforeEach(function () {
     $this->user = User::factory()->create();

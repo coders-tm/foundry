@@ -22,10 +22,6 @@ it('user last login at is updated on login', function () {
         'password' => 'password',
     ]);
 
-    if ($response->status() !== 200) {
-        dump($response->json());
-    }
-
     $response->assertStatus(200);
 
     $user = $user->fresh();
@@ -46,10 +42,6 @@ it('admin last login at is updated on login', function () {
         'email' => $admin->email,
         'password' => 'password',
     ]);
-
-    if ($response->status() !== 200) {
-        dump($response->json());
-    }
 
     $response->assertStatus(200);
 

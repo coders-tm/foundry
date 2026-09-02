@@ -5,13 +5,13 @@ use Foundry\Models\Notification;
 use Foundry\Services\NotificationTemplateRenderer;
 use Foundry\Tests\TestCase;
 
+uses(TestCase::class);
+
 beforeEach(function () {
     $this->renderer = new NotificationTemplateRenderer;
     $this->admin = Admin::factory()->create(['is_super_admin' => true]);
     $this->actingAs($this->admin);
 });
-
-uses(TestCase::class);
 
 it('renders notification with blade directives', function () {
     $notification = Notification::factory()->create([

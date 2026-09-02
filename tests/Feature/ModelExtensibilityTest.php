@@ -71,3 +71,9 @@ it('plan model can be configured', function () {
 
     expect(Foundry\Foundry::$planModel)->toBe(Plan::class);
 });
+
+afterEach(function () {
+    Foundry\Foundry::useCouponModel(\Foundry\Models\Coupon::class);
+    Foundry\Foundry::usePlanModel(\Foundry\Models\Subscription\Plan::class);
+    Foundry\Foundry::useSubscriptionModel(\Foundry\Models\Subscription::class);
+});

@@ -12,8 +12,7 @@ use Illuminate\Support\Facades\Storage;
 use Workbench\App\Models\Admin;
 use Workbench\App\Models\User;
 
-uses(FeatureTestCase::class);
-uses(RefreshDatabase::class);
+uses(FeatureTestCase::class)->use(RefreshDatabase::class);
 
 beforeEach(function () {
     /** @var Admin $this->admin */
