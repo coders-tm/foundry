@@ -65,7 +65,10 @@ it('formats updated log', function () {
 });
 
 it('formats deleted log', function () {
-    $admin = Admin::factory()->make(['first_name' => 'Carol', 'last_name' => 'White']);
+    $admin = Admin::factory()->make([
+        'first_name' => 'Carol',
+        'last_name' => 'White',
+    ]);
 
     Logable::add(Admin::class, fn ($model) => ['name' => $model->name]);
 
