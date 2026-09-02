@@ -67,7 +67,7 @@ it('stores payment in base currency when paid in foreign currency with paypal', 
     $position->countryCode = 'DE';
     Location::shouldReceive('get')->andReturn($position);
     Currency::resolve(['country_code' => 'DE']);
-    $this->assertEquals('EUR', Currency::code());
+    expect(Currency::code())->toBe('EUR');
     $this->order->update(['billing_address' => ['country_code' => 'DE', 'line1' => 'Test Strasse']]);
     $paypalMock = Mockery::mock('stdClass');
     $paypalOrderId = 'ORDER-123';
@@ -80,9 +80,9 @@ it('stores payment in base currency when paid in foreign currency with paypal', 
     $this->assertDatabaseHas('payments', ['paymentable_id' => $this->order->id, 'paymentable_type' => $this->order->getMorphClass(), 'amount' => 100.00, 'currency' => 'USD']);
     $payment = $this->order->payments()->latest()->first();
     $metadata = $payment->metadata;
-    $this->assertEquals(90.00, $metadata['gateway_amount']);
-    $this->assertEquals('EUR', $metadata['gateway_currency']);
-    $this->assertEquals('CAP-123', $payment->transaction_id);
+    expect($metadata['gateway_amount'])->toEqual(90.00);
+    expect($metadata['gateway_currency'])->toBe('EUR');
+    expect($payment->transaction_id)->toBe('CAP-123');
 });
 
 it('stores payment in base currency when paid in foreign currency with stripe', function () use ($mockStripeClient) {
@@ -105,9 +105,9 @@ it('stores payment in base currency when paid in foreign currency with stripe', 
     $this->assertDatabaseHas('payments', ['paymentable_id' => $this->order->id, 'paymentable_type' => $this->order->getMorphClass(), 'amount' => 100.00, 'currency' => 'USD']);
     $payment = $this->order->payments()->latest()->first();
     $metadata = $payment->metadata;
-    $this->assertEquals(90.00, $metadata['gateway_amount']);
-    $this->assertEquals('EUR', $metadata['gateway_currency']);
-    $this->assertEquals('pi_eur_confirm_test', $payment->transaction_id);
+    expect($metadata['gateway_amount'])->toEqual(90.00);
+    expect($metadata['gateway_currency'])->toBe('EUR');
+    expect($payment->transaction_id)->toBe('pi_eur_confirm_test');
 });
 
 it('stores payment in base currency when paid in foreign currency with razorpay', function () use ($mockRazorpayClient) {
@@ -133,9 +133,9 @@ it('stores payment in base currency when paid in foreign currency with razorpay'
     $this->assertDatabaseHas('payments', ['paymentable_id' => $this->order->id, 'paymentable_type' => $this->order->getMorphClass(), 'amount' => 100.00, 'currency' => 'USD']);
     $payment = $this->order->payments()->latest()->first();
     $metadata = $payment->metadata;
-    $this->assertEquals(8000.00, $metadata['gateway_amount']);
-    $this->assertEquals('INR', $metadata['gateway_currency']);
-    $this->assertEquals('pay_inr_123', $payment->transaction_id);
+    expect($metadata['gateway_amount'])->toEqual(8000.00);
+    expect($metadata['gateway_currency'])->toBe('INR');
+    expect($payment->transaction_id)->toBe('pay_inr_123');
 });
 
 it('stores payment in base currency for all other mappers', function () {
@@ -146,9 +146,9 @@ it('stores payment in base currency for all other mappers', function () {
     Currency::resolve(['country_code' => 'GB']);
     $this->order->update(['billing_address' => ['country_code' => 'GB', 'line1' => 'Test Street']]);
     $payable = Payable::fromOrder($this->order);
-    $this->assertEquals(100.00, $payable->getGrandTotal());
-    $this->assertEquals(80.00, $payable->getGatewayAmount());
-    $this->assertEquals('GBP', $payable->getCurrency());
+    expect($payable->getGrandTotal())->toEqual(100.00);
+    expect($payable->getGatewayAmount())->toEqual(80.00);
+    expect($payable->getCurrency())->toBe('GBP');
     $mappers = [
         FlutterwavePayment::class => ['id' => 'flw_123', 'status' => 'successful', 'amount' => 80.00, 'currency' => 'GBP'],
         KlarnaPayment::class => ['session_id' => 'klarna_123', 'status' => 'complete', 'order_amount' => 8000, 'purchase_currency' => 'GBP'],
@@ -159,9 +159,9 @@ it('stores payment in base currency for all other mappers', function () {
     ];
     foreach ($mappers as $mapperClass => $mockResponse) {
         $mapper = new $mapperClass($mockResponse, 'flutterwave');
-        $this->assertEquals(80.00, $mapper->getAmount(), "Failed for $mapperClass: Amount mismatch");
-        $this->assertEquals('GBP', $mapper->getCurrency(), "Failed for $mapperClass: Currency mismatch");
-        $this->assertEquals(80.00, $mapper->toArray()['metadata']['gateway_amount'], "Failed for $mapperClass: Gateway Amount mismatch");
-        $this->assertEquals('GBP', $mapper->toArray()['metadata']['gateway_currency'], "Failed for $mapperClass: Gateway Currency mismatch");
+        expect($mapper->getAmount())->toEqual(80.00);
+        expect($mapper->getCurrency())->toBe('GBP');
+        expect($mapper->toArray()['metadata']['gateway_amount'])->toEqual(80.00);
+        expect($mapper->toArray()['metadata']['gateway_currency'])->toBe('GBP');
     }
 });

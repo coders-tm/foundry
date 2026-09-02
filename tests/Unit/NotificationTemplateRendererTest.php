@@ -25,11 +25,11 @@ BLADE;
         'plan' => ['label' => 'Premium Plan', 'price' => '$99/month'],
     ]);
 
-    $this->assertStringContainsString('John', $result);
-    $this->assertStringContainsString('Premium Plan', $result);
-    $this->assertStringContainsString('$99/month', $result);
-    $this->assertStringNotContainsString('{{USER_FIRST_NAME}}', $result);
-    $this->assertStringNotContainsString('{{PLAN_LABEL}}', $result);
+    expect($result)->toContain('John');
+    expect($result)->toContain('Premium Plan');
+    expect($result)->toContain('$99/month');
+    expect($result)->not->toContain('{{USER_FIRST_NAME}}');
+    expect($result)->not->toContain('{{PLAN_LABEL}}');
 });
 
 it('renders blade variable syntax', function () {
@@ -51,9 +51,9 @@ BLADE;
         'showDetails' => true,
     ]);
 
-    $this->assertStringContainsString('John', $result);
-    $this->assertStringContainsString('Premium Plan', $result);
-    $this->assertStringContainsString('$99/month', $result);
+    expect($result)->toContain('John');
+    expect($result)->toContain('Premium Plan');
+    expect($result)->toContain('$99/month');
 });
 
 it('supports mixing uppercase and blade formats', function () {
@@ -80,10 +80,10 @@ BLADE;
         'showPrice' => true,
     ]);
 
-    $this->assertStringContainsString('Hello John Doe', $result);
-    $this->assertStringContainsString('john@example.com', $result);
-    $this->assertStringContainsString('Premium Plan', $result);
-    $this->assertStringContainsString('$99/month', $result);
+    expect($result)->toContain('Hello John Doe');
+    expect($result)->toContain('john@example.com');
+    expect($result)->toContain('Premium Plan');
+    expect($result)->toContain('$99/month');
 });
 
 it('renders simple scalar values in uppercase format', function () {
@@ -101,9 +101,9 @@ BLADE;
         'isActive' => true,
     ]);
 
-    $this->assertStringContainsString('Custom Scalar: Test Value', $result);
-    $this->assertStringContainsString('Domain: example.com', $result);
-    $this->assertStringContainsString('Status: Active', $result);
+    expect($result)->toContain('Custom Scalar: Test Value');
+    expect($result)->toContain('Domain: example.com');
+    expect($result)->toContain('Status: Active');
 });
 
 it('handles model objects with to array method', function () {
@@ -128,8 +128,8 @@ BLADE;
         'user' => $user,
     ]);
 
-    $this->assertStringContainsString('Blade format: Jane jane@example.com', $result);
-    $this->assertStringContainsString('Legacy format: Smith', $result);
+    expect($result)->toContain('Blade format: Jane jane@example.com');
+    expect($result)->toContain('Legacy format: Smith');
 });
 
 it('handles nested array data', function () {
@@ -155,10 +155,10 @@ BLADE;
         ],
     ]);
 
-    $this->assertStringContainsString('User: Alice Johnson', $result);
-    $this->assertStringContainsString('Plan: Enterprise', $result);
-    $this->assertStringContainsString('Price: $199/month', $result);
-    $this->assertStringContainsString('Premium Member', $result);
+    expect($result)->toContain('User: Alice Johnson');
+    expect($result)->toContain('Plan: Enterprise');
+    expect($result)->toContain('Price: $199/month');
+    expect($result)->toContain('Premium Member');
 });
 
 it('handles null values gracefully', function () {
@@ -176,9 +176,9 @@ BLADE;
         ],
     ]);
 
-    $this->assertStringContainsString('Name: John', $result);
-    $this->assertStringContainsString('Middle:', $result);
-    $this->assertStringContainsString('Last: Doe', $result);
+    expect($result)->toContain('Name: John');
+    expect($result)->toContain('Middle:');
+    expect($result)->toContain('Last: Doe');
 });
 
 it('supports blade conditionals with both shortcode formats', function () {
@@ -201,10 +201,10 @@ BLADE;
         'isPremium' => false,
     ]);
 
-    $this->assertStringContainsString('Premium User: John', $resultPremium);
-    $this->assertStringContainsString('john@example.com', $resultPremium);
-    $this->assertStringContainsString('Regular User', $resultRegular);
-    $this->assertStringNotContainsString('Premium User', $resultRegular);
+    expect($resultPremium)->toContain('Premium User: John');
+    expect($resultPremium)->toContain('john@example.com');
+    expect($resultRegular)->toContain('Regular User');
+    expect($resultRegular)->not->toContain('Premium User');
 });
 
 it('supports blade loops with shortcodes', function () {
@@ -222,26 +222,26 @@ BLADE;
         ],
     ]);
 
-    $this->assertStringContainsString('Feature A', $result);
-    $this->assertStringContainsString('Feature B', $result);
-    $this->assertStringContainsString('$10', $result);
-    $this->assertStringContainsString('$20', $result);
+    expect($result)->toContain('Feature A');
+    expect($result)->toContain('Feature B');
+    expect($result)->toContain('$10');
+    expect($result)->toContain('$20');
 });
 
 it('validates template syntax', function () {
     $validTemplate = 'Hello {{ $user->first_name }}';
     $result = $this->renderer->validate($validTemplate);
 
-    $this->assertTrue($result['valid']);
-    $this->assertArrayNotHasKey('error', $result);
+    expect($result['valid'])->toBeTrue();
+    expect($result)->not->toHaveKey('error');
 });
 
 it('detects invalid template syntax', function () {
     $invalidTemplate = 'Hello {{ exec("ls") }}';
     $result = $this->renderer->validate($invalidTemplate);
 
-    $this->assertFalse($result['valid']);
-    $this->assertArrayHasKey('error', $result);
+    expect($result['valid'])->toBeFalse();
+    expect($result)->toHaveKey('error');
 });
 
 it('backward compatibility with existing notification patterns', function () {
@@ -261,11 +261,11 @@ HTML;
         'plan' => ['label' => 'Premium', 'price' => '$99', 'billing_cycle' => 'Monthly'],
     ]);
 
-    $this->assertStringContainsString('<b>John</b>', $result);
-    $this->assertStringContainsString('My App', $result);
-    $this->assertStringContainsString('Premium', $result);
-    $this->assertStringContainsString('$99', $result);
-    $this->assertStringContainsString('Monthly', $result);
+    expect($result)->toContain('<b>John</b>');
+    expect($result)->toContain('My App');
+    expect($result)->toContain('Premium');
+    expect($result)->toContain('$99');
+    expect($result)->toContain('Monthly');
 });
 
 it('blade format works with existing notification patterns', function () {
@@ -285,10 +285,10 @@ HTML;
         'plan' => ['label' => 'Premium', 'price' => '$99', 'billing_cycle' => 'Monthly'],
     ]);
 
-    $this->assertStringContainsString('<b>John</b>', $result);
-    $this->assertStringContainsString('My App', $result);
-    $this->assertStringContainsString('$99', $result);
-    $this->assertStringContainsString('Monthly', $result);
+    expect($result)->toContain('<b>John</b>');
+    expect($result)->toContain('My App');
+    expect($result)->toContain('$99');
+    expect($result)->toContain('Monthly');
 });
 
 it('renders class and schedule blade template', function () {
@@ -311,9 +311,9 @@ HTML;
         'schedule' => $schedule,
     ]);
 
-    $this->assertStringContainsString('Math 101', $result);
-    $this->assertStringContainsString('2026-04-01 09:00:00', $result);
-    $this->assertStringContainsString('See you there!', $result);
+    expect($result)->toContain('Math 101');
+    expect($result)->toContain('2026-04-01 09:00:00');
+    expect($result)->toContain('See you there!');
 });
 
 it('handles html escaped object operator in templates', function () {
@@ -336,8 +336,8 @@ HTML;
         'schedule' => $schedule,
     ]);
 
-    $this->assertStringNotContainsString('-&gt;', $result);
-    $this->assertStringContainsString('Physics 201', $result);
-    $this->assertStringContainsString('2026-05-10 14:30:00', $result);
-    $this->assertStringContainsString('See you there!', $result);
+    expect($result)->not->toContain('-&gt;');
+    expect($result)->toContain('Physics 201');
+    expect($result)->toContain('2026-05-10 14:30:00');
+    expect($result)->toContain('See you there!');
 });

@@ -11,109 +11,106 @@ uses(TestCase::class);
 it('can get all report types', function () {
     $types = ReportService::all();
 
-    $this->assertIsArray($types);
-    $this->assertGreaterThan(0, count($types));
-    $this->assertContains('subscriptions', $types);
-    $this->assertContains('orders', $types);
-    $this->assertContains('mrr-by-plan', $types);
+    expect($types)->toBeArray();
+    expect(count($types))->toBeGreaterThan(0);
+    expect($types)->toContain('subscriptions');
+    expect($types)->toContain('orders');
+    expect($types)->toContain('mrr-by-plan');
 });
 
 it('can get grouped reports', function () {
     $grouped = ReportService::grouped();
 
-    $this->assertIsArray($grouped);
-    $this->assertArrayHasKey('revenue', $grouped);
-    $this->assertArrayHasKey('retention', $grouped);
-    $this->assertArrayHasKey('economics', $grouped);
-    $this->assertArrayHasKey('exports', $grouped);
+    expect($grouped)->toBeArray();
+    expect($grouped)->toHaveKey('revenue');
+    expect($grouped)->toHaveKey('retention');
+    expect($grouped)->toHaveKey('economics');
+    expect($grouped)->toHaveKey('exports');
 });
 
 it('can get report category', function () {
-    $this->assertEquals('exports', ReportService::getCategory('subscriptions'));
-    $this->assertEquals('revenue', ReportService::getCategory('mrr-by-plan'));
-    $this->assertEquals('retention', ReportService::getCategory('customer-churn'));
-    $this->assertNull(ReportService::getCategory('non-existent'));
+    expect(ReportService::getCategory('subscriptions'))->toBe('exports');
+    expect(ReportService::getCategory('mrr-by-plan'))->toBe('revenue');
+    expect(ReportService::getCategory('customer-churn'))->toBe('retention');
+    expect(ReportService::getCategory('non-existent'))->toBeNull();
 });
 
 it('can get report label', function () {
-    $this->assertEquals('Subscriptions Export', ReportService::getLabel('subscriptions'));
-    $this->assertEquals('MRR by Plan', ReportService::getLabel('mrr-by-plan'));
+    expect(ReportService::getLabel('subscriptions'))->toBe('Subscriptions Export');
+    expect(ReportService::getLabel('mrr-by-plan'))->toBe('MRR by Plan');
 });
 
 it('can resolve export report', function () {
     $service = ReportService::resolve('subscriptions');
-    $this->assertInstanceOf(ReportInterface::class, $service);
-    $this->assertInstanceOf(SubscriptionsExportReport::class, $service);
+    expect($service)->toBeInstanceOf(ReportInterface::class);
+    expect($service)->toBeInstanceOf(SubscriptionsExportReport::class);
 });
 
 it('can resolve revenue report', function () {
     $service = ReportService::resolve('mrr-by-plan');
-    $this->assertInstanceOf(ReportInterface::class, $service);
-    $this->assertInstanceOf(MrrByPlanReport::class, $service);
+    expect($service)->toBeInstanceOf(ReportInterface::class);
+    expect($service)->toBeInstanceOf(MrrByPlanReport::class);
 });
 
 it('throws exception for invalid type', function () {
-    $this->expectException(InvalidArgumentException::class);
-    $this->expectExceptionMessage('Unknown report type: invalid-type');
-
-    ReportService::resolve('invalid-type');
+    expect(fn () => ReportService::resolve('invalid-type'))->toThrow(InvalidArgumentException::class, 'Unknown report type: invalid-type');
 });
 
 it('can check if type exists', function () {
-    $this->assertTrue(ReportService::has('subscriptions'));
-    $this->assertTrue(ReportService::has('mrr-by-plan'));
-    $this->assertFalse(ReportService::has('invalid-type'));
+    expect(ReportService::has('subscriptions'))->toBeTrue();
+    expect(ReportService::has('mrr-by-plan'))->toBeTrue();
+    expect(ReportService::has('invalid-type'))->toBeFalse();
 });
 
 it('can get reports for category', function () {
     $revenue = ReportService::forCategory('revenue');
-    $this->assertContains('mrr-by-plan', $revenue);
+    expect($revenue)->toContain('mrr-by-plan');
 
     $exports = ReportService::forCategory('exports');
-    $this->assertContains('subscriptions', $exports);
-    $this->assertContains('orders', $exports);
+    expect($exports)->toContain('subscriptions');
+    expect($exports)->toContain('orders');
 });
 
 it('can get all with labels', function () {
     $allWithLabels = ReportService::allWithLabels();
 
-    $this->assertIsArray($allWithLabels);
-    $this->assertArrayHasKey('subscriptions', $allWithLabels);
-    $this->assertEquals('Subscriptions Export', $allWithLabels['subscriptions']);
+    expect($allWithLabels)->toBeArray();
+    expect($allWithLabels)->toHaveKey('subscriptions');
+    expect($allWithLabels['subscriptions'])->toBe('Subscriptions Export');
 });
 
 it('can get category labels', function () {
     $labels = ReportService::getCategoryLabels();
 
-    $this->assertIsArray($labels);
-    $this->assertEquals('Revenue', $labels['revenue']);
-    $this->assertEquals('Data Exports', $labels['exports']);
+    expect($labels)->toBeArray();
+    expect($labels['revenue'])->toBe('Revenue');
+    expect($labels['exports'])->toBe('Data Exports');
 });
 
 it('export report can handle correct type', function () {
     $service = new SubscriptionsExportReport;
 
-    $this->assertTrue($service::canHandle('subscriptions'));
-    $this->assertFalse($service::canHandle('orders'));
-    $this->assertFalse($service::canHandle('mrr-by-plan'));
+    expect($service::canHandle('subscriptions'))->toBeTrue();
+    expect($service::canHandle('orders'))->toBeFalse();
+    expect($service::canHandle('mrr-by-plan'))->toBeFalse();
 });
 
 it('revenue report can handle correct type', function () {
     $service = new MrrByPlanReport;
 
-    $this->assertTrue($service::canHandle('mrr-by-plan'));
-    $this->assertFalse($service::canHandle('sales-summary'));
-    $this->assertFalse($service::canHandle('subscriptions'));
+    expect($service::canHandle('mrr-by-plan'))->toBeTrue();
+    expect($service::canHandle('sales-summary'))->toBeFalse();
+    expect($service::canHandle('subscriptions'))->toBeFalse();
 });
 
 it('can register custom report', function () {
     ReportService::register('custom-report', SubscriptionsExportReport::class);
 
-    $this->assertTrue(ReportService::has('custom-report'));
+    expect(ReportService::has('custom-report'))->toBeTrue();
     $service = ReportService::resolve('custom-report');
-    $this->assertInstanceOf(SubscriptionsExportReport::class, $service);
+    expect($service)->toBeInstanceOf(SubscriptionsExportReport::class);
 
     // Cleanup
     ReportService::unregister('custom-report');
-    $this->assertFalse(ReportService::has('custom-report'));
+    expect(ReportService::has('custom-report'))->toBeFalse();
 });

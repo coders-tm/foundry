@@ -22,16 +22,16 @@ it('subscription can be frozen immediately', function () {
     // Freeze subscription
     $subscription->freeze($releaseAt, $reason, 200);
 
-    $this->assertEquals(SubscriptionStatus::PAUSED, $subscription->status);
-    $this->assertNotNull($subscription->frozen_at);
-    $this->assertEquals($releaseAt->format('Y-m-d'), $subscription->release_at->format('Y-m-d'));
-    $this->assertTrue($subscription->onFreeze());
+    expect($subscription->status)->toEqual(SubscriptionStatus::PAUSED);
+    expect($subscription->frozen_at)->not->toBeNull();
+    expect($subscription->release_at->format('Y-m-d'))->toEqual($releaseAt->format('Y-m-d'));
+    expect($subscription->onFreeze())->toBeTrue();
 
     // Check log contains the reason
     $log = $subscription->logs()->where('message', 'LIKE', '%frozen%')->latest()->first();
-    $this->assertNotNull($log);
-    $this->assertStringContainsString($reason, $log->message);
-    $this->assertStringContainsString($releaseAt->format('Y-m-d'), $log->message);
+    expect($log)->not->toBeNull();
+    expect($log->message)->toContain($reason);
+    expect($log->message)->toContain($releaseAt->format('Y-m-d'));
 });
 
 it('subscription can be unfrozen', function () {
@@ -45,17 +45,17 @@ it('subscription can be unfrozen', function () {
     $releaseAt = now()->addDays(30);
     $subscription->freeze($releaseAt, 'Testing');
 
-    $this->assertTrue($subscription->onFreeze());
+    expect($subscription->onFreeze())->toBeTrue();
 
     // Unfreeze
     $subscription->unfreeze();
 
-    $this->assertFalse($subscription->onFreeze());
-    $this->assertEquals(SubscriptionStatus::ACTIVE, $subscription->status);
-    $this->assertNull($subscription->frozen_at);
-    $this->assertNull($subscription->release_at);
-    $this->assertNull($subscription->freeze_reason);
-    $this->assertNull($subscription->freeze_fee);
+    expect($subscription->onFreeze())->toBeFalse();
+    expect($subscription->status)->toEqual(SubscriptionStatus::ACTIVE);
+    expect($subscription->frozen_at)->toBeNull();
+    expect($subscription->release_at)->toBeNull();
+    expect($subscription->freeze_reason)->toBeNull();
+    expect($subscription->freeze_fee)->toBeNull();
 });
 
 it('freeze extends expires at', function () {
@@ -80,7 +80,7 @@ it('freeze extends expires at', function () {
     $subscription->freeze($releaseAt);
 
     // Verify it's frozen
-    $this->assertTrue($subscription->onFreeze());
+    expect($subscription->onFreeze())->toBeTrue();
 
     // Manually set frozen_at to 60 days ago to simulate passage of time
     $subscription->frozen_at = $frozenAt->copy()->subDays(60);
@@ -91,10 +91,8 @@ it('freeze extends expires at', function () {
     $subscription->unfreeze();
 
     // expires_at should be extended by 60 days
-    $this->assertEquals(
-        $originalExpiresAt->addDays(60)->format('Y-m-d'),
-        $subscription->expires_at->format('Y-m-d'),
-        'expires_at should be extended by freeze duration'
+    expect($subscription->expires_at->format('Y-m-d'))->toEqual(
+        $originalExpiresAt->addDays(60)->format('Y-m-d')
     );
 });
 
@@ -108,13 +106,10 @@ it('cannot freeze if already frozen', function () {
     // Freeze subscription
     $subscription->freeze(now()->addDays(30));
 
-    $this->assertTrue($subscription->onFreeze());
+    expect($subscription->onFreeze())->toBeTrue();
 
     // Try to freeze again
-    $this->expectException(LogicException::class);
-    $this->expectExceptionMessage('Subscription cannot be frozen at this time');
-
-    $subscription->freeze(now()->addDays(60));
+    expect(fn () => $subscription->freeze(now()->addDays(60)))->toThrow(LogicException::class, 'Subscription cannot be frozen at this time');
 });
 
 it('cannot freeze canceled subscription', function () {
@@ -125,10 +120,7 @@ it('cannot freeze canceled subscription', function () {
     $subscription->cancels_at = now();
     $subscription->save();
 
-    $this->expectException(LogicException::class);
-    $this->expectExceptionMessage('Subscription cannot be frozen at this time');
-
-    $subscription->freeze(now()->addDays(30));
+    expect(fn () => $subscription->freeze(now()->addDays(30)))->toThrow(LogicException::class, 'Subscription cannot be frozen at this time');
 });
 
 it('frozen scope returns only frozen subscriptions', function () {
@@ -147,11 +139,10 @@ it('frozen scope returns only frozen subscriptions', function () {
     $frozenSubscription->release_at = now()->addDays(30);
     $frozenSubscription->save();
 
-    $frozenCount = Subscription::frozen()->count();
-    $this->assertEquals(1, $frozenCount);
+    expect(Subscription::frozen()->count())->toEqual(1);
 
     $frozen = Subscription::frozen()->first();
-    $this->assertEquals($frozenSubscription->id, $frozen->id);
+    expect($frozen->id)->toEqual($frozenSubscription->id);
 });
 
 it('due for unfreeze scope', function () {
@@ -172,11 +163,10 @@ it('due for unfreeze scope', function () {
     $notDueSubscription->release_at = now()->addDays(30);
     $notDueSubscription->save();
 
-    $dueCount = Subscription::dueForUnfreeze()->count();
-    $this->assertEquals(1, $dueCount);
+    expect(Subscription::dueForUnfreeze()->count())->toEqual(1);
 
     $due = Subscription::dueForUnfreeze()->first();
-    $this->assertEquals($dueSubscription->id, $due->id);
+    expect($due->id)->toEqual($dueSubscription->id);
 });
 
 it('freeze fee uses config default', function () {
@@ -193,8 +183,8 @@ it('freeze fee uses config default', function () {
 
     // Verify invoice was created with the config fee
     $invoice = $subscription->invoices()->latest()->first();
-    $this->assertNotNull($invoice);
-    $this->assertEquals(250.00, $invoice->grand_total);
+    expect($invoice)->not->toBeNull();
+    expect((float) $invoice->grand_total)->toEqual(250.00);
 });
 
 it('freeze can be disabled via config', function () {
@@ -206,8 +196,7 @@ it('freeze can be disabled via config', function () {
     $subscription->status = SubscriptionStatus::ACTIVE;
     $subscription->save();
 
-    $this->assertFalse($subscription->canFreeze());
+    expect($subscription->canFreeze())->toBeFalse();
 
-    $this->expectException(LogicException::class);
-    $subscription->freeze(now()->addDays(30));
+    expect(fn () => $subscription->freeze(now()->addDays(30)))->toThrow(LogicException::class);
 });

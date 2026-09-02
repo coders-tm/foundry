@@ -47,7 +47,7 @@ it('report generates mrr movement data', function () {
     $result = $report->paginate($report->validate($filters), 25, 1);
 
     // Assert
-    $this->assertNotEmpty($result['data']);
+    expect($result['data'])->not->toBeEmpty();
 });
 
 it('summary calculates mrr changes', function () {
@@ -77,5 +77,5 @@ it('summary calculates mrr changes', function () {
     $summary = $report->summarize($report->validate($filters));
 
     // Assert
-    $this->assertIsArray($summary);
+    expect($summary)->toBeArray();
 });

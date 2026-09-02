@@ -17,8 +17,8 @@ it('plan can store yearly fee', function () {
         'yearly_fee' => 10000,
     ]);
 
-    $this->assertEquals(1000, $plan->price);
-    $this->assertEquals(10000, $plan->yearly_fee);
+    expect($plan->price)->toEqual(1000);
+    expect($plan->yearly_fee)->toEqual(10000);
 });
 
 it('plan yearly price formatted accessor', function () {
@@ -27,8 +27,8 @@ it('plan yearly price formatted accessor', function () {
         'yearly_fee' => 10000,
     ]);
 
-    $this->assertNotNull($plan->yearly_price_formatted);
-    $this->assertStringContainsString('$10,000.00', $plan->yearly_price_formatted);
+    expect($plan->yearly_price_formatted)->not->toBeNull();
+    expect($plan->yearly_price_formatted)->toContain('$10,000.00');
 });
 
 it('plan yearly fee is calculated from price when no yearly fee set', function () {
@@ -39,7 +39,7 @@ it('plan yearly fee is calculated from price when no yearly fee set', function (
         'yearly_fee' => null,
     ]);
 
-    $this->assertEquals(1000 * 12, $plan->yearly_fee);
+    expect($plan->yearly_fee)->toEqual(1000 * 12);
 });
 
 it('plan is free checks yearly fee', function () {
@@ -48,7 +48,7 @@ it('plan is free checks yearly fee', function () {
         'yearly_fee' => 100,
     ]);
 
-    $this->assertFalse($plan->isFree());
+    expect($plan->isFree())->toBeFalse();
 });
 
 it('plan is free when both prices zero', function () {
@@ -57,7 +57,7 @@ it('plan is free when both prices zero', function () {
         'yearly_fee' => 0,
     ]);
 
-    $this->assertTrue($plan->isFree());
+    expect($plan->isFree())->toBeTrue();
 });
 
 it('plan is free when yearly fee null and price zero', function () {
@@ -66,7 +66,7 @@ it('plan is free when yearly fee null and price zero', function () {
         'yearly_fee' => null,
     ]);
 
-    $this->assertTrue($plan->isFree());
+    expect($plan->isFree())->toBeTrue();
 });
 
 it('yearly fee is included in currency fields', function () {
@@ -75,7 +75,7 @@ it('yearly fee is included in currency fields', function () {
         'yearly_fee' => 10000,
     ]);
 
-    $this->assertContains('yearly_fee', $plan->getCurrencyFields());
+    expect($plan->getCurrencyFields())->toContain('yearly_fee');
 });
 
 it('new subscription with yearly billing sets correct interval', function () {
@@ -91,8 +91,8 @@ it('new subscription with yearly billing sets correct interval', function () {
     $subscription = $user->newSubscription('default', $plan);
     $subscription->save();
 
-    $this->assertEquals('year', $subscription->billing_interval);
-    $this->assertEquals(1, $subscription->billing_interval_count);
+    expect($subscription->billing_interval)->toEqual('year');
+    expect($subscription->billing_interval_count)->toEqual(1);
 });
 
 it('new subscription with yearly billing sets credit resets at', function () {
@@ -108,8 +108,8 @@ it('new subscription with yearly billing sets credit resets at', function () {
     $subscription = $user->newSubscription('default', $plan);
     $subscription->save();
 
-    $this->assertNotNull($subscription->credit_resets_at);
-    $this->assertTrue($subscription->credit_resets_at->isFuture());
+    expect($subscription->credit_resets_at)->not->toBeNull();
+    expect($subscription->credit_resets_at->isFuture())->toBeTrue();
 });
 
 it('new subscription with yearly billing credit resets at matches plan interval', function () {
@@ -128,10 +128,7 @@ it('new subscription with yearly billing credit resets at matches plan interval'
     $subscription->save();
 
     $expectedCreditReset = Carbon::parse('2027-06-01 12:00:00');
-    $this->assertTrue(
-        $subscription->credit_resets_at->eq($expectedCreditReset),
-        "Expected {$expectedCreditReset} but got {$subscription->credit_resets_at}"
-    );
+    expect($subscription->credit_resets_at->eq($expectedCreditReset))->toBeTrue();
 });
 
 it('new subscription with monthly billing sets credit resets at', function () {
@@ -145,7 +142,7 @@ it('new subscription with monthly billing sets credit resets at', function () {
     $subscription = $user->newSubscription('default', $plan);
     $subscription->save();
 
-    $this->assertNotNull($subscription->credit_resets_at);
+    expect($subscription->credit_resets_at)->not->toBeNull();
 });
 
 it('new subscription monthly billing uses plan interval', function () {
@@ -159,7 +156,7 @@ it('new subscription monthly billing uses plan interval', function () {
     $subscription = $user->newSubscription('default', $plan);
     $subscription->save();
 
-    $this->assertEquals('month', $subscription->billing_interval);
+    expect($subscription->billing_interval)->toEqual('month');
 });
 
 it('yearly subscription expires at is one year from now', function () {
@@ -177,10 +174,7 @@ it('yearly subscription expires at is one year from now', function () {
     $subscription = $user->newSubscription('default', $plan);
     $subscription->save();
 
-    $this->assertTrue(
-        $subscription->expires_at->eq(Carbon::parse('2027-06-01 12:00:00')),
-        "Expected 2027-06-01 12:00:00 but got {$subscription->expires_at}"
-    );
+    expect($subscription->expires_at->eq(Carbon::parse('2027-06-01 12:00:00')))->toBeTrue();
 });
 
 it('yearly subscription upcoming invoice uses yearly fee', function () {
@@ -198,10 +192,10 @@ it('yearly subscription upcoming invoice uses yearly fee', function () {
 
     $invoice = $subscription->upcomingInvoice(true);
 
-    $this->assertNotNull($invoice);
-    $this->assertCount(1, $invoice->line_items);
-    $this->assertEquals(10000, $invoice->line_items[0]['price']);
-    $this->assertEquals(10000, $invoice->line_items[0]['total']);
+    expect($invoice)->not->toBeNull();
+    expect($invoice->line_items)->toHaveCount(1);
+    expect($invoice->line_items[0]['price'])->toEqual(10000);
+    expect($invoice->line_items[0]['total'])->toEqual(10000);
 });
 
 it('yearly subscription upcoming invoice uses year interval', function () {
@@ -219,8 +213,8 @@ it('yearly subscription upcoming invoice uses year interval', function () {
 
     $invoice = $subscription->upcomingInvoice(true);
 
-    $this->assertNotNull($invoice);
-    $this->assertStringContainsString('year', $invoice->line_items[0]['title']);
+    expect($invoice)->not->toBeNull();
+    expect($invoice->line_items[0]['title'])->toContain('year');
 });
 
 it('monthly subscription upcoming invoice uses plan price', function () {
@@ -237,9 +231,9 @@ it('monthly subscription upcoming invoice uses plan price', function () {
 
     $invoice = $subscription->upcomingInvoice(true);
 
-    $this->assertNotNull($invoice);
-    $this->assertEquals(1000, $invoice->line_items[0]['price']);
-    $this->assertStringContainsString('month', $invoice->line_items[0]['title']);
+    expect($invoice)->not->toBeNull();
+    expect($invoice->line_items[0]['price'])->toEqual(1000);
+    expect($invoice->line_items[0]['title'])->toContain('month');
 });
 
 it('yearly subscription status response includes credit resets at', function () {
@@ -255,8 +249,8 @@ it('yearly subscription status response includes credit resets at', function () 
 
     $response = $subscription->status()->toResponse();
 
-    $this->assertArrayHasKey('credit_resets_at', $response);
-    $this->assertNotNull($response['credit_resets_at']);
+    expect($response)->toHaveKey('credit_resets_at');
+    expect($response['credit_resets_at'])->not->toBeNull();
 });
 
 it('monthly subscription status response credit resets at is not null', function () {
@@ -271,8 +265,8 @@ it('monthly subscription status response credit resets at is not null', function
 
     $response = $subscription->status()->toResponse();
 
-    $this->assertArrayHasKey('credit_resets_at', $response);
-    $this->assertNotNull($response['credit_resets_at']);
+    expect($response)->toHaveKey('credit_resets_at');
+    expect($response['credit_resets_at'])->not->toBeNull();
 });
 
 it('advance credit resets at moves to next plan interval', function () {
@@ -290,16 +284,11 @@ it('advance credit resets at moves to next plan interval', function () {
     $subscription = $user->newSubscription('default', $plan);
     $subscription->save();
 
-    $this->assertTrue(
-        $subscription->credit_resets_at->eq(Carbon::parse('2027-06-01 12:00:00'))
-    );
+    expect($subscription->credit_resets_at->eq(Carbon::parse('2027-06-01 12:00:00')))->toBeTrue();
 
     $subscription->advanceCreditResetsAt();
 
-    $this->assertTrue(
-        $subscription->credit_resets_at->eq(Carbon::parse('2028-06-01 12:00:00')),
-        "Expected 2028-06-01 12:00:00 but got {$subscription->credit_resets_at}"
-    );
+    expect($subscription->credit_resets_at->eq(Carbon::parse('2028-06-01 12:00:00')))->toBeTrue();
 });
 
 it('swap resets to plan defaults and updates credit resets at', function () {
@@ -322,14 +311,14 @@ it('swap resets to plan defaults and updates credit resets at', function () {
     $subscription->save();
     $subscription->paymentConfirmation();
 
-    $this->assertEquals('year', $subscription->billing_interval);
-    $this->assertNotNull($subscription->credit_resets_at);
+    expect($subscription->billing_interval)->toEqual('year');
+    expect($subscription->credit_resets_at)->not->toBeNull();
 
     $subscription->swap($newPlan->id, false);
 
-    $this->assertEquals($newPlan->id, $subscription->plan_id);
-    $this->assertEquals('month', $subscription->billing_interval);
-    $this->assertNotNull($subscription->credit_resets_at);
+    expect($subscription->plan_id)->toEqual($newPlan->id);
+    expect($subscription->billing_interval)->toEqual('month');
+    expect($subscription->credit_resets_at)->not->toBeNull();
 });
 
 it('yearly billing creates subscription with correct period', function () {
@@ -347,20 +336,11 @@ it('yearly billing creates subscription with correct period', function () {
     $subscription = $user->newSubscription('default', $plan);
     $subscription->save();
 
-    $this->assertTrue(
-        $subscription->starts_at->eq(Carbon::parse('2026-06-01 12:00:00')),
-        "starts_at: expected 2026-06-01 12:00:00 got {$subscription->starts_at}"
-    );
-    $this->assertTrue(
-        $subscription->expires_at->eq(Carbon::parse('2027-06-01 12:00:00')),
-        "expires_at: expected 2027-06-01 12:00:00 got {$subscription->expires_at}"
-    );
-    $this->assertEquals('year', $subscription->billing_interval);
-    $this->assertEquals(1, $subscription->billing_interval_count);
-    $this->assertTrue(
-        $subscription->credit_resets_at->eq(Carbon::parse('2027-06-01 12:00:00')),
-        "credit_resets_at: expected 2027-06-01 12:00:00 got {$subscription->credit_resets_at}"
-    );
+    expect($subscription->starts_at->eq(Carbon::parse('2026-06-01 12:00:00')))->toBeTrue();
+    expect($subscription->expires_at->eq(Carbon::parse('2027-06-01 12:00:00')))->toBeTrue();
+    expect($subscription->billing_interval)->toEqual('year');
+    expect($subscription->billing_interval_count)->toEqual(1);
+    expect($subscription->credit_resets_at->eq(Carbon::parse('2027-06-01 12:00:00')))->toBeTrue();
 });
 
 it('yearly subscription generates invoice with yearly price', function () {
@@ -377,11 +357,11 @@ it('yearly subscription generates invoice with yearly price', function () {
     $subscription->saveAndInvoice([], true);
 
     $subscription->refresh();
-    $this->assertNotNull($subscription->latestInvoice);
+    expect($subscription->latestInvoice)->not->toBeNull();
     $invoice = $subscription->latestInvoice;
 
-    $this->assertEquals(12000, $invoice->line_items[0]['price']);
-    $this->assertEquals(12000, $invoice->sub_total);
+    expect($invoice->line_items[0]['price'])->toEqual(12000);
+    expect($invoice->sub_total)->toEqual(12000);
 });
 
 it('monthly subscription generates invoice with monthly price', function () {
@@ -398,11 +378,11 @@ it('monthly subscription generates invoice with monthly price', function () {
     $subscription->saveAndInvoice([], true);
 
     $subscription->refresh();
-    $this->assertNotNull($subscription->latestInvoice);
+    expect($subscription->latestInvoice)->not->toBeNull();
     $invoice = $subscription->latestInvoice;
 
-    $this->assertEquals(1000, $invoice->line_items[0]['price']);
-    $this->assertEquals(1000, $invoice->sub_total);
+    expect($invoice->line_items[0]['price'])->toEqual(1000);
+    expect($invoice->sub_total)->toEqual(1000);
 });
 
 it('credit resets at is set even without yearly fee', function () {
@@ -417,11 +397,8 @@ it('credit resets at is set even without yearly fee', function () {
     $subscription = $user->newSubscription('default', $plan);
     $subscription->save();
 
-    $this->assertEquals('year', $subscription->billing_interval);
-    $this->assertNotNull(
-        $subscription->credit_resets_at,
-        'credit_resets_at should be set for yearly billing even without yearly_fee'
-    );
+    expect($subscription->billing_interval)->toEqual('year');
+    expect($subscription->credit_resets_at)->not->toBeNull();
 });
 
 it('yearly billing with trial sets credit resets at correctly', function () {
@@ -439,13 +416,10 @@ it('yearly billing with trial sets credit resets at correctly', function () {
     $subscription = $user->newSubscription('default', $plan);
     $subscription->save();
 
-    $this->assertEquals('year', $subscription->billing_interval);
-    $this->assertTrue($subscription->onTrial());
-    $this->assertNotNull($subscription->credit_resets_at);
-    $this->assertTrue(
-        $subscription->credit_resets_at->eq(Carbon::parse('2027-06-15 12:00:00')),
-        "Expected 2027-06-15 12:00:00 but got {$subscription->credit_resets_at}"
-    );
+    expect($subscription->billing_interval)->toEqual('year');
+    expect($subscription->onTrial())->toBeTrue();
+    expect($subscription->credit_resets_at)->not->toBeNull();
+    expect($subscription->credit_resets_at->eq(Carbon::parse('2027-06-15 12:00:00')))->toBeTrue();
 });
 
 it('payment keeps credit resets at intact', function () {
@@ -463,7 +437,7 @@ it('payment keeps credit resets at intact', function () {
     $subscription = $user->newSubscription('default', $plan);
     $subscription->saveAndInvoice([], true);
 
-    $this->assertNotNull($subscription->credit_resets_at);
+    expect($subscription->credit_resets_at)->not->toBeNull();
 
     $originalCreditReset = $subscription->credit_resets_at->copy();
 
@@ -471,11 +445,8 @@ it('payment keeps credit resets at intact', function () {
 
     $subscription->refresh();
 
-    $this->assertNotNull($subscription->credit_resets_at);
-    $this->assertTrue(
-        $subscription->credit_resets_at->eq($originalCreditReset),
-        'paymentConfirmation should preserve credit_resets_at'
-    );
+    expect($subscription->credit_resets_at)->not->toBeNull();
+    expect($subscription->credit_resets_at->eq($originalCreditReset))->toBeTrue();
 });
 
 it('renew advances credit resets at', function () {
@@ -504,11 +475,8 @@ it('renew advances credit resets at', function () {
 
     $subscription->renew();
 
-    $this->assertNotNull($subscription->credit_resets_at);
-    $this->assertTrue(
-        $subscription->credit_resets_at->gt($originalCreditReset),
-        'credit_resets_at should have advanced after renewal'
-    );
+    expect($subscription->credit_resets_at)->not->toBeNull();
+    expect($subscription->credit_resets_at->gt($originalCreditReset))->toBeTrue();
 });
 
 it('early renew extends expires_at for active subscription without resetting credits', function () {
@@ -526,16 +494,14 @@ it('early renew extends expires_at for active subscription without resetting cre
     $subscription->save();
     $subscription->paymentConfirmation();
 
-    $this->assertTrue($subscription->active());
-    $this->assertTrue($subscription->expires_at->eq(Carbon::parse('2026-07-01 12:00:00')));
+    expect($subscription->active())->toBeTrue();
+    expect($subscription->expires_at->eq(Carbon::parse('2026-07-01 12:00:00')))->toBeTrue();
 
     $subscription->renew(false);
 
     $subscription->refresh();
-    $this->assertTrue($subscription->expires_at->eq(Carbon::parse('2026-08-01 12:00:00')),
-        "expires_at: expected 2026-08-01 12:00:00 got {$subscription->expires_at}"
-    );
-    $this->assertEquals(SubscriptionStatus::ACTIVE, $subscription->status);
+    expect($subscription->expires_at->eq(Carbon::parse('2026-08-01 12:00:00')))->toBeTrue();
+    expect($subscription->status)->toEqual(SubscriptionStatus::ACTIVE);
 });
 
 it('early renew preserves feature usage for active subscription', function () {
@@ -563,14 +529,12 @@ it('early renew preserves feature usage for active subscription', function () {
     ]);
 
     $subscription->recordFeatureUsage('api-calls', 500);
-    $this->assertEquals(500, $subscription->getFeatureUsage('api-calls'));
+    expect($subscription->getFeatureUsage('api-calls'))->toEqual(500);
 
     $subscription->renew(false);
 
     $subscription->refresh();
-    $this->assertEquals(500, $subscription->getFeatureUsage('api-calls'),
-        'Credits should NOT be reset for active subscription on early renew'
-    );
+    expect($subscription->getFeatureUsage('api-calls'))->toEqual(500);
 });
 
 it('early renew does not advance credit_resets_at for active subscription', function () {
@@ -593,10 +557,7 @@ it('early renew does not advance credit_resets_at for active subscription', func
     $subscription->renew(false);
 
     $subscription->refresh();
-    $this->assertTrue(
-        $subscription->credit_resets_at->eq($originalCreditReset),
-        'credit_resets_at should NOT change for active subscription on early renew'
-    );
+    expect($subscription->credit_resets_at->eq($originalCreditReset))->toBeTrue();
 });
 
 it('expired subscription renew resets credits and advances credit_resets_at', function () {
@@ -633,19 +594,14 @@ it('expired subscription renew resets credits and advances credit_resets_at', fu
         'expires_at' => Carbon::now()->subDay(),
     ]);
 
-    $this->assertTrue($subscription->fresh()->expired());
+    expect($subscription->fresh()->expired())->toBeTrue();
 
     $subscription->renew(false);
 
     $subscription->refresh();
-    $this->assertEquals(0, $subscription->getFeatureUsage('api-calls'),
-        'Credits should be reset for expired subscription'
-    );
-    $this->assertNotNull($subscription->credit_resets_at);
-    $this->assertTrue(
-        $subscription->credit_resets_at->gt($originalCreditReset),
-        'credit_resets_at should advance after expired renewal'
-    );
+    expect($subscription->getFeatureUsage('api-calls'))->toEqual(0);
+    expect($subscription->credit_resets_at)->not->toBeNull();
+    expect($subscription->credit_resets_at->gt($originalCreditReset))->toBeTrue();
 });
 
 it('early renew clears ends_at and trial_ends_at', function () {
@@ -662,12 +618,12 @@ it('early renew clears ends_at and trial_ends_at', function () {
     $subscription = $user->newSubscription('default', $plan);
     $subscription->save();
 
-    $this->assertTrue($subscription->onTrial());
-    $this->assertNotNull($subscription->trial_ends_at);
+    expect($subscription->onTrial())->toBeTrue();
+    expect($subscription->trial_ends_at)->not->toBeNull();
 
     $subscription->renew(false);
 
     $subscription->refresh();
-    $this->assertNull($subscription->ends_at, 'ends_at should be cleared');
-    $this->assertNull($subscription->trial_ends_at, 'trial_ends_at should be cleared');
+    expect($subscription->ends_at)->toBeNull();
+    expect($subscription->trial_ends_at)->toBeNull();
 });

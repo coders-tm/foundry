@@ -32,11 +32,11 @@ it('calculates simple taxable from request', function () {
 
     $order = OrderRepository::fromRequest($request, $order);
 
-    $this->assertEquals(100, $order->sub_total);
-    $this->assertEquals(10, $order->tax_total);
-    $this->assertEquals(110, $order->grand_total);
-    $this->assertCount(1, $order->line_items);
-    $this->assertEquals('Taxable Item', $order->line_items->first()->title);
+    expect($order->sub_total)->toEqual(100);
+    expect($order->tax_total)->toEqual(10);
+    expect($order->grand_total)->toEqual(110);
+    expect($order->line_items)->toHaveCount(1);
+    expect($order->line_items->first()->title)->toBe('Taxable Item');
 });
 
 it('calculates line item discount from request', function () {
@@ -62,14 +62,14 @@ it('calculates line item discount from request', function () {
 
     $order = OrderRepository::fromRequest($request, $order);
 
-    $this->assertEquals(100, $order->sub_total);
-    $this->assertEquals(20, $order->discount_total);
-    $this->assertEquals(8, $order->tax_total);
-    $this->assertEquals(88, $order->grand_total);
+    expect($order->sub_total)->toEqual(100);
+    expect($order->discount_total)->toEqual(20);
+    expect($order->tax_total)->toEqual(8);
+    expect($order->grand_total)->toEqual(88);
 
     $lineItem = $order->line_items->first();
-    $this->assertNotNull($lineItem->discount);
-    $this->assertEquals(20, $lineItem->discount->value);
+    expect($lineItem->discount)->not->toBeNull();
+    expect($lineItem->discount->value)->toEqual(20);
 });
 
 it('calculates order level discount from request', function () {
@@ -95,12 +95,12 @@ it('calculates order level discount from request', function () {
 
     $order = OrderRepository::fromRequest($request, $order);
 
-    $this->assertEquals(100, $order->sub_total);
-    $this->assertEquals(20, $order->discount_total);
-    $this->assertEquals(8, $order->tax_total);
-    $this->assertEquals(88, $order->grand_total);
-    $this->assertNotNull($order->discount);
-    $this->assertEquals(20, $order->discount->value);
+    expect($order->sub_total)->toEqual(100);
+    expect($order->discount_total)->toEqual(20);
+    expect($order->tax_total)->toEqual(8);
+    expect($order->grand_total)->toEqual(88);
+    expect($order->discount)->not->toBeNull();
+    expect($order->discount->value)->toEqual(20);
 });
 
 it('hydrates customer and address from request', function () {
@@ -121,10 +121,10 @@ it('hydrates customer and address from request', function () {
 
     $order = OrderRepository::fromRequest($request, $order);
 
-    $this->assertNotNull($order->customer);
-    $this->assertEquals('John', $order->customer->first_name);
-    $this->assertNotNull($order->customer->address);
-    $this->assertEquals('123 Main St', $order->customer->address->line1);
+    expect($order->customer)->not->toBeNull();
+    expect($order->customer->first_name)->toBe('John');
+    expect($order->customer->address)->not->toBeNull();
+    expect($order->customer->address->line1)->toBe('123 Main St');
 });
 
 it('hydrates contact from request', function () {
@@ -140,9 +140,9 @@ it('hydrates contact from request', function () {
 
     $order = OrderRepository::fromRequest($request, $order);
 
-    $this->assertNotNull($order->contact);
-    $this->assertEquals('Jane', $order->contact->first_name);
-    $this->assertEquals('jane@example.com', $order->contact->email);
+    expect($order->contact)->not->toBeNull();
+    expect($order->contact->first_name)->toBe('Jane');
+    expect($order->contact->email)->toBe('jane@example.com');
 });
 
 it('calculates concurrent taxes indian gst from request', function () {
@@ -181,12 +181,12 @@ it('calculates concurrent taxes indian gst from request', function () {
 
     $order = OrderRepository::fromRequest($request, $order);
 
-    $this->assertEquals(100, $order->sub_total);
-    $this->assertEquals(18, $order->tax_total);
-    $this->assertEquals(118, $order->grand_total);
-    $this->assertCount(2, $order->tax_lines);
-    $this->assertEquals('CGST', $order->tax_lines[0]['label']);
-    $this->assertEquals('SGST', $order->tax_lines[1]['label']);
+    expect($order->sub_total)->toEqual(100);
+    expect($order->tax_total)->toEqual(18);
+    expect($order->grand_total)->toEqual(118);
+    expect($order->tax_lines)->toHaveCount(2);
+    expect($order->tax_lines[0]['label'])->toBe('CGST');
+    expect($order->tax_lines[1]['label'])->toBe('SGST');
 });
 
 it('calculates compounding taxes from request', function () {
@@ -226,6 +226,6 @@ it('calculates compounding taxes from request', function () {
 
     $order = OrderRepository::fromRequest($request, $order);
 
-    $this->assertEquals(15.5, $order->tax_total);
-    $this->assertEquals(115.5, $order->grand_total);
+    expect($order->tax_total)->toEqual(15.5);
+    expect($order->grand_total)->toEqual(115.5);
 });

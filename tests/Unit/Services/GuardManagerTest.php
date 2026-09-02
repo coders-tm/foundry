@@ -8,60 +8,60 @@ uses(BaseTestCase::class);
 
 it('resolves default context from request', function () {
     $this->instance('request', Request::create('/admin'));
-    $this->assertEquals('admin', Guard::current());
+    expect(Guard::current())->toBe('admin');
 
     Guard::forgetResolved();
     $this->instance('request', Request::create('/dashboard'));
-    $this->assertEquals('user', Guard::current());
+    expect(Guard::current())->toBe('user');
 });
 
 it('can set and get request', function () {
     $request = Request::create('/admin');
     $this->instance('request', $request);
 
-    $this->assertSame($request, Guard::getRequest());
-    $this->assertTrue(Guard::is('admin'));
+    expect(Guard::getRequest())->toBe($request);
+    expect(Guard::is('admin'))->toBeTrue();
 });
 
 it('set request clears resolved state', function () {
     $this->instance('request', Request::create('/admin'));
-    $this->assertEquals('admin', Guard::current());
+    expect(Guard::current())->toBe('admin');
 
     Guard::forgetResolved();
     $this->instance('request', Request::create('/dashboard'));
-    $this->assertEquals('user', Guard::current());
+    expect(Guard::current())->toBe('user');
 });
 
 it('supports custom resolvers', function () {
     Guard::resolveUsing(fn () => 'custom');
 
-    $this->assertEquals('custom', Guard::current());
-    $this->assertTrue(Guard::is('custom'));
+    expect(Guard::current())->toBe('custom');
+    expect(Guard::is('custom'))->toBeTrue();
 });
 
 it('resolves values from config', function () {
     config(['foundry.guards.admin.home' => '/custom-admin-home']);
 
     $this->instance('request', Request::create('/admin'));
-    $this->assertEquals('/custom-admin-home', Guard::home());
+    expect(Guard::home())->toBe('/custom-admin-home');
 });
 
 it('falls back to hardcoded defaults', function () {
     $this->instance('request', Request::create('/admin'));
 
-    $this->assertEquals('/admin', Guard::home());
-    $this->assertEquals('admin.login', Guard::loginRoute());
+    expect(Guard::home())->toBe('/admin');
+    expect(Guard::loginRoute())->toBe('admin.login');
 });
 
 it('explicit request does not poison global state', function () {
     $globalRequest = Request::create('/dashboard');
 
-    $this->assertEquals('user', Guard::current());
+    expect(Guard::current())->toBe('user');
 
     $explicitRequest = Request::create('/admin');
-    $this->assertEquals('admin', Guard::current($explicitRequest));
+    expect(Guard::current($explicitRequest))->toBe('admin');
 
-    $this->assertEquals('user', Guard::current());
+    expect(Guard::current())->toBe('user');
 });
 
 it('forget resolved works', function () {
@@ -72,13 +72,13 @@ it('forget resolved works', function () {
 
     config(['foundry.admin_prefix' => 'portal']);
 
-    $this->assertEquals('user', Guard::current());
+    expect(Guard::current())->toBe('user');
 });
 
 it('aliases work', function () {
     $this->instance('request', Request::create('/admin'));
 
-    $this->assertEquals('admin', Guard::current());
-    $this->assertEquals('admin', Guard::key());
-    $this->assertEquals('admin', Guard::context());
+    expect(Guard::current())->toBe('admin');
+    expect(Guard::key())->toBe('admin');
+    expect(Guard::context())->toBe('admin');
 });

@@ -15,7 +15,7 @@ it('user last login at is updated on login', function () {
         'status' => AppStatus::ACTIVE,
     ]);
 
-    $this->assertNull($user->last_login_at);
+    expect($user->last_login_at)->toBeNull();
 
     $response = $this->postJson('/auth/user/login', [
         'email' => $user->email,
@@ -29,8 +29,8 @@ it('user last login at is updated on login', function () {
     $response->assertStatus(200);
 
     $user = $user->fresh();
-    $this->assertNotNull($user->last_login_at, 'User last_login_at should not be null');
-    $this->assertTrue(now()->diffInSeconds($user->last_login_at) < 60);
+    expect($user->last_login_at)->not->toBeNull();
+    expect(now()->diffInSeconds($user->last_login_at) < 60)->toBeTrue();
 });
 
 it('admin last login at is updated on login', function () {
@@ -40,7 +40,7 @@ it('admin last login at is updated on login', function () {
         'is_active' => true,
     ]);
 
-    $this->assertNull($admin->last_login_at);
+    expect($admin->last_login_at)->toBeNull();
 
     $response = $this->postJson('/auth/admin/login', [
         'email' => $admin->email,
@@ -54,6 +54,6 @@ it('admin last login at is updated on login', function () {
     $response->assertStatus(200);
 
     $admin = $admin->fresh();
-    $this->assertNotNull($admin->last_login_at, 'Admin last_login_at should not be null');
-    $this->assertTrue(now()->diffInSeconds($admin->last_login_at) < 60);
+    expect($admin->last_login_at)->not->toBeNull();
+    expect(now()->diffInSeconds($admin->last_login_at) < 60)->toBeTrue();
 });

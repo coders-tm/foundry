@@ -94,11 +94,11 @@ it('revenue chart endpoint works', function () use ($seedTestData) {
     $data = $response->json();
 
     // Verify we have 12 months of data
-    $this->assertCount(12, $data);
+    expect($data)->toHaveCount(12);
 
     // Verify at least some months have revenue > 0
     $totalRevenue = array_sum($data);
-    $this->assertGreaterThan(0, $totalRevenue, 'Total revenue should be greater than 0');
+    expect($totalRevenue)->toBeGreaterThan(0, 'Total revenue should be greater than 0');
 });
 
 it('subscription chart endpoint works', function () use ($seedTestData) {
@@ -110,18 +110,18 @@ it('subscription chart endpoint works', function () use ($seedTestData) {
     $data = $response->json();
 
     // Verify we have 12 months of data
-    $this->assertCount(12, $data);
+    expect($data)->toHaveCount(12);
 
     // Verify data structure
     foreach ($data as $monthLabel => $monthData) {
-        $this->assertArrayHasKey('new', $monthData);
-        $this->assertArrayHasKey('cancelled', $monthData);
-        $this->assertArrayHasKey('net', $monthData);
+        expect($monthData)->toHaveKey('new');
+        expect($monthData)->toHaveKey('cancelled');
+        expect($monthData)->toHaveKey('net');
     }
 
     // Verify at least some months have new subscriptions
     $totalNew = array_sum(array_column($data, 'new'));
-    $this->assertGreaterThan(0, $totalNew, 'Should have new subscriptions');
+    expect($totalNew)->toBeGreaterThan(0, 'Should have new subscriptions');
 });
 
 it('customer chart endpoint works', function () {
@@ -132,11 +132,11 @@ it('customer chart endpoint works', function () {
     $data = $response->json();
 
     // Verify we have 12 months of data
-    $this->assertCount(12, $data);
+    expect($data)->toHaveCount(12);
 
     // Verify at least some months have new customers
     $totalCustomers = array_sum($data);
-    $this->assertGreaterThan(0, $totalCustomers, 'Should have new customers');
+    expect($totalCustomers)->toBeGreaterThan(0, 'Should have new customers');
 });
 
 it('order chart endpoint works', function () use ($seedTestData) {
@@ -148,17 +148,17 @@ it('order chart endpoint works', function () use ($seedTestData) {
     $data = $response->json();
 
     // Verify we have 12 months of data
-    $this->assertCount(12, $data);
+    expect($data)->toHaveCount(12);
 
     // Verify data structure
     foreach ($data as $monthLabel => $monthData) {
-        $this->assertArrayHasKey('orders', $monthData);
-        $this->assertArrayHasKey('revenue', $monthData);
+        expect($monthData)->toHaveKey('orders');
+        expect($monthData)->toHaveKey('revenue');
     }
 
     // Verify at least some months have orders
     $totalOrders = array_sum(array_column($data, 'orders'));
-    $this->assertGreaterThan(0, $totalOrders, 'Should have orders');
+    expect($totalOrders)->toBeGreaterThan(0, 'Should have orders');
 });
 
 it('mrr chart endpoint works', function () {
@@ -169,11 +169,11 @@ it('mrr chart endpoint works', function () {
     $data = $response->json();
 
     // Verify we have 12 months of data
-    $this->assertCount(12, $data);
+    expect($data)->toHaveCount(12);
 
     // MRR should be numeric values
     foreach ($data as $monthLabel => $mrr) {
-        $this->assertIsNumeric($mrr);
+        expect($mrr)->toBeNumeric();
     }
 });
 
@@ -185,12 +185,12 @@ it('churn chart endpoint works', function () {
     $data = $response->json();
 
     // Verify we have 12 months of data
-    $this->assertCount(12, $data);
+    expect($data)->toHaveCount(12);
 
     // Verify data structure
     foreach ($data as $monthLabel => $monthData) {
-        $this->assertArrayHasKey('churned', $monthData);
-        $this->assertArrayHasKey('rate', $monthData);
+        expect($monthData)->toHaveKey('churned');
+        expect($monthData)->toHaveKey('rate');
     }
 });
 
@@ -202,11 +202,11 @@ it('revenue breakdown chart endpoint works', function () {
     $data = $response->json();
 
     // Verify data structure (pie chart format)
-    $this->assertIsArray($data);
+    expect($data)->toBeArray();
 
     // Should have subscription and product revenue
     $totalRevenue = array_sum($data);
-    $this->assertGreaterThanOrEqual(0, $totalRevenue);
+    expect($totalRevenue)->toBeGreaterThanOrEqual(0);
 });
 
 it('members breakdown chart endpoint works', function () use ($seedTestData) {
@@ -218,15 +218,15 @@ it('members breakdown chart endpoint works', function () use ($seedTestData) {
     $data = $response->json();
 
     // Verify data structure (pie chart format)
-    $this->assertIsArray($data);
+    expect($data)->toBeArray();
 
     // Should have Active, On Trial, Grace Period, Cancelled segments
-    $this->assertArrayHasKey('Active', $data);
-    $this->assertArrayHasKey('On Trial', $data);
-    $this->assertArrayHasKey('Cancelled', $data);
+    expect($data)->toHaveKey('Active');
+    expect($data)->toHaveKey('On Trial');
+    expect($data)->toHaveKey('Cancelled');
 
     $totalMembers = array_sum($data);
-    $this->assertGreaterThan(0, $totalMembers, 'Should have members in breakdown');
+    expect($totalMembers)->toBeGreaterThan(0, 'Should have members in breakdown');
 });
 
 it('arpu chart endpoint works', function () {
@@ -237,11 +237,11 @@ it('arpu chart endpoint works', function () {
     $data = $response->json();
 
     // Verify we have 12 months of data
-    $this->assertCount(12, $data);
+    expect($data)->toHaveCount(12);
 
     // ARPU should be numeric values
     foreach ($data as $monthLabel => $arpu) {
-        $this->assertIsNumeric($arpu);
+        expect($arpu)->toBeNumeric();
     }
 });
 
@@ -253,14 +253,14 @@ it('plan distribution chart endpoint works', function () {
     $data = $response->json();
 
     // Verify data structure (pie chart format)
-    $this->assertIsArray($data);
+    expect($data)->toBeArray();
 
     // If we have active subscriptions, should have plan entries
     if (count($data) > 0) {
         foreach ($data as $planLabel => $count) {
-            $this->assertIsString($planLabel);
-            $this->assertIsInt($count);
-            $this->assertGreaterThan(0, $count);
+            expect($planLabel)->toBeString();
+            expect($count)->toBeInt();
+            expect($count)->toBeGreaterThan(0);
         }
     }
 });

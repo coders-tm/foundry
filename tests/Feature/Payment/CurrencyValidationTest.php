@@ -16,7 +16,5 @@ it('validates currency for stripe processor', function () {
     $payable->shouldReceive('getGatewayAmount')->andReturn(100);
     $payable->shouldReceive('setCurrencies');
 
-    $this->expectException(ValidationException::class);
-
-    $processor->setupPaymentIntent(new Request, $payable);
+    expect(fn () => $processor->setupPaymentIntent(new Request, $payable))->toThrow(ValidationException::class);
 });

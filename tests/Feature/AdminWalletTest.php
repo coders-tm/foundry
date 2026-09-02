@@ -54,7 +54,7 @@ it('can credit user wallet', function () {
             'balance' => 100,
         ]);
 
-    $this->assertEquals(100, $this->user->fresh()->getWalletBalance());
+    expect($this->user->fresh()->getWalletBalance())->toEqual(100);
 });
 
 it('can debit user wallet', function () {
@@ -72,7 +72,7 @@ it('can debit user wallet', function () {
             'balance' => 150,
         ]);
 
-    $this->assertEquals(150, $this->user->fresh()->getWalletBalance());
+    expect($this->user->fresh()->getWalletBalance())->toEqual(150);
 });
 
 it('cannot debit more than wallet balance', function () {

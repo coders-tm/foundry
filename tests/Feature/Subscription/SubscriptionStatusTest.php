@@ -13,9 +13,9 @@ it('we can check if a subscription is incomplete', function () {
         'status' => SubscriptionStatus::INCOMPLETE,
     ]);
 
-    $this->assertTrue($subscription->incomplete());
-    $this->assertFalse($subscription->expired());
-    $this->assertFalse($subscription->active());
+    expect($subscription->incomplete())->toBeTrue();
+    expect($subscription->expired())->toBeFalse();
+    expect($subscription->active())->toBeFalse();
 });
 
 it('we can check if a subscription is expired', function () {
@@ -23,9 +23,9 @@ it('we can check if a subscription is expired', function () {
         'status' => SubscriptionStatus::EXPIRED,
     ]);
 
-    $this->assertFalse($subscription->incomplete());
-    $this->assertTrue($subscription->expired());
-    $this->assertFalse($subscription->active());
+    expect($subscription->incomplete())->toBeFalse();
+    expect($subscription->expired())->toBeTrue();
+    expect($subscription->active())->toBeFalse();
 });
 
 it('we can check if a subscription is active', function () {
@@ -33,9 +33,9 @@ it('we can check if a subscription is active', function () {
         'status' => SubscriptionStatus::ACTIVE,
     ]);
 
-    $this->assertFalse($subscription->incomplete());
-    $this->assertFalse($subscription->expired());
-    $this->assertTrue($subscription->active());
+    expect($subscription->incomplete())->toBeFalse();
+    expect($subscription->expired())->toBeFalse();
+    expect($subscription->active())->toBeTrue();
 });
 
 it('an incomplete subscription is not valid', function () {
@@ -43,7 +43,7 @@ it('an incomplete subscription is not valid', function () {
         'status' => SubscriptionStatus::INCOMPLETE,
     ]);
 
-    $this->assertFalse($subscription->valid());
+    expect($subscription->valid())->toBeFalse();
 });
 
 it('an expired subscription is not valid', function () {
@@ -51,7 +51,7 @@ it('an expired subscription is not valid', function () {
         'status' => SubscriptionStatus::EXPIRED,
     ]);
 
-    $this->assertFalse($subscription->valid());
+    expect($subscription->valid())->toBeFalse();
 });
 
 it('an active subscription is valid', function () {
@@ -59,7 +59,7 @@ it('an active subscription is valid', function () {
         'status' => SubscriptionStatus::ACTIVE,
     ]);
 
-    $this->assertTrue($subscription->valid());
+    expect($subscription->valid())->toBeTrue();
 });
 
 it('payment is incomplete when status is incomplete', function () {
@@ -67,7 +67,7 @@ it('payment is incomplete when status is incomplete', function () {
         'status' => SubscriptionStatus::INCOMPLETE,
     ]);
 
-    $this->assertTrue($subscription->hasIncompletePayment());
+    expect($subscription->hasIncompletePayment())->toBeTrue();
 });
 
 it('payment is incomplete when status is expired', function () {
@@ -75,7 +75,7 @@ it('payment is incomplete when status is expired', function () {
         'status' => SubscriptionStatus::EXPIRED,
     ]);
 
-    $this->assertTrue($subscription->hasIncompletePayment());
+    expect($subscription->hasIncompletePayment())->toBeTrue();
 });
 
 it('payment is not incomplete when status is active', function () {
@@ -83,7 +83,7 @@ it('payment is not incomplete when status is active', function () {
         'status' => SubscriptionStatus::ACTIVE,
     ]);
 
-    $this->assertFalse($subscription->hasIncompletePayment());
+    expect($subscription->hasIncompletePayment())->toBeFalse();
 });
 
 it('incomplete subscriptions cannot be swapped', function () {
@@ -94,15 +94,11 @@ it('incomplete subscriptions cannot be swapped', function () {
 
     $subscription->setRelation('plan', Plan::find($plans[0]));
 
-    $this->expectException(SubscriptionUpdateFailure::class);
-
-    $subscription->swap($plans[1]);
+    expect(fn () => $subscription->swap($plans[1]))->toThrow(SubscriptionUpdateFailure::class);
 });
 
 it('extending a trial requires a date in the future', function () {
-    $this->expectException(InvalidArgumentException::class);
-
-    (new Subscription)->extendTrial(now()->subDay());
+    expect(fn () => (new Subscription)->extendTrial(now()->subDay()))->toThrow(InvalidArgumentException::class);
 });
 
 it('it can determine if the subscription is on trial', function () {
@@ -110,13 +106,13 @@ it('it can determine if the subscription is on trial', function () {
     $subscription->setDateFormat('Y-m-d H:i:s');
     $subscription->trial_ends_at = now()->addDay();
 
-    $this->assertTrue($subscription->onTrial());
+    expect($subscription->onTrial())->toBeTrue();
 
     $subscription = new Subscription;
     $subscription->setDateFormat('Y-m-d H:i:s');
     $subscription->trial_ends_at = now()->subDay();
 
-    $this->assertFalse($subscription->onTrial());
+    expect($subscription->onTrial())->toBeFalse();
 });
 
 it('it can determine if a trial has expired', function () {
@@ -124,11 +120,11 @@ it('it can determine if a trial has expired', function () {
     $subscription->setDateFormat('Y-m-d H:i:s');
     $subscription->trial_ends_at = now()->subDay();
 
-    $this->assertTrue($subscription->onTrialExpired());
+    expect($subscription->onTrialExpired())->toBeTrue();
 
     $subscription = new Subscription;
     $subscription->setDateFormat('Y-m-d H:i:s');
     $subscription->trial_ends_at = now()->addDay();
 
-    $this->assertFalse($subscription->onTrialExpired());
+    expect($subscription->onTrialExpired())->toBeFalse();
 });

@@ -28,11 +28,11 @@ it('report generates new signups by period', function () {
     $result = $report->paginate($report->validate($filters), 25, 1);
 
     // Assert
-    $this->assertNotEmpty($result['data']);
+    expect($result['data'])->not->toBeEmpty();
     foreach ($result['data'] as $row) {
-        $this->assertArrayHasKey('period', $row);
-        $this->assertArrayHasKey('new_users', $row);
-        $this->assertIsNumeric($row['new_users']);
+        expect($row)->toHaveKey('period');
+        expect($row)->toHaveKey('new_users');
+        expect($row['new_users'])->toBeNumeric();
     }
 });
 
@@ -53,6 +53,6 @@ it('summary calculates totals', function () {
     $summary = $report->summarize($report->validate($filters));
 
     // Assert
-    $this->assertArrayHasKey('total_new_users', $summary);
-    $this->assertGreaterThanOrEqual(5, $summary['total_new_users']);
+    expect($summary)->toHaveKey('total_new_users');
+    expect($summary['total_new_users'])->toBeGreaterThanOrEqual(5);
 });

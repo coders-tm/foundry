@@ -39,6 +39,6 @@ it('report generates payment performance data', function () {
     $result = $report->paginate($report->validate($filters), 25, 1);
 
     // Assert
-    $this->assertIsArray($result);
-    $this->assertArrayHasKey('data', $result);
+    expect($result)->toBeArray();
+    expect($result)->toHaveKey('data');
 });

@@ -22,13 +22,9 @@ it('returns app timezone formatted string for startAt', function () {
 
     $startAt = $schedule->startAt();
 
-    $this->assertNotNull($startAt);
-    $this->assertStringContainsString('09:00:00', $startAt,
-        'startAt() should show the time as entered (IST 09:00)'
-    );
-    $this->assertStringContainsString('+05:30', $startAt,
-        'startAt() should carry the IST timezone offset'
-    );
+    expect($startAt)->not->toBeNull();
+    expect($startAt)->toContain('09:00:00');
+    expect($startAt)->toContain('+05:30');
 });
 
 it('returns null when date_at is null for startAt', function () {
@@ -37,7 +33,7 @@ it('returns null when date_at is null for startAt', function () {
         'start_at' => '09:00',
     ]);
 
-    $this->assertNull($schedule->startAt());
+    expect($schedule->startAt())->toBeNull();
 });
 
 it('returns null when start_at is null', function () {
@@ -46,7 +42,7 @@ it('returns null when start_at is null', function () {
         'start_at' => null,
     ]);
 
-    $this->assertNull($schedule->startAt());
+    expect($schedule->startAt())->toBeNull();
 });
 
 it('returns app timezone formatted string for endAt', function () {
@@ -57,11 +53,9 @@ it('returns app timezone formatted string for endAt', function () {
 
     $endAt = $schedule->endAt();
 
-    $this->assertNotNull($endAt);
-    $this->assertStringContainsString('10:30:00', $endAt,
-        'endAt() should show the time as entered (IST 10:30)'
-    );
-    $this->assertStringContainsString('+05:30', $endAt);
+    expect($endAt)->not->toBeNull();
+    expect($endAt)->toContain('10:30:00');
+    expect($endAt)->toContain('+05:30');
 });
 
 it('returns null when end_at is null', function () {
@@ -70,7 +64,7 @@ it('returns null when end_at is null', function () {
         'end_at' => null,
     ]);
 
-    $this->assertNull($schedule->endAt());
+    expect($schedule->endAt())->toBeNull();
 });
 
 it('calculates duration in minutes', function () {
@@ -79,7 +73,7 @@ it('calculates duration in minutes', function () {
         'end_at' => '10:30',
     ]);
 
-    $this->assertEquals(90, $schedule->duration);
+    expect($schedule->duration)->toEqual(90);
 });
 
 it('has zero duration when times are null', function () {
@@ -88,7 +82,7 @@ it('has zero duration when times are null', function () {
         'end_at' => null,
     ]);
 
-    $this->assertEquals(0, $schedule->duration);
+    expect($schedule->duration)->toEqual(0);
 });
 
 it('stores date_at as calendar date without timezone shift', function () {
@@ -109,7 +103,7 @@ it('reads date_at back as same calendar date', function () {
 
     $fresh = $schedule->fresh();
 
-    $this->assertEquals('2024-06-15', $fresh->date_at->format('Y-m-d'));
+    expect($fresh->date_at->format('Y-m-d'))->toBe('2024-06-15');
 });
 
 it('stores sign_off_at app timezone input as utc', function () {
@@ -130,8 +124,8 @@ it('serializes sign_off_at in app timezone', function () {
 
     $data = $schedule->fresh()->toArray();
 
-    $this->assertStringContainsString('17:30:00', $data['sign_off_at']);
-    $this->assertStringContainsString('+05:30', $data['sign_off_at']);
+    expect($data['sign_off_at'])->toContain('17:30:00');
+    expect($data['sign_off_at'])->toContain('+05:30');
 });
 
 it('uses utc offset for start_at when app timezone is utc', function () {
@@ -144,8 +138,8 @@ it('uses utc offset for start_at when app timezone is utc', function () {
 
     $startAt = $schedule->startAt();
 
-    $this->assertStringContainsString('09:00:00', $startAt);
-    $this->assertStringContainsString('+00:00', $startAt);
+    expect($startAt)->toContain('09:00:00');
+    expect($startAt)->toContain('+00:00');
 });
 
 it('preserves user entered time in round trip start_at', function () {
@@ -156,8 +150,8 @@ it('preserves user entered time in round trip start_at', function () {
 
     $fresh = ClassSchedule::find($schedule->id);
 
-    $this->assertStringContainsString('09:00:00', $fresh->startAt());
-    $this->assertStringContainsString('+05:30', $fresh->startAt());
+    expect($fresh->startAt())->toContain('09:00:00');
+    expect($fresh->startAt())->toContain('+05:30');
 
-    $this->assertEquals('2024-06-15', $fresh->date_at->format('Y-m-d'));
+    expect($fresh->date_at->format('Y-m-d'))->toBe('2024-06-15');
 });

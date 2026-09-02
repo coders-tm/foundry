@@ -151,9 +151,9 @@ it('kpis mrr calculation with active subscriptions', function () {
     $data = $response->json();
 
     // MRR should be calculated from existing active subscriptions
-    $this->assertGreaterThan(0, $data['mrr']['raw_current'], 'MRR should be greater than 0 with seeded data');
-    $this->assertArrayHasKey('by_plan', $data['mrr']);
-    $this->assertArrayHasKey('by_interval', $data['mrr']);
+    expect($data['mrr']['raw_current'])->toBeGreaterThan(0, 'MRR should be greater than 0 with seeded data');
+    expect($data['mrr'])->toHaveKey('by_plan');
+    expect($data['mrr'])->toHaveKey('by_interval');
 });
 
 it('kpis churn calculation', function () {
@@ -164,10 +164,10 @@ it('kpis churn calculation', function () {
 
     $data = $response->json();
 
-    $this->assertArrayHasKey('current', $data['churn']);
-    $this->assertArrayHasKey('previous', $data['churn']);
-    $this->assertArrayHasKey('logo_churn', $data['churn']);
-    $this->assertIsNumeric($data['churn']['raw_current']);
+    expect($data['churn'])->toHaveKey('current');
+    expect($data['churn'])->toHaveKey('previous');
+    expect($data['churn'])->toHaveKey('logo_churn');
+    expect($data['churn']['raw_current'])->toBeNumeric();
 });
 
 it('kpis orders metrics', function () {
@@ -179,15 +179,15 @@ it('kpis orders metrics', function () {
     $data = $response->json();
 
     // Check flattened order metrics
-    $this->assertArrayHasKey('order_count', $data);
-    $this->assertArrayHasKey('net_revenue', $data);
-    $this->assertArrayHasKey('aov', $data);
+    expect($data)->toHaveKey('order_count');
+    expect($data)->toHaveKey('net_revenue');
+    expect($data)->toHaveKey('aov');
 
     // Each order KPI should have period comparison
-    $this->assertArrayHasKey('current', $data['order_count']);
-    $this->assertArrayHasKey('previous', $data['order_count']);
-    $this->assertArrayHasKey('trend', $data['order_count']);
-    $this->assertArrayHasKey('description', $data['order_count']);
+    expect($data['order_count'])->toHaveKey('current');
+    expect($data['order_count'])->toHaveKey('previous');
+    expect($data['order_count'])->toHaveKey('trend');
+    expect($data['order_count'])->toHaveKey('description');
 });
 
 it('kpis active users calculation', function () {
@@ -198,8 +198,8 @@ it('kpis active users calculation', function () {
 
     $data = $response->json();
 
-    $this->assertArrayHasKey('current', $data['active_users']);
-    $this->assertGreaterThan(0, $data['active_users']['raw_current']);
+    expect($data['active_users'])->toHaveKey('current');
+    expect($data['active_users']['raw_current'])->toBeGreaterThan(0);
 });
 
 it('kpis metadata includes period ranges', function () {
@@ -209,12 +209,12 @@ it('kpis metadata includes period ranges', function () {
 
     $data = $response->json();
 
-    $this->assertArrayHasKey('metadata', $data);
-    $this->assertArrayHasKey('comparison_periods', $data['metadata']);
-    $this->assertArrayHasKey('start', $data['metadata']['comparison_periods']['current']);
-    $this->assertArrayHasKey('end', $data['metadata']['comparison_periods']['current']);
-    $this->assertArrayHasKey('start', $data['metadata']['comparison_periods']['previous']);
-    $this->assertArrayHasKey('end', $data['metadata']['comparison_periods']['previous']);
+    expect($data)->toHaveKey('metadata');
+    expect($data['metadata'])->toHaveKey('comparison_periods');
+    expect($data['metadata']['comparison_periods']['current'])->toHaveKey('start');
+    expect($data['metadata']['comparison_periods']['current'])->toHaveKey('end');
+    expect($data['metadata']['comparison_periods']['previous'])->toHaveKey('start');
+    expect($data['metadata']['comparison_periods']['previous'])->toHaveKey('end');
 });
 
 it('kpis trend calculation', function () {
@@ -226,8 +226,8 @@ it('kpis trend calculation', function () {
     $data = $response->json();
 
     // Orders count should have trend indicator
-    $this->assertArrayHasKey('trend', $data['order_count']);
-    $this->assertContains($data['order_count']['trend'], ['up', 'down', 'flat']);
+    expect($data['order_count'])->toHaveKey('trend');
+    expect(['up', 'down', 'flat'])->toContain($data['order_count']['trend']);
 });
 
 it('kpis with custom date range', function () {
@@ -242,9 +242,9 @@ it('kpis with custom date range', function () {
 
     $data = $response->json();
 
-    $this->assertArrayHasKey('metadata', $data);
-    $this->assertStringContainsString($startDate, $data['metadata']['comparison_periods']['current']['start']);
-    $this->assertStringContainsString($endDate, $data['metadata']['comparison_periods']['current']['end']);
+    expect($data)->toHaveKey('metadata');
+    expect($data['metadata']['comparison_periods']['current']['start'])->toContain($startDate);
+    expect($data['metadata']['comparison_periods']['current']['end'])->toContain($endDate);
 });
 
 it('kpis percentage formatted correctly', function () {
@@ -255,10 +255,10 @@ it('kpis percentage formatted correctly', function () {
     $data = $response->json();
 
     // Churn should be decimal (e.g., 0.06 for 6%)
-    $this->assertIsNumeric($data['churn']['raw_current']);
+    expect($data['churn']['raw_current'])->toBeNumeric();
 
     // Change percentage should be numeric (or null if previous is 0)
-    $this->assertTrue(is_numeric($data['mrr']['delta_percent']) || is_null($data['mrr']['delta_percent']));
+    expect(is_numeric($data['mrr']['delta_percent']) || is_null($data['mrr']['delta_percent']))->toBeTrue();
 });
 
 it('kpis change string formatting', function () {
@@ -269,8 +269,8 @@ it('kpis change string formatting', function () {
     $data = $response->json();
 
     // MRR change should be percentage format (e.g. 11.1 or null)
-    $this->assertArrayHasKey('delta_percent', $data['mrr']);
-    $this->assertTrue(is_numeric($data['mrr']['delta_percent']) || is_null($data['mrr']['delta_percent']));
+    expect($data['mrr'])->toHaveKey('delta_percent');
+    expect(is_numeric($data['mrr']['delta_percent']) || is_null($data['mrr']['delta_percent']))->toBeTrue();
 });
 
 it('kpis handles zero division gracefully', function () {
@@ -282,9 +282,9 @@ it('kpis handles zero division gracefully', function () {
     $data = $response->json();
 
     // Should return valid structure even with no data
-    $this->assertIsString($data['mrr']['current']);
-    $this->assertIsNumeric($data['mrr']['raw_current']);
-    $this->assertIsNumeric($data['churn']['raw_current']);
+    expect($data['mrr']['current'])->toBeString();
+    expect($data['mrr']['raw_current'])->toBeNumeric();
+    expect($data['churn']['raw_current'])->toBeNumeric();
 });
 
 it('kpis cache clear includes kpi metrics', function () {
@@ -308,13 +308,13 @@ it('kpis mrr segments by plan', function () {
 
     $data = $response->json();
 
-    $this->assertArrayHasKey('by_plan', $data['mrr']);
-    $this->assertIsArray($data['mrr']['by_plan']);
+    expect($data['mrr'])->toHaveKey('by_plan');
+    expect($data['mrr']['by_plan'])->toBeArray();
 
     if (count($data['mrr']['by_plan']) > 0) {
         foreach ($data['mrr']['by_plan'] as $name => $mrr) {
-            $this->assertIsString((string) $name);
-            $this->assertIsNumeric($mrr);
+            expect((string) $name)->toBeString();
+            expect($mrr)->toBeNumeric();
         }
     }
 });
@@ -327,10 +327,10 @@ it('kpis ltv calculation', function () {
 
     $data = $response->json();
 
-    $this->assertArrayHasKey('ltv', $data);
-    $this->assertArrayHasKey('current', $data['ltv']);
-    $this->assertArrayHasKey('previous', $data['ltv']);
-    $this->assertIsNumeric($data['ltv']['raw_current']);
+    expect($data)->toHaveKey('ltv');
+    expect($data['ltv'])->toHaveKey('current');
+    expect($data['ltv'])->toHaveKey('previous');
+    expect($data['ltv']['raw_current'])->toBeNumeric();
 });
 
 it('kpis can be filtered by includes parameter', function () {
@@ -341,17 +341,17 @@ it('kpis can be filtered by includes parameter', function () {
     $data = $response->json();
 
     // Should only include requested KPIs
-    $this->assertArrayHasKey('mrr', $data);
-    $this->assertArrayHasKey('churn', $data);
-    $this->assertArrayHasKey('order_count', $data);
-    $this->assertArrayHasKey('metadata', $data); // Always included
+    expect($data)->toHaveKey('mrr');
+    expect($data)->toHaveKey('churn');
+    expect($data)->toHaveKey('order_count');
+    expect($data)->toHaveKey('metadata'); // Always included
 
     // Should not include other KPIs
-    $this->assertArrayNotHasKey('ltv', $data);
-    $this->assertArrayNotHasKey('arpu', $data);
-    $this->assertArrayNotHasKey('active_users', $data);
-    $this->assertArrayNotHasKey('total_revenue', $data);
-    $this->assertArrayNotHasKey('new_customers', $data);
+    expect($data)->not->toHaveKey('ltv');
+    expect($data)->not->toHaveKey('arpu');
+    expect($data)->not->toHaveKey('active_users');
+    expect($data)->not->toHaveKey('total_revenue');
+    expect($data)->not->toHaveKey('new_customers');
 });
 
 it('kpis includes single metric', function () {
@@ -362,11 +362,11 @@ it('kpis includes single metric', function () {
     $data = $response->json();
 
     // Should only include MRR
-    $this->assertArrayHasKey('mrr', $data);
-    $this->assertArrayHasKey('metadata', $data);
+    expect($data)->toHaveKey('mrr');
+    expect($data)->toHaveKey('metadata');
 
     // Should have exactly 2 keys (mrr + metadata)
-    $this->assertCount(2, $data);
+    expect($data)->toHaveCount(2);
 });
 
 it('kpis includes ignores invalid keys', function () {
@@ -377,16 +377,16 @@ it('kpis includes ignores invalid keys', function () {
     $data = $response->json();
 
     // Should only include valid KPIs
-    $this->assertArrayHasKey('mrr', $data);
-    $this->assertArrayHasKey('churn', $data);
-    $this->assertArrayHasKey('metadata', $data);
+    expect($data)->toHaveKey('mrr');
+    expect($data)->toHaveKey('churn');
+    expect($data)->toHaveKey('metadata');
 
     // Should ignore invalid keys
-    $this->assertArrayNotHasKey('invalid_key', $data);
-    $this->assertArrayNotHasKey('another_invalid', $data);
+    expect($data)->not->toHaveKey('invalid_key');
+    expect($data)->not->toHaveKey('another_invalid');
 
     // Should have exactly 3 keys (mrr + churn + metadata)
-    $this->assertCount(3, $data);
+    expect($data)->toHaveCount(3);
 });
 
 it('kpis includes with spaces', function () {
@@ -397,10 +397,10 @@ it('kpis includes with spaces', function () {
     $data = $response->json();
 
     // Should trim spaces and include requested KPIs
-    $this->assertArrayHasKey('mrr', $data);
-    $this->assertArrayHasKey('churn', $data);
-    $this->assertArrayHasKey('order_count', $data);
-    $this->assertCount(4, $data); // mrr + churn + order_count + metadata
+    expect($data)->toHaveKey('mrr');
+    expect($data)->toHaveKey('churn');
+    expect($data)->toHaveKey('order_count');
+    expect($data)->toHaveCount(4); // mrr + churn + order_count + metadata
 });
 
 it('kpis without includes returns all metrics', function () {
@@ -411,15 +411,15 @@ it('kpis without includes returns all metrics', function () {
     $data = $response->json();
 
     // Should include all KPIs
-    $this->assertArrayHasKey('mrr', $data);
-    $this->assertArrayHasKey('churn', $data);
-    $this->assertArrayHasKey('ltv', $data);
-    $this->assertArrayHasKey('arpu', $data);
-    $this->assertArrayHasKey('order_count', $data);
-    $this->assertArrayHasKey('total_revenue', $data);
-    $this->assertArrayHasKey('active_users', $data);
-    $this->assertArrayHasKey('metadata', $data);
+    expect($data)->toHaveKey('mrr');
+    expect($data)->toHaveKey('churn');
+    expect($data)->toHaveKey('ltv');
+    expect($data)->toHaveKey('arpu');
+    expect($data)->toHaveKey('order_count');
+    expect($data)->toHaveKey('total_revenue');
+    expect($data)->toHaveKey('active_users');
+    expect($data)->toHaveKey('metadata');
 
     // Should have many keys (all KPIs)
-    $this->assertGreaterThan(10, count($data));
+    expect(count($data))->toBeGreaterThan(10);
 });

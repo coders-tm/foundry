@@ -12,7 +12,7 @@ uses(BaseTestCase::class);
 it('coupon model can be configured', function () {
     Foundry\Foundry::useCouponModel(Coupon::class);
 
-    $this->assertEquals(Coupon::class, Foundry\Foundry::$couponModel);
+    expect(Foundry\Foundry::$couponModel)->toBe(Coupon::class);
 });
 
 it('subscription coupon relationship uses configured model', function () {
@@ -20,7 +20,7 @@ it('subscription coupon relationship uses configured model', function () {
 
     $subscription = new Subscription;
 
-    $this->assertEquals(Coupon::class, $subscription->coupon()->getRelated()::class);
+    expect($subscription->coupon()->getRelated()::class)->toBe(Coupon::class);
 });
 
 it('redeem coupon relationship uses configured model', function () {
@@ -28,7 +28,7 @@ it('redeem coupon relationship uses configured model', function () {
 
     $redeem = new Redeem;
 
-    $this->assertEquals(Coupon::class, $redeem->coupon()->getRelated()::class);
+    expect($redeem->coupon()->getRelated()::class)->toBe(Coupon::class);
 });
 
 it('discount line coupon relationship uses configured model', function () {
@@ -36,7 +36,7 @@ it('discount line coupon relationship uses configured model', function () {
 
     $discountLine = new DiscountLine;
 
-    $this->assertEquals(Coupon::class, $discountLine->coupon()->getRelated()::class);
+    expect($discountLine->coupon()->getRelated()::class)->toBe(Coupon::class);
 });
 
 it('extended subscription can override can apply coupon without type error', function () {
@@ -50,7 +50,7 @@ it('extended subscription can override can apply coupon without type error', fun
         }
     };
 
-    $this->assertInstanceOf(Subscription::class, $mockSubscription);
+    expect($mockSubscription)->toBeInstanceOf(Subscription::class);
 });
 
 it('workbench extended subscription model can be instantiated', function () {
@@ -59,15 +59,15 @@ it('workbench extended subscription model can be instantiated', function () {
 
     $subscription = new Workbench\App\Models\Subscription;
 
-    $this->assertInstanceOf(Workbench\App\Models\Subscription::class, $subscription);
-    $this->assertInstanceOf(Subscription::class, $subscription);
+    expect($subscription)->toBeInstanceOf(Workbench\App\Models\Subscription::class);
+    expect($subscription)->toBeInstanceOf(Subscription::class);
 
-    $this->assertTrue(method_exists($subscription, 'canApplyCoupon'));
-    $this->assertTrue(method_exists($subscription, 'hasSpecialCoupon'));
+    expect(method_exists($subscription, 'canApplyCoupon'))->toBeTrue();
+    expect(method_exists($subscription, 'hasSpecialCoupon'))->toBeTrue();
 });
 
 it('plan model can be configured', function () {
     Foundry\Foundry::usePlanModel(Plan::class);
 
-    $this->assertEquals(Plan::class, Foundry\Foundry::$planModel);
+    expect(Foundry\Foundry::$planModel)->toBe(Plan::class);
 });

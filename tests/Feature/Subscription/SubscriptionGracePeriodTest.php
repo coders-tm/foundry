@@ -57,7 +57,7 @@ it('renewal expires subscription on wallet charge failure when no grace period',
 
     // Assert:
     // 1. Subscription status should be EXPIRED
-    $this->assertEquals(SubscriptionStatus::EXPIRED, $subscription->fresh()->status, 'Subscription status should be EXPIRED after failed wallet charge with no grace period.');
+    expect($subscription->fresh()->status)->toEqual(SubscriptionStatus::EXPIRED);
 
     // 2. SubscriptionExpired event should be dispatched
     Event::assertDispatched(SubscriptionExpired::class);
@@ -103,10 +103,10 @@ it('renewal enters grace period on wallet charge failure when grace period exist
     // Assert:
     // 1. Subscription status should NOT be EXPIRED (effectively ACTIVE with future ends_at)
     // Note: The renew method (via setPeriod logic) sets ends_at to grace period end.
-    $this->assertNotEquals(SubscriptionStatus::EXPIRED, $subscription->fresh()->status, 'Subscription status should NOT be EXPIRED when grace period exists.');
+    expect($subscription->fresh()->status)->not->toBe(SubscriptionStatus::EXPIRED);
 
     // 2. Ends_at should be in the future (grace period end)
-    $this->assertTrue($subscription->fresh()->ends_at->isFuture(), 'Subscription ends_at should be in the future (grace period).');
+    expect($subscription->fresh()->ends_at->isFuture())->toBeTrue();
 
     // 3. SubscriptionExpired event should NOT be dispatched
     Event::assertNotDispatched(SubscriptionExpired::class);

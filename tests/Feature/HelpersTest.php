@@ -49,7 +49,7 @@ it('user function returns specific user property', function () {
 
 it('settings', function () {
     Settings::set('foo', ['bar' => 'baz']);
-    $this->assertEquals(['bar' => 'baz'], settings('foo'));
+    expect(settings('foo'))->toBe(['bar' => 'baz']);
 });
 
 it('admin notify', function () {
@@ -89,8 +89,8 @@ it('country taxes', function () {
         'priority' => 1,
     ]);
 
-    $this->assertNotEmpty($repository->countryTaxes('US'));
-    $this->assertNotEmpty($repository->countryTaxes('US', 'California'));
+    expect($repository->countryTaxes('US'))->not->toBeEmpty();
+    expect($repository->countryTaxes('US', 'California'))->not->toBeEmpty();
 });
 
 it('default tax', function () {
@@ -114,7 +114,7 @@ it('default tax', function () {
         'priority' => 0,
     ]);
 
-    $this->assertNotEmpty($repository->useDefaultTax()->tax_lines);
+    expect($repository->useDefaultTax()->tax_lines)->not->toBeEmpty();
 });
 
 it('rest of world tax', function () {
@@ -129,7 +129,7 @@ it('rest of world tax', function () {
         'priority' => 0,
     ]);
 
-    $this->assertNotEmpty($repository->restOfWorldTax());
+    expect($repository->restOfWorldTax())->not->toBeEmpty();
 });
 
 it('billing address tax', function () {
@@ -144,6 +144,6 @@ it('billing address tax', function () {
         'priority' => 0,
     ]);
 
-    $this->assertNotEmpty($repository->getBillingAddressTax(['country' => 'United States']));
-    $this->assertNotEmpty($repository->getBillingAddressTax(['country' => 'Canada']));
+    expect($repository->getBillingAddressTax(['country' => 'United States']))->not->toBeEmpty();
+    expect($repository->getBillingAddressTax(['country' => 'Canada']))->not->toBeEmpty();
 });

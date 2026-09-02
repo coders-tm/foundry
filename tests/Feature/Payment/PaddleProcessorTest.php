@@ -35,8 +35,8 @@ beforeEach(function () {
 
 it('creates paddle processor instance', function () {
     $processor = Processor::make(PaymentProvider::PADDLE);
-    $this->assertInstanceOf(PaddleProcessor::class, $processor);
-    $this->assertEquals(PaymentProvider::PADDLE, $processor->getProvider());
+    expect($processor)->toBeInstanceOf(PaddleProcessor::class);
+    expect($processor->getProvider())->toBe(PaymentProvider::PADDLE);
 });
 
 it('sets up paddle payment intent', function () {
@@ -44,11 +44,11 @@ it('sets up paddle payment intent', function () {
     $payable = ($this->createMockPayable)();
     try {
         $result = $processor->setupPaymentIntent(new Request, $payable);
-        $this->assertNotEmpty($result['transaction_id']);
-        $this->assertStringStartsWith('txn_', $result['transaction_id']);
-        $this->assertEquals(49.99, $result['amount']);
-        $this->assertEquals('USD', $result['currency']);
-        $this->assertNotNull($result['checkout_url']);
+        expect($result['transaction_id'])->not->toBeEmpty();
+        expect($result['transaction_id'])->toBeStartingWith('txn_');
+        expect($result['amount'])->toEqual(49.99);
+        expect($result['currency'])->toBe('USD');
+        expect($result['checkout_url'])->not->toBeNull();
     } catch (Throwable $e) {
         $paddleMock = $this->createMock(Client::class);
         $transactionsClientMock = $this->createMock(TransactionsClient::class);
@@ -62,10 +62,10 @@ it('sets up paddle payment intent', function () {
         $property->setValue($paddleMock, $transactionsClientMock);
         $this->app->instance(Client::class, $paddleMock);
         $result = $processor->setupPaymentIntent(new Request, $payable);
-        $this->assertEquals('txn_01h8abcdef1234567890', $result['transaction_id']);
-        $this->assertEquals(49.99, $result['amount']);
-        $this->assertEquals('USD', $result['currency']);
-        $this->assertEquals('https://sandbox-checkout.paddle.com/txn_01h8abcdef1234567890', $result['checkout_url']);
+        expect($result['transaction_id'])->toBe('txn_01h8abcdef1234567890');
+        expect($result['amount'])->toEqual(49.99);
+        expect($result['currency'])->toBe('USD');
+        expect($result['checkout_url'])->toBe('https://sandbox-checkout.paddle.com/txn_01h8abcdef1234567890');
     }
 });
 
@@ -87,10 +87,10 @@ it('confirms paddle payment', function () {
     $payable = ($this->createMockPayable)();
     $request = new Request(['transaction_id' => 'txn_01h8abcdef1234567890']);
     $result = $processor->confirmPayment($request, $payable);
-    $this->assertTrue($result->isSuccess());
-    $this->assertEquals('txn_01h8abcdef1234567890', $result->getTransactionId());
-    $this->assertInstanceOf(PaddlePayment::class, $result->getPaymentData());
-    $this->assertEquals('Paddle (Visa •••• 4242)', $result->getPaymentData()->toString());
+    expect($result->isSuccess())->toBeTrue();
+    expect($result->getTransactionId())->toBe('txn_01h8abcdef1234567890');
+    expect($result->getPaymentData())->toBeInstanceOf(PaddlePayment::class);
+    expect($result->getPaymentData()->toString())->toBe('Paddle (Visa •••• 4242)');
 });
 
 it('handles paddle refund', function () {
@@ -107,7 +107,7 @@ it('handles paddle refund', function () {
     $processor = new PaddleProcessor;
     $payment = Payment::create(['paymentable_type' => 'Order', 'paymentable_id' => 1, 'provider' => PaymentProvider::PADDLE, 'transaction_id' => 'txn_01h8abcdef1234567890', 'amount' => 49.99, 'status' => 'completed']);
     $result = $processor->refund($payment, 49.99, 'Customer requested refund');
-    $this->assertTrue($result->isSuccess());
-    $this->assertEquals('rf_01h8ref12345', $result->getRefundId());
-    $this->assertEquals(49.99, $result->getAmount());
+    expect($result->isSuccess())->toBeTrue();
+    expect($result->getRefundId())->toBe('rf_01h8ref12345');
+    expect($result->getAmount())->toEqual(49.99);
 });

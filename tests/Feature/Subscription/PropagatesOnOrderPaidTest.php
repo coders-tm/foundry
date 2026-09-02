@@ -47,9 +47,9 @@ it('mark as paid activates subscription and sets period based on subscription wh
     [$subscription, $order] = $createSubscriptionWithOpenInvoice(true);
     $order->markAsPaid(1, ['note' => 'manual']);
     $subscription = $subscription->fresh();
-    $this->assertEquals(Subscription::ACTIVE, $subscription->status);
-    $this->assertNotNull($subscription->starts_at);
-    $this->assertTrue($subscription->starts_at->isSameDay(now()));
+    expect($subscription->status)->toEqual(Subscription::ACTIVE);
+    expect($subscription->starts_at)->not->toBeNull();
+    expect($subscription->starts_at->isSameDay(now()))->toBeTrue();
 });
 
 it('mark as paid activates subscription and sets period from today when anchoring disabled', function () use ($createSubscriptionWithOpenInvoice) {
@@ -57,6 +57,6 @@ it('mark as paid activates subscription and sets period from today when anchorin
     [$subscription, $order] = $createSubscriptionWithOpenInvoice(true);
     $order->markAsPaid(1, ['note' => 'manual']);
     $subscription = $subscription->fresh();
-    $this->assertEquals(Subscription::ACTIVE, $subscription->status);
-    $this->assertTrue($subscription->starts_at->isSameDay(now()));
+    expect($subscription->status)->toEqual(Subscription::ACTIVE);
+    expect($subscription->starts_at->isSameDay(now()))->toBeTrue();
 });

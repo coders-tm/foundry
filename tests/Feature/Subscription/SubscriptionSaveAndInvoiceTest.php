@@ -23,9 +23,9 @@ it('save and invoice returns subscription instance', function () {
     // Call saveAndInvoice and verify it returns the subscription instance
     $result = $subscription->saveAndInvoice();
 
-    $this->assertInstanceOf(Foundry::$subscriptionModel, $result);
-    $this->assertEquals($subscription->id, $result->id);
-    $this->assertTrue($result->exists);
+    expect($result)->toBeInstanceOf(Foundry::$subscriptionModel);
+    expect($result->id)->toEqual($subscription->id);
+    expect($result->exists)->toBeTrue();
 });
 
 it('save and invoice generates invoice when not on trial', function () {
@@ -45,12 +45,12 @@ it('save and invoice generates invoice when not on trial', function () {
     $result = $subscription->saveAndInvoice()->refresh();
 
     // Verify subscription was saved
-    $this->assertTrue($result->exists);
+    expect($result->exists)->toBeTrue();
 
     // Verify invoice was generated
     $invoice = $result->latestInvoice;
-    $this->assertNotNull($invoice);
-    $this->assertInstanceOf(Order::class, $invoice);
+    expect($invoice)->not->toBeNull();
+    expect($invoice)->toBeInstanceOf(Order::class);
 });
 
 it('save and invoice skips invoice generation when on trial', function () {
@@ -71,12 +71,12 @@ it('save and invoice skips invoice generation when on trial', function () {
     $result = $subscription->saveAndInvoice()->refresh();
 
     // Verify subscription was saved
-    $this->assertTrue($result->exists);
-    $this->assertTrue($result->onTrial());
+    expect($result->exists)->toBeTrue();
+    expect($result->onTrial())->toBeTrue();
 
     // Verify invoice was NOT generated (because on trial)
     $invoice = $result->latestInvoice;
-    $this->assertNull($invoice);
+    expect($invoice)->toBeNull();
 });
 
 it('save and invoice forces invoice generation when on trial', function () {
@@ -97,13 +97,13 @@ it('save and invoice forces invoice generation when on trial', function () {
     $result = $subscription->saveAndInvoice([], true)->refresh();
 
     // Verify subscription was saved
-    $this->assertTrue($result->exists);
-    $this->assertTrue($result->onTrial());
+    expect($result->exists)->toBeTrue();
+    expect($result->onTrial())->toBeTrue();
 
     // Verify invoice WAS generated (because forced)
     $invoice = $result->latestInvoice;
-    $this->assertNotNull($invoice);
-    $this->assertInstanceOf(Order::class, $invoice);
+    expect($invoice)->not->toBeNull();
+    expect($invoice)->toBeInstanceOf(Order::class);
 });
 
 it('save and invoice can be chained', function () {
@@ -124,8 +124,8 @@ it('save and invoice can be chained', function () {
         ->saveAndInvoice()
         ->refresh();
 
-    $this->assertInstanceOf(Foundry::$subscriptionModel, $result);
-    $this->assertTrue($result->exists);
+    expect($result)->toBeInstanceOf(Foundry::$subscriptionModel);
+    expect($result->exists)->toBeTrue();
 });
 
 it('save and invoice preserves trialing status from new subscription', function () {
@@ -139,17 +139,16 @@ it('save and invoice preserves trialing status from new subscription', function 
 
     // 2. Create new subscription (initializes as TRIALING)
     $subscription = $user->newSubscription('default', $plan);
-    $this->assertEquals(SubscriptionStatus::TRIALING, $subscription->status);
-    $this->assertTrue($subscription->onTrial());
+    expect($subscription->status)->toEqual(SubscriptionStatus::TRIALING);
+    expect($subscription->onTrial())->toBeTrue();
 
     // 3. Call saveAndInvoice
     // This should trigger generateInvoice, but due to our fix, it should return early
     $subscription->saveAndInvoice();
 
     // 4. Assert Status is still TRIALING
-    $this->assertEquals(SubscriptionStatus::TRIALING, $subscription->status, 'Subscription status should remain TRIALING');
+    expect($subscription->status)->toEqual(SubscriptionStatus::TRIALING);
 
     // 5. Assert No Invoice Generated
-    // Since generateInvoice returns null when on trial, no invoice should be created yet.
-    $this->assertCount(0, $subscription->invoices()->get(), 'No invoice should be generated during trial');
+    expect($subscription->invoices()->get())->toHaveCount(0);
 });

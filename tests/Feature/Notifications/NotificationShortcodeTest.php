@@ -27,8 +27,8 @@ it('sends user signup notification', function () {
         [$user],
         UserSignupNotification::class,
         function ($notification, $channels) use ($user) {
-            $this->assertStringContainsString($user->first_name, $notification->message);
-            $this->assertStringContainsString($user->subscription()->plan->label, $notification->message);
+            expect($notification->message)->toContain($user->first_name);
+            expect($notification->message)->toContain($user->subscription()->plan->label);
 
             return true;
         }
@@ -47,7 +47,7 @@ it('sends subscription upgrade notification', function () {
         [$subscription->user],
         SubscriptionUpgradeNotification::class,
         function ($notification, $channels) use ($subscription) {
-            $this->assertStringContainsString($subscription->plan->label, $notification->message);
+            expect($notification->message)->toContain($subscription->plan->label);
 
             return true;
         }
@@ -64,7 +64,7 @@ it('sends subscription renewed notification', function () {
         [$subscription->user],
         SubscriptionRenewedNotification::class,
         function ($notification, $channels) use ($subscription) {
-            $this->assertStringContainsString($subscription->plan->label, $notification->message);
+            expect($notification->message)->toContain($subscription->plan->label);
 
             return true;
         }
@@ -81,7 +81,7 @@ it('sends subscription expired notification', function () {
         [$subscription->user],
         SubscriptionExpiredNotification::class,
         function ($notification, $channels) use ($subscription) {
-            $this->assertStringContainsString($subscription->plan->label, $notification->message);
+            expect($notification->message)->toContain($subscription->plan->label);
 
             return true;
         }
@@ -98,7 +98,7 @@ it('sends subscription downgrade notification', function () {
         [$subscription->user],
         SubscriptionDowngradeNotification::class,
         function ($notification, $channels) use ($subscription) {
-            $this->assertStringContainsString($subscription->plan->label, $notification->message);
+            expect($notification->message)->toContain($subscription->plan->label);
 
             return true;
         }
@@ -115,7 +115,7 @@ it('sends subscription cancel notification', function () {
         [$subscription->user],
         SubscriptionCancelNotification::class,
         function ($notification, $channels) use ($subscription) {
-            $this->assertStringContainsString($subscription->plan->label, $notification->message);
+            expect($notification->message)->toContain($subscription->plan->label);
 
             return true;
         }
@@ -132,7 +132,7 @@ it('sends subscription canceled notification', function () {
         [$subscription->user],
         SubscriptionCanceledNotification::class,
         function ($notification, $channels) use ($subscription) {
-            $this->assertStringContainsString($subscription->plan->label, $notification->message);
+            expect($notification->message)->toContain($subscription->plan->label);
 
             return true;
         }

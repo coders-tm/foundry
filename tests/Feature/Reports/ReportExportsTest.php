@@ -37,16 +37,16 @@ it('admin can get available reports', function () {
 
     // Verify each category has reports with value and label
     foreach ($data['reports'] as $category => $reports) {
-        $this->assertIsArray($reports);
+        expect($reports)->toBeArray();
         foreach ($reports as $report) {
-            $this->assertArrayHasKey('value', $report);
-            $this->assertArrayHasKey('label', $report);
+            expect($report)->toHaveKey('value');
+            expect($report)->toHaveKey('label');
         }
     }
 
     // Verify categories have labels
-    $this->assertArrayHasKey('revenue', $data['categories']);
-    $this->assertArrayHasKey('exports', $data['categories']);
+    expect($data['categories'])->toHaveKey('revenue');
+    expect($data['categories'])->toHaveKey('exports');
 });
 
 it('admin can get report metadata', function () {
@@ -65,11 +65,11 @@ it('admin can get report metadata', function () {
 
     $data = $response->json();
 
-    $this->assertEquals('users', $data['type']);
-    $this->assertEquals('exports', $data['category']);
-    $this->assertNotEmpty($data['description']);
-    $this->assertIsArray($data['fields']);
-    $this->assertNotEmpty($data['fields']);
+    expect($data['type'])->toEqual('users');
+    expect($data['category'])->toEqual('exports');
+    expect($data['description'])->not->toBeEmpty();
+    expect($data['fields'])->toBeArray();
+    expect($data['fields'])->not->toBeEmpty();
 });
 
 it('admin cannot get metadata for invalid report type', function () {
@@ -93,7 +93,9 @@ it('admin can list their report exports', function () {
 it('admin can filter exports by type', function () {
     $admin = Foundry\Models\Admin::factory()->create();
 
-    ReportExport::factory()->create(['admin_id' => $this->admin->id, 'type' => 'subscriptions']);
+    ReportExport::factory()->create([
+        'admin_id' => $this->admin->id, 'type' => 'subscriptions'
+    ]);
     ReportExport::factory()->create(['admin_id' => $this->admin->id, 'type' => 'orders']);
 
     $response = $this->getJson('/admin/reports/exports/?type=subscriptions');
@@ -119,7 +121,9 @@ it('admin can filter exports by payments type', function () {
         ->assertJsonCount(2, 'data');
 
     $data = $response->json('data');
-    $this->assertTrue(collect($data)->every(fn ($item) => $item['type'] === 'payments'));
+    foreach ($data as $item) {
+        expect($item['type'])->toEqual('payments');
+    }
 });
 
 it('admin can filter exports by status', function () {
@@ -210,7 +214,7 @@ it('admin can delete multiple exports', function () {
     ]);
 
     $response->assertStatus(200);
-    $this->assertEquals(0, ReportExport::count());
+    expect(ReportExport::count())->toEqual(0);
 });
 
 it('admin can retry failed export', function () {
@@ -228,8 +232,8 @@ it('admin can retry failed export', function () {
     $response->assertStatus(200);
 
     $export->refresh();
-    $this->assertEquals('pending', $export->status);
-    $this->assertNull($export->error_message);
+    expect($export->status)->toEqual('pending');
+    expect($export->error_message)->toBeNull();
 
     Queue::assertPushed(GenerateReport::class);
 });
@@ -270,7 +274,7 @@ it('admin can cleanup expired reports', function () {
 
     $response->assertStatus(200);
     // Should have 3 remaining (recent ones)
-    $this->assertEquals(3, ReportExport::count());
+    expect(ReportExport::count())->toEqual(3);
 });
 
 it('generate report job processes subscriptions', function () {
@@ -296,10 +300,10 @@ it('generate report job processes subscriptions', function () {
     $job->handle();
 
     $export->refresh();
-    $this->assertEquals('completed', $export->status);
-    $this->assertNotNull($export->file_path);
-    $this->assertEquals(5, $export->total_records);
-    $this->assertTrue(Storage::exists($export->file_path));
+    expect($export->status)->toEqual('completed');
+    expect($export->file_path)->not->toBeNull();
+    expect($export->total_records)->toEqual(5);
+    expect(Storage::exists($export->file_path))->toBeTrue();
 });
 
 it('generate report job marks as failed on error', function () {
@@ -321,8 +325,8 @@ it('generate report job marks as failed on error', function () {
     }
 
     $export->refresh();
-    $this->assertEquals('failed', $export->status);
-    $this->assertNotNull($export->error_message);
+    expect($export->status)->toEqual('failed');
+    expect($export->error_message)->not->toBeNull();
 });
 
 it('report export deletes file when deleted', function () {
@@ -331,9 +335,9 @@ it('report export deletes file when deleted', function () {
     ]);
 
     Storage::put('reports/test.csv', 'test,data');
-    $this->assertTrue(Storage::exists('reports/test.csv'));
+    expect(Storage::exists('reports/test.csv'))->toBeTrue();
 
     $export->delete();
 
-    $this->assertFalse(Storage::exists('reports/test.csv'));
+    expect(Storage::exists('reports/test.csv'))->toBeFalse();
 });

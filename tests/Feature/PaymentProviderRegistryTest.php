@@ -15,30 +15,30 @@ it('can dynamically add and retrieve a payment provider via facade', function ()
         'methods' => ['usdt', 'btc'],
     ]);
 
-    $this->assertTrue(PaymentProvider::has('custom_crypto'));
+    expect(PaymentProvider::has('custom_crypto'))->toBeTrue();
 
     $config = PaymentProvider::find('custom_crypto');
-    $this->assertNotNull($config);
-    $this->assertEquals('custom_crypto', $config['provider']);
-    $this->assertEquals('Crypto Pay', $config['name']);
-    $this->assertEquals(['usdt', 'btc'], $config['methods']);
+    expect($config)->not->toBeNull();
+    expect($config['provider'])->toBe('custom_crypto');
+    expect($config['name'])->toBe('Crypto Pay');
+    expect($config['methods'])->toBe(['usdt', 'btc']);
 
     $enabled = PaymentProvider::enabled();
-    $this->assertTrue($enabled->has('custom_crypto'));
+    expect($enabled->has('custom_crypto'))->toBeTrue();
 
     $publicProviders = PaymentProvider::toPublic();
     $cryptoPublic = $publicProviders->firstWhere('provider', 'custom_crypto')->toArray();
-    $this->assertNotNull($cryptoPublic);
-    $this->assertEquals('Crypto Pay', $cryptoPublic['name']);
-    $this->assertEquals('Pay with Crypto', $cryptoPublic['label']);
-    $this->assertEquals('pk_crypto_123', $cryptoPublic['public_key']);
-    $this->assertArrayNotHasKey('key', $cryptoPublic);
-    $this->assertArrayNotHasKey('client_id', $cryptoPublic);
-    $this->assertArrayNotHasKey('credentials', $cryptoPublic);
+    expect($cryptoPublic)->not->toBeNull();
+    expect($cryptoPublic['name'])->toBe('Crypto Pay');
+    expect($cryptoPublic['label'])->toBe('Pay with Crypto');
+    expect($cryptoPublic['public_key'])->toBe('pk_crypto_123');
+    expect($cryptoPublic)->not->toHaveKey('key');
+    expect($cryptoPublic)->not->toHaveKey('client_id');
+    expect($cryptoPublic)->not->toHaveKey('credentials');
 
     PaymentProvider::remove('custom_crypto');
-    $this->assertFalse(PaymentProvider::has('custom_crypto'));
-    $this->assertNull(PaymentProvider::find('custom_crypto'));
+    expect(PaymentProvider::has('custom_crypto'))->toBeFalse();
+    expect(PaymentProvider::find('custom_crypto'))->toBeNull();
 });
 
 it('can add a payment provider statically on registry class', function () {
@@ -47,9 +47,9 @@ it('can add a payment provider statically on registry class', function () {
         'enabled' => true,
     ]);
 
-    $this->assertTrue(PaymentProvider::has('custom_bank'));
-    $this->assertEquals('Bank Direct', PaymentProvider::find('custom_bank')['name']);
+    expect(PaymentProvider::has('custom_bank'))->toBeTrue();
+    expect(PaymentProvider::find('custom_bank')['name'])->toBe('Bank Direct');
 
     PaymentProvider::remove('custom_bank');
-    $this->assertFalse(PaymentProvider::has('custom_bank'));
+    expect(PaymentProvider::has('custom_bank'))->toBeFalse();
 });

@@ -19,23 +19,23 @@ beforeEach(function () {
 
 it('exchange rate returns correct rate', function () {
     $rate = ExchangeRate::rateFor('INR');
-    $this->assertEquals(83.0, $rate);
+    expect($rate)->toEqual(83.0);
 });
 
 it('exchange rate returns one for base currency', function () {
     $rate = ExchangeRate::rateFor('USD');
-    $this->assertEquals(1.0, $rate);
+    expect($rate)->toEqual(1.0);
 });
 
 it('exchange rate converts amount correctly', function () {
     $converted = ExchangeRate::convertAmount(100.00, 'USD', 'INR');
-    $this->assertEquals(8300.00, $converted);
+    expect($converted)->toEqual(8300.00);
 
     $converted = ExchangeRate::convertAmount(8300.00, 'INR', 'USD');
-    $this->assertEquals(100.00, $converted);
+    expect($converted)->toEqual(100.00);
 
     $converted = ExchangeRate::convertAmount(100.00, 'USD', 'USD');
-    $this->assertEquals(100.00, $converted);
+    expect($converted)->toEqual(100.00);
 });
 
 it('order stores base values only', function () {
@@ -46,20 +46,20 @@ it('order stores base values only', function () {
         'status' => 'pending',
     ]);
 
-    $this->assertEquals(100.00, $order->grand_total);
-    $this->assertEquals(80.00, $order->sub_total);
+    expect($order->grand_total)->toEqual(100.00);
+    expect($order->sub_total)->toEqual(80.00);
 
-    $this->assertNull($order->currency ?? null);
-    $this->assertNull($order->exchange_rate ?? null);
+    expect($order->currency ?? null)->toBeNull();
+    expect($order->exchange_rate ?? null)->toBeNull();
 });
 
 it('get currency from country code', function () {
     $currency = ExchangeRate::getCurrencyFromCountryCode('IN');
-    $this->assertEquals('INR', $currency);
+    expect($currency)->toBe('INR');
 
     $currency = ExchangeRate::getCurrencyFromCountryCode('US');
-    $this->assertEquals('USD', $currency);
+    expect($currency)->toBe('USD');
 
     $currency = ExchangeRate::getCurrencyFromCountryCode('XX');
-    $this->assertEquals('USD', $currency);
+    expect($currency)->toBe('USD');
 });

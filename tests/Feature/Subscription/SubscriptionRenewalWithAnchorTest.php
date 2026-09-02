@@ -32,33 +32,17 @@ it('renewal extends period when anchor from invoice is enabled', function () {
     $subscription->renew();
 
     // Assert: Both dates should change
-    $this->assertNotEquals(
-        $originalStartsAt->format('Y-m-d'),
-        $subscription->starts_at->format('Y-m-d'),
-        'starts_at should change after renewal'
-    );
+    expect($subscription->starts_at->format('Y-m-d'))->not->toBe($originalStartsAt->format('Y-m-d'));
 
-    $this->assertNotEquals(
-        $originalExpiresAt->format('Y-m-d'),
-        $subscription->expires_at->format('Y-m-d'),
-        'expires_at should change after renewal'
-    );
+    expect($subscription->expires_at->format('Y-m-d'))->not->toBe($originalExpiresAt->format('Y-m-d'));
 
     // Assert: The new period should be approximately 1 month from original expiry
     $expectedNewStarts = $originalExpiresAt->copy();
     $expectedNewExpiry = $originalExpiresAt->copy()->addMonth();
 
-    $this->assertEquals(
-        $expectedNewStarts->format('Y-m-d'),
-        $subscription->starts_at->format('Y-m-d'),
-        'New starts_at should equal original expires_at'
-    );
+    expect($subscription->starts_at->format('Y-m-d'))->toEqual($expectedNewStarts->format('Y-m-d'));
 
-    $this->assertEquals(
-        $expectedNewExpiry->format('Y-m-d'),
-        $subscription->expires_at->format('Y-m-d'),
-        'New expires_at should be 1 month after original expires_at'
-    );
+    expect($subscription->expires_at->format('Y-m-d'))->toEqual($expectedNewExpiry->format('Y-m-d'));
 });
 
 it('renewal works with quarterly plan and anchor enabled', function () {
@@ -81,11 +65,7 @@ it('renewal works with quarterly plan and anchor enabled', function () {
 
     // Assert: expires_at should be extended by 3 months
     $expectedNewExpiry = $originalExpiresAt->copy()->addMonths(3);
-    $this->assertEquals(
-        $expectedNewExpiry->format('Y-m-d'),
-        $subscription->expires_at->format('Y-m-d'),
-        'expires_at should be extended by 3 months from original expiry'
-    );
+    expect($subscription->expires_at->format('Y-m-d'))->toEqual($expectedNewExpiry->format('Y-m-d'));
 });
 
 it('multiple renewals properly advance period', function () {
@@ -111,26 +91,14 @@ it('multiple renewals properly advance period', function () {
     $secondRenewalExpiry = $subscription->expires_at;
 
     // Assert: Each renewal should advance the period
-    $this->assertNotEquals(
-        $originalExpiresAt->format('Y-m-d'),
-        $firstRenewalExpiry->format('Y-m-d'),
-        'First renewal should change expires_at'
-    );
+    expect($originalExpiresAt->format('Y-m-d'))->not->toBe($firstRenewalExpiry->format('Y-m-d'));
 
-    $this->assertNotEquals(
-        $firstRenewalExpiry->format('Y-m-d'),
-        $secondRenewalExpiry->format('Y-m-d'),
-        'Second renewal should change expires_at again'
-    );
+    expect($firstRenewalExpiry->format('Y-m-d'))->not->toBe($secondRenewalExpiry->format('Y-m-d'));
 
     // Assert: Second renewal should be 2 months after original
     // Note: When dealing with sequential month additions, Carbon's overflow behavior means:
     // Jan 31 + 1 month = Feb 28/29, then Feb 28/29 + 1 month = Mar 28/29
     // So we need to calculate the expected date by doing sequential additions, not a single +2 months
     $expectedSecondExpiry = $originalExpiresAt->copy()->addMonth()->addMonth();
-    $this->assertEquals(
-        $expectedSecondExpiry->format('Y-m-d'),
-        $secondRenewalExpiry->format('Y-m-d'),
-        'After two renewals, expires_at should be 2 months after original (with sequential month addition)'
-    );
+    expect($secondRenewalExpiry->format('Y-m-d'))->toEqual($expectedSecondExpiry->format('Y-m-d'));
 });

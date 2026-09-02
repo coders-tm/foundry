@@ -26,12 +26,12 @@ it('preserves trailing whitespace in text content', function () {
     ];
 
     $encoded = $this->cast->set($this->model, 'data', $originalData, []);
-    $this->assertIsString($encoded);
+    expect($encoded)->toBeString();
 
     $decoded = $this->cast->get($this->model, 'data', $encoded, []);
 
-    $this->assertSame('Be at least 18 years old or ', $decoded['components'][0]['content']);
-    $this->assertSame('have ', $decoded['components'][1]['content']);
+    expect($decoded['components'][0]['content'])->toBe('Be at least 18 years old or ');
+    expect($decoded['components'][1]['content'])->toBe('have ');
 });
 
 it('preserves non breaking spaces', function () {
@@ -42,7 +42,7 @@ it('preserves non breaking spaces', function () {
     $encoded = $this->cast->set($this->model, 'data', $originalData, []);
     $decoded = $this->cast->get($this->model, 'data', $encoded, []);
 
-    $this->assertSame("Text with\u{00A0}non-breaking\u{00A0}spaces", $decoded['content']);
+    expect($decoded['content'])->toBe("Text with\u{00A0}non-breaking\u{00A0}spaces");
 });
 
 it('preserves leading and trailing whitespace', function () {
@@ -54,8 +54,8 @@ it('preserves leading and trailing whitespace', function () {
     $encoded = $this->cast->set($this->model, 'data', $originalData, []);
     $decoded = $this->cast->get($this->model, 'data', $encoded, []);
 
-    $this->assertSame('  leading and trailing spaces  ', $decoded['content']);
-    $this->assertSame(" \n  multi\n  line\n  content  \n ", $decoded['multiline']);
+    expect($decoded['content'])->toBe('  leading and trailing spaces  ');
+    expect($decoded['multiline'])->toBe(" \n  multi\n  line\n  content  \n ");
 });
 
 it('handles complex nested structures with whitespace', function () {
@@ -94,38 +94,38 @@ it('handles complex nested structures with whitespace', function () {
     $decoded = $this->cast->get($this->model, 'data', $encoded, []);
 
     $components = $decoded['pages'][0]['components'][0]['components'];
-    $this->assertSame('Be at least 18 years old or ', $components[0]['content']);
-    $this->assertSame('have ', $components[1]['components'][0]['content']);
-    $this->assertSame('parental consent', $components[2]['content']);
+    expect($components[0]['content'])->toBe('Be at least 18 years old or ');
+    expect($components[1]['components'][0]['content'])->toBe('have ');
+    expect($components[2]['content'])->toBe('parental consent');
 });
 
 it('handles null values', function () {
     $encoded = $this->cast->set($this->model, 'data', null, []);
-    $this->assertNull($encoded);
+    expect($encoded)->toBeNull();
 
     $decoded = $this->cast->get($this->model, 'data', null, []);
-    $this->assertNull($decoded);
+    expect($decoded)->toBeNull();
 });
 
 it('handles already decoded arrays', function () {
     $arrayData = ['key' => 'value with spaces  '];
 
     $result = $this->cast->get($this->model, 'data', $arrayData, []);
-    $this->assertSame($arrayData, $result);
+    expect($result)->toEqual($arrayData);
 });
 
 it('handles already decoded objects', function () {
     $objectData = (object) ['key' => 'value with spaces  '];
 
     $result = $this->cast->get($this->model, 'data', $objectData, []);
-    $this->assertSame($objectData, $result);
+    expect($result)->toEqual($objectData);
 });
 
 it('validates and preserves existing json strings', function () {
     $jsonString = '{"content":"text with trailing space ","another":"value"}';
 
     $result = $this->cast->set($this->model, 'data', $jsonString, []);
-    $this->assertSame($jsonString, $result);
+    expect($result)->toBe($jsonString);
 });
 
 it('preserves unicode characters', function () {
@@ -138,9 +138,9 @@ it('preserves unicode characters', function () {
     $encoded = $this->cast->set($this->model, 'data', $originalData, []);
     $decoded = $this->cast->get($this->model, 'data', $encoded, []);
 
-    $this->assertSame('🎉 Party time! 🎊 ', $decoded['emoji']);
-    $this->assertSame('Café münü  ', $decoded['unicode']);
-    $this->assertSame('Mixed 🌟 content with spaces  ', $decoded['mixed']);
+    expect($decoded['emoji'])->toBe('🎉 Party time! 🎊 ');
+    expect($decoded['unicode'])->toBe('Café münü  ');
+    expect($decoded['mixed'])->toBe('Mixed 🌟 content with spaces  ');
 });
 
 it('preserves various whitespace characters', function () {
@@ -154,30 +154,27 @@ it('preserves various whitespace characters', function () {
     $encoded = $this->cast->set($this->model, 'data', $originalData, []);
     $decoded = $this->cast->get($this->model, 'data', $encoded, []);
 
-    $this->assertSame("content\twith\ttabs\t", $decoded['tab']);
-    $this->assertSame("content\nwith\nnewlines\n", $decoded['newline']);
-    $this->assertSame("content\rwith\rcarriage\r", $decoded['carriage_return']);
-    $this->assertSame(" \t\n\r mixed \t\n\r whitespace \t\n\r ", $decoded['mixed_whitespace']);
+    expect($decoded['tab'])->toBe("content\twith\ttabs\t");
+    expect($decoded['newline'])->toBe("content\nwith\nnewlines\n");
+    expect($decoded['carriage_return'])->toBe("content\rwith\rcarriage\r");
+    expect($decoded['mixed_whitespace'])->toBe(" \t\n\r mixed \t\n\r whitespace \t\n\r ");
 });
 
 it('handles serialization', function () {
     $data = ['content' => 'text with spaces  '];
 
     $result = $this->cast->serialize($this->model, 'data', $data, []);
-    $this->assertSame($data, $result);
+    expect($result)->toEqual($data);
 });
 
 it('throws exception for invalid json in get', function () {
-    $this->expectException(JsonException::class);
-
-    $invalidJson = '{"invalid": json}';
-    $this->cast->get($this->model, 'data', $invalidJson, []);
+    expect(fn () => $this->cast->get($this->model, 'data', '{"invalid": json}', []))->toThrow(JsonException::class);
 });
 
 it('encodes arrays that are not valid json strings', function () {
     $data = ['content' => 'not a json string'];
 
     $result = $this->cast->set($this->model, 'data', $data, []);
-    $this->assertIsString($result);
-    $this->assertStringContainsString('not a json string', $result);
+    expect($result)->toBeString();
+    expect($result)->toContain('not a json string');
 });

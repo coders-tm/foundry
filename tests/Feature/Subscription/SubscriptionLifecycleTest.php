@@ -23,9 +23,9 @@ it('subscription starts in pending status', function () {
 
     $subscription->refresh();
 
-    $this->assertEquals(SubscriptionStatus::PENDING, $subscription->status);
-    $this->assertNotNull($subscription->latestInvoice);
-    $this->assertFalse($subscription->latestInvoice->is_paid);
+    expect($subscription->status)->toEqual(SubscriptionStatus::PENDING);
+    expect($subscription->latestInvoice)->not->toBeNull();
+    expect($subscription->latestInvoice->is_paid)->toBeFalse();
 });
 
 it('subscription creation with coupon', function () {
@@ -41,7 +41,7 @@ it('subscription creation with coupon', function () {
         ->withCoupon('TEST20')
         ->saveAndInvoice([], true);
 
-    $this->assertEquals($coupon->id, $subscription->coupon_id);
+    expect($subscription->coupon_id)->toEqual($coupon->id);
 });
 
 it('creation with trial generates no initial invoice', function () {
@@ -52,8 +52,8 @@ it('creation with trial generates no initial invoice', function () {
         ->trialDays(14)
         ->saveAndInvoice();
 
-    $this->assertTrue($subscription->onTrial());
-    $this->assertNull($subscription->latestInvoice);
+    expect($subscription->onTrial())->toBeTrue();
+    expect($subscription->latestInvoice)->toBeNull();
 });
 
 it('manual trial end triggers invoice', function () {
@@ -64,17 +64,17 @@ it('manual trial end triggers invoice', function () {
         ->trialDays(14)
         ->saveAndInvoice();
 
-    $this->assertTrue($subscription->onTrial());
-    $this->assertEquals(SubscriptionStatus::TRIALING, $subscription->status);
+    expect($subscription->onTrial())->toBeTrue();
+    expect($subscription->status)->toEqual(SubscriptionStatus::TRIALING);
 
     // End trial manually
     $subscription->endTrial();
-    $this->assertFalse($subscription->onTrial());
+    expect($subscription->onTrial())->toBeFalse();
 
     // Renew/Invoice after trial end
     $subscription->saveAndInvoice([], true)->refresh();
 
-    $this->assertNotNull($subscription->latestInvoice);
+    expect($subscription->latestInvoice)->not->toBeNull();
 });
 
 it('subscription cancellation and resumption workflow', function () {
@@ -84,22 +84,22 @@ it('subscription cancellation and resumption workflow', function () {
     $subscription = $user->newSubscription('default', $plan->id)
         ->saveAndInvoice([], true);
 
-    $this->assertNull($subscription->cancels_at);
-    $this->assertFalse($subscription->canceled());
+    expect($subscription->cancels_at)->toBeNull();
+    expect($subscription->canceled())->toBeFalse();
 
     // Cancel subscription
     $subscription->cancel();
 
-    $this->assertNotNull($subscription->cancels_at);
-    $this->assertTrue($subscription->canceled());
-    $this->assertTrue($subscription->canceledOnGracePeriod());
+    expect($subscription->cancels_at)->not->toBeNull();
+    expect($subscription->canceled())->toBeTrue();
+    expect($subscription->canceledOnGracePeriod())->toBeTrue();
 
     // Resume subscription
     $subscription->resume();
 
-    $this->assertNull($subscription->cancels_at);
-    $this->assertFalse($subscription->canceled());
-    $this->assertTrue($subscription->active());
+    expect($subscription->cancels_at)->toBeNull();
+    expect($subscription->canceled())->toBeFalse();
+    expect($subscription->active())->toBeTrue();
 });
 
 it('subscription immediate cancellation workflow', function () {
@@ -112,9 +112,9 @@ it('subscription immediate cancellation workflow', function () {
     // Cancel immediately
     $subscription->cancelNow();
 
-    $this->assertTrue($subscription->canceled());
-    $this->assertFalse($subscription->canceledOnGracePeriod());
-    $this->assertEquals(SubscriptionStatus::CANCELED, $subscription->status);
+    expect($subscription->canceled())->toBeTrue();
+    expect($subscription->canceledOnGracePeriod())->toBeFalse();
+    expect($subscription->status)->toEqual(SubscriptionStatus::CANCELED);
 });
 
 it('subscription with multiple method chaining', function () {
@@ -127,9 +127,9 @@ it('subscription with multiple method chaining', function () {
         ->saveAndInvoice([], true)
         ->refresh();
 
-    $this->assertTrue($subscription->exists);
-    $this->assertFalse($subscription->onTrial());
-    $this->assertNotNull($subscription->latestInvoice);
+    expect($subscription->exists)->toBeTrue();
+    expect($subscription->onTrial())->toBeFalse();
+    expect($subscription->latestInvoice)->not->toBeNull();
 });
 
 it('subscription implements manages subscriptions interface', function () {
@@ -139,10 +139,10 @@ it('subscription implements manages subscriptions interface', function () {
     $subscription = $user->newSubscription('default', $plan->id)
         ->saveAndInvoice([], true);
 
-    $this->assertInstanceOf(ManagesSubscriptions::class, $subscription);
-    $this->assertTrue(method_exists($subscription, 'valid'));
-    $this->assertTrue(method_exists($subscription, 'swap'));
-    $this->assertTrue(method_exists($subscription, 'cancel'));
+    expect($subscription)->toBeInstanceOf(ManagesSubscriptions::class);
+    expect(method_exists($subscription, 'valid'))->toBeTrue();
+    expect(method_exists($subscription, 'swap'))->toBeTrue();
+    expect(method_exists($subscription, 'cancel'))->toBeTrue();
 });
 
 it('subscription downgrade workflow', function () {
@@ -158,14 +158,14 @@ it('subscription downgrade workflow', function () {
     $subscription->is_downgrade = true;
     $subscription->save();
 
-    $this->assertTrue($subscription->hasDowngrade());
-    $this->assertEquals($basicPlan->id, $subscription->next_plan);
+    expect($subscription->hasDowngrade())->toBeTrue();
+    expect($subscription->next_plan)->toEqual($basicPlan->id);
 
     // Cancel downgrade
     $subscription->cancelDowngrade();
 
-    $this->assertFalse($subscription->hasDowngrade());
-    $this->assertNull($subscription->next_plan);
+    expect($subscription->hasDowngrade())->toBeFalse();
+    expect($subscription->next_plan)->toBeNull();
 });
 
 it('subscription status becomes incomplete on payment failure', function () {
@@ -178,8 +178,8 @@ it('subscription status becomes incomplete on payment failure', function () {
     // Simulate payment failure
     $subscription->paymentFailed();
 
-    $this->assertEquals(SubscriptionStatus::INCOMPLETE, $subscription->status);
-    $this->assertTrue($subscription->hasIncompletePayment());
+    expect($subscription->status)->toEqual(SubscriptionStatus::INCOMPLETE);
+    expect($subscription->hasIncompletePayment())->toBeTrue();
 });
 
 it('subscription cancel open invoices workflow', function () {
@@ -195,7 +195,7 @@ it('subscription cancel open invoices workflow', function () {
     // Cancel all open invoices
     $subscription->cancelOpenInvoices();
 
-    $this->assertEquals(0, $subscription->invoices()->where('status', 'open')->count());
+    expect($subscription->invoices()->where('status', 'open')->count())->toEqual(0);
 });
 
 it('subscription transitions to active on payment', function () {
@@ -205,13 +205,13 @@ it('subscription transitions to active on payment', function () {
     $subscription = $user->newSubscription('default', $plan->id)
         ->saveAndInvoice([], true);
 
-    $this->assertEquals(SubscriptionStatus::PENDING, $subscription->status);
+    expect($subscription->status)->toEqual(SubscriptionStatus::PENDING);
 
     // Simulate payment confirmation
     $subscription->paymentConfirmation();
 
-    $this->assertEquals(SubscriptionStatus::ACTIVE, $subscription->status);
-    $this->assertNull($subscription->ends_at);
+    expect($subscription->status)->toEqual(SubscriptionStatus::ACTIVE);
+    expect($subscription->ends_at)->toBeNull();
 });
 
 it('active subscription enters grace on payment failure', function () {
@@ -222,7 +222,7 @@ it('active subscription enters grace on payment failure', function () {
         ->saveAndInvoice([], true);
 
     $subscription->paymentConfirmation();
-    $this->assertEquals(SubscriptionStatus::ACTIVE, $subscription->status);
+    expect($subscription->status)->toEqual(SubscriptionStatus::ACTIVE);
 
     // Set expires_at to future (next billing period) and ends_at to near future (within grace period)
     // This simulates the renewal scenario where customer hasn't paid yet
@@ -234,9 +234,9 @@ it('active subscription enters grace on payment failure', function () {
     $subscription->paymentFailed();
 
     // Status stays ACTIVE, but onGracePeriod() returns true
-    $this->assertEquals(SubscriptionStatus::ACTIVE, $subscription->status);
-    $this->assertTrue($subscription->onGracePeriod());
-    $this->assertFalse($subscription->notOnGracePeriod());
+    expect($subscription->status)->toEqual(SubscriptionStatus::ACTIVE);
+    expect($subscription->onGracePeriod())->toBeTrue();
+    expect($subscription->notOnGracePeriod())->toBeFalse();
 });
 
 it('renewal without payment sets grace status', function () {
@@ -251,9 +251,9 @@ it('renewal without payment sets grace status', function () {
     // Generate invoice (renewal scenario)
     $invoice = $subscription->generateInvoice();
 
-    $this->assertEquals(SubscriptionStatus::ACTIVE, $subscription->status);
-    $this->assertNotNull($invoice);
-    $this->assertFalse($invoice->is_paid);
+    expect($subscription->status)->toEqual(SubscriptionStatus::ACTIVE);
+    expect($invoice)->not->toBeNull();
+    expect($invoice->is_paid)->toBeFalse();
 });
 
 it('grace status is valid', function () {
@@ -272,8 +272,8 @@ it('grace status is valid', function () {
     $subscription->ends_at = now()->addDays(7); // Grace period ends in 7 days (before expires_at)
     $subscription->save();
 
-    $this->assertTrue($subscription->onGracePeriod());
-    $this->assertTrue($subscription->valid());
+    expect($subscription->onGracePeriod())->toBeTrue();
+    expect($subscription->valid())->toBeTrue();
 });
 
 it('payment during grace reactivates subscription', function () {
@@ -287,8 +287,8 @@ it('payment during grace reactivates subscription', function () {
     // Simulate renewal that enters grace period (unpaid)
     $subscription->renew(); // This creates new period with grace
 
-    $this->assertTrue($subscription->onGracePeriod());
-    $this->assertEquals(SubscriptionStatus::ACTIVE, $subscription->status);
+    expect($subscription->onGracePeriod())->toBeTrue();
+    expect($subscription->status)->toEqual(SubscriptionStatus::ACTIVE);
 
     // Simulate payment during grace period - should exit grace
     $subscription->paymentConfirmation();
@@ -297,10 +297,10 @@ it('payment during grace reactivates subscription', function () {
     // Payment confirmation should clear ends_at (grace period)
     $subscription->refresh();
 
-    $this->assertEquals(SubscriptionStatus::ACTIVE, $subscription->status);
-    $this->assertNull($subscription->ends_at); // Grace period cleared by payment
-    $this->assertFalse($subscription->onGracePeriod()); // No longer in grace (payment made)
-    $this->assertTrue($subscription->expires_at->isFuture());
+    expect($subscription->status)->toEqual(SubscriptionStatus::ACTIVE);
+    expect($subscription->ends_at)->toBeNull();
+    expect($subscription->onGracePeriod())->toBeFalse();
+    expect($subscription->expires_at->isFuture())->toBeTrue();
 });
 
 it('billing interval is stored', function () {
@@ -310,7 +310,7 @@ it('billing interval is stored', function () {
     $subscription = $user->newSubscription('default', $plan->id)
         ->saveAndInvoice([], true);
 
-    $this->assertEquals('month', $subscription->billing_interval);
+    expect($subscription->billing_interval)->toEqual('month');
 });
 
 it('grace scope filters subscriptions', function () {
@@ -336,13 +336,13 @@ it('grace scope filters subscriptions', function () {
     // Query only grace period subscriptions
     $graceSubscriptions = (Foundry::$subscriptionModel)::query()->onGracePeriod()->get();
 
-    $this->assertCount(1, $graceSubscriptions);
-    $this->assertEquals($graceSubscription->id, $graceSubscriptions->first()->id);
+    expect($graceSubscriptions)->toHaveCount(1);
+    expect($graceSubscriptions->first()->id)->toEqual($graceSubscription->id);
 
     // Test notOnGracePeriod scope
     $notGraceSubscriptions = (Foundry::$subscriptionModel)::query()->notOnGracePeriod()->get();
-    $this->assertGreaterThanOrEqual(2, $notGraceSubscriptions->count());
-    $this->assertFalse($notGraceSubscriptions->contains($graceSubscription));
+    expect($notGraceSubscriptions->count())->toBeGreaterThanOrEqual(2);
+    expect($notGraceSubscriptions->contains($graceSubscription))->toBeFalse();
 });
 
 it('renew clears trial ends at', function () {
@@ -369,16 +369,16 @@ it('renew clears trial ends at', function () {
 
     // 2. Refresh to make sure
     $subscription->refresh();
-    $this->assertEquals($trialEndAndExpires->toDateTimeString(), $subscription->trial_ends_at->toDateTimeString());
+    expect($subscription->trial_ends_at->toDateTimeString())->toEqual($trialEndAndExpires->toDateTimeString());
 
     // 3. Call renew()
     $subscription->renew();
 
     // 4. Assert trial_ends_at is NULL
-    $this->assertNull($subscription->trial_ends_at, 'trial_ends_at should be null after renewal');
+    expect($subscription->trial_ends_at)->toBeNull();
 
     // 5. Assert Invoice is generated
-    $this->assertCount(1, $subscription->invoices()->get(), 'An invoice should be generated upon renewal');
+    expect($subscription->invoices()->get())->toHaveCount(1);
 });
 
 it('renewal extends expires at by plan interval', function () {
@@ -403,7 +403,7 @@ it('renewal extends expires at by plan interval', function () {
     $subscription->renew();
 
     $expectedNewExpiry = $originalExpiresAt->copy()->addMonth();
-    $this->assertEquals($expectedNewExpiry->format('Y-m-d'), $subscription->expires_at->format('Y-m-d'));
+    expect($subscription->expires_at->format('Y-m-d'))->toEqual($expectedNewExpiry->format('Y-m-d'));
 });
 
 it('renewal with different interval counts', function () {
@@ -428,7 +428,7 @@ it('renewal with different interval counts', function () {
     $subscription->renew();
 
     $expectedNewExpiry = $originalExpiresAt->copy()->addMonths(3);
-    $this->assertEquals($expectedNewExpiry->format('Y-m-d'), $subscription->expires_at->format('Y-m-d'));
+    expect($subscription->expires_at->format('Y-m-d'))->toEqual($expectedNewExpiry->format('Y-m-d'));
 });
 
 it('renewal with yearly plan', function () {
@@ -453,7 +453,7 @@ it('renewal with yearly plan', function () {
     $subscription->renew();
 
     $expectedNewExpiry = $originalExpiresAt->copy()->addYear();
-    $this->assertEquals($expectedNewExpiry->format('Y-m-d'), $subscription->expires_at->format('Y-m-d'));
+    expect($subscription->expires_at->format('Y-m-d'))->toEqual($expectedNewExpiry->format('Y-m-d'));
 });
 
 it('renewal with next plan updates billing fields', function () {
@@ -488,12 +488,12 @@ it('renewal with next plan updates billing fields', function () {
     $subscription->renew();
     $subscription->refresh();
 
-    $this->assertEquals('month', $subscription->billing_interval);
-    $this->assertEquals(3, $subscription->billing_interval_count);
-    $this->assertEquals($quarterlyPlan->id, $subscription->plan_id);
+    expect($subscription->billing_interval)->toEqual('month');
+    expect($subscription->billing_interval_count)->toEqual(3);
+    expect($subscription->plan_id)->toEqual($quarterlyPlan->id);
 
     $expectedExpiresAt = Carbon::parse('2025-04-01')->addMonths(3);
-    $this->assertEquals($expectedExpiresAt->format('Y-m-d'), $subscription->expires_at->format('Y-m-d'));
+    expect($subscription->expires_at->format('Y-m-d'))->toEqual($expectedExpiresAt->format('Y-m-d'));
 });
 
 it('renewal uses plan grace period days', function () {
@@ -517,8 +517,8 @@ it('renewal uses plan grace period days', function () {
     $subscription->renew();
 
     $expectedGraceEnd = Carbon::now()->addDays(14);
-    $this->assertNotNull($subscription->ends_at);
-    $this->assertEquals($expectedGraceEnd->format('Y-m-d H:i'), $subscription->ends_at->format('Y-m-d H:i'));
+    expect($subscription->ends_at)->not->toBeNull();
+    expect($subscription->ends_at->format('Y-m-d H:i'))->toEqual($expectedGraceEnd->format('Y-m-d H:i'));
 
     Carbon::setTestNow(); // Reset
 });
@@ -539,8 +539,8 @@ it('renewal with zero grace period expires immediately', function () {
 
     $subscription->renew();
 
-    $this->assertNull($subscription->ends_at);
-    $this->assertEquals(SubscriptionStatus::EXPIRED, $subscription->status);
+    expect($subscription->ends_at)->toBeNull();
+    expect($subscription->status)->toEqual(SubscriptionStatus::EXPIRED);
 });
 
 it('artisan command renews active subscriptions', function () {
@@ -621,6 +621,6 @@ it('does not reset non resetable features on renewal', function () {
     $subscription->update(['expires_at' => now()->subDay()]);
     $subscription->renew();
 
-    $this->assertEquals(0, $subscription->getFeatureUsage('api-calls'));
-    $this->assertEquals(2500, $subscription->getFeatureUsage('storage-used'));
+    expect($subscription->getFeatureUsage('api-calls'))->toEqual(0);
+    expect($subscription->getFeatureUsage('storage-used'))->toEqual(2500);
 });

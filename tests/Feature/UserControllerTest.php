@@ -56,9 +56,9 @@ it('loads subscription info for users on index', function () {
 
     $userData = collect($response->json('data'))->firstWhere('id', $user->id);
 
-    $this->assertNotNull($userData);
-    $this->assertArrayHasKey('subscription', $userData);
-    $this->assertEquals($subscription->id, $userData['subscription']['id']);
+    expect($userData)->not->toBeNull();
+    expect($userData)->toHaveKey('subscription');
+    expect($userData['subscription']['id'])->toEqual($subscription->id);
 });
 
 it('can show user with subscription info', function () {
@@ -108,7 +108,7 @@ it('can show user with subscription info', function () {
             ],
         ]);
 
-    $this->assertEquals($subscription->id, $response->json('subscription.id'));
+    expect($response->json('subscription.id'))->toEqual($subscription->id);
 });
 
 it('shows user without subscription', function () {
@@ -125,7 +125,7 @@ it('shows user without subscription', function () {
             'subscription',
         ]);
 
-    $this->assertNull($response->json('subscription'));
+    expect($response->json('subscription'))->toBeNull();
 });
 
 it('can create user without plan', function () {
@@ -200,18 +200,18 @@ it('can create user with subscription', function () {
         ]);
 
     $user = User::where('email', 'subscriber@example.com')->first();
-    $this->assertNotNull($user);
+    expect($user)->not->toBeNull();
 
     $user->load('subscriptions');
 
-    $this->assertEquals(1, $user->subscriptions->count(), 'User should have exactly 1 subscription');
+    expect($user->subscriptions->count())->toEqual(1);
 
     $subscription = $user->subscriptions->first();
-    $this->assertNotNull($subscription, 'Subscription should exist');
-    $this->assertEquals($plan->id, $subscription->plan_id, 'Subscription should have correct plan');
-    $this->assertEquals('default', $subscription->type, 'Subscription type should be default');
+    expect($subscription)->not->toBeNull();
+    expect($subscription->plan_id)->toEqual($plan->id);
+    expect($subscription->type)->toEqual('default');
 
-    $this->assertNotNull($user->subscription());
+    expect($user->subscription())->not->toBeNull();
 });
 
 it('requires payment method when plan provided', function () {
@@ -274,12 +274,12 @@ it('can create user with subscription and coupon', function () {
     $response->assertStatus(200);
 
     $user = User::where('email', 'coupon@example.com')->first();
-    $this->assertNotNull($user);
+    expect($user)->not->toBeNull();
 
     $subscription = $user->subscription();
-    $this->assertNotNull($subscription);
+    expect($subscription)->not->toBeNull();
 
-    $this->assertEquals($plan->id, $subscription->plan_id);
+    expect($subscription->plan_id)->toEqual($plan->id);
 });
 
 it('can update user with subscription info', function () {
@@ -370,14 +370,14 @@ it('includes feature usages in subscription info', function () {
     $response->assertStatus(200);
 
     $usages = $response->json('subscription.usages');
-    $this->assertIsArray($usages);
-    $this->assertCount(1, $usages);
+    expect($usages)->toBeArray();
+    expect($usages)->toHaveCount(1);
 
     $usage = $usages[0];
-    $this->assertEquals('api-calls', $usage['slug']);
-    $this->assertEquals('API Calls', $usage['label']);
-    $this->assertEquals(150, $usage['used']);
-    $this->assertEquals(1000, $usage['value']);
+    expect($usage['slug'])->toEqual('api-calls');
+    expect($usage['label'])->toEqual('API Calls');
+    expect($usage['used'])->toEqual(150);
+    expect($usage['value'])->toEqual(1000);
 });
 
 it('shows canceled message in subscription info', function () {
@@ -408,9 +408,8 @@ it('shows canceled message in subscription info', function () {
             ],
         ]);
 
-    $id = $response->json('subscription.id');
-    $this->assertNotNull($id);
-    $this->assertTrue($response->json('subscription.canceled'));
+    expect($response->json('subscription.id'))->not->toBeNull();
+    expect($response->json('subscription.canceled'))->toBeTrue();
 });
 
 it('validates required fields on store', function () {
@@ -462,11 +461,9 @@ it('can delete user', function () {
         ->assertJsonStructure(['message']);
 
     $message = $response->json('message');
-    $this->assertStringContainsString('been deleted successfully', strtolower($message));
+    expect(strtolower($message))->toContain('been deleted successfully');
 
-    $this->assertSoftDeleted('users', [
-        'id' => $user->id,
-    ]);
+    $this->assertSoftDeleted('users', ['id' => $user->id]);
 });
 
 it('can get user options', function () {
@@ -545,8 +542,8 @@ it('can add notes to user', function () {
         ->assertJsonStructure(['message', 'data']);
 
     $responseData = $response->json('data');
-    $this->assertNotNull($responseData);
-    $this->assertEquals('This is a test note for the user.', $responseData['message']);
+    expect($responseData)->not->toBeNull();
+    expect($responseData['message'])->toEqual('This is a test note for the user.');
 
     $this->assertDatabaseHas('logs', [
         'logable_type' => 'User',

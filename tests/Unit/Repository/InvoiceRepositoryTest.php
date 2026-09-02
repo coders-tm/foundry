@@ -24,9 +24,9 @@ it('calculates simple taxable scenario', function () {
         ],
     ]);
 
-    $this->assertEquals(100, $repository->sub_total);
-    $this->assertEquals(10, $repository->tax_total);
-    $this->assertEquals(110, $repository->grand_total);
+    expect($repository->sub_total)->toEqual(100);
+    expect($repository->tax_total)->toEqual(10);
+    expect($repository->grand_total)->toEqual(110);
 });
 
 it('calculates mixed taxability scenario', function () {
@@ -53,9 +53,9 @@ it('calculates mixed taxability scenario', function () {
         ],
     ]);
 
-    $this->assertEquals(200, $repository->sub_total);
-    $this->assertEquals(10, $repository->tax_total);
-    $this->assertEquals(210, $repository->grand_total);
+    expect($repository->sub_total)->toEqual(200);
+    expect($repository->tax_total)->toEqual(10);
+    expect($repository->grand_total)->toEqual(210);
 });
 
 it('calculates line item discount scenario', function () {
@@ -78,12 +78,12 @@ it('calculates line item discount scenario', function () {
         ],
     ]);
 
-    $this->assertEquals(100, $repository->sub_total);
-    $this->assertEquals(20, $repository->line_discount_total);
-    $this->assertEquals(0, $repository->order_discount_total);
-    $this->assertEquals(20, $repository->discount_total);
-    $this->assertEquals(8, $repository->tax_total);
-    $this->assertEquals(88, $repository->grand_total);
+    expect($repository->sub_total)->toEqual(100);
+    expect($repository->line_discount_total)->toEqual(20);
+    expect($repository->order_discount_total)->toEqual(0);
+    expect($repository->discount_total)->toEqual(20);
+    expect($repository->tax_total)->toEqual(8);
+    expect($repository->grand_total)->toEqual(88);
 });
 
 it('calculates order level fixed discount scenario', function () {
@@ -108,10 +108,10 @@ it('calculates order level fixed discount scenario', function () {
         ],
     ]);
 
-    $this->assertEquals(100, $repository->sub_total);
-    $this->assertEquals(20, $repository->order_discount_total);
-    $this->assertEquals(8, $repository->tax_total);
-    $this->assertEquals(88, $repository->grand_total);
+    expect($repository->sub_total)->toEqual(100);
+    expect($repository->order_discount_total)->toEqual(20);
+    expect($repository->tax_total)->toEqual(8);
+    expect($repository->grand_total)->toEqual(88);
 });
 
 it('calculates mixed taxability with order discount prorating scenario', function () {
@@ -143,11 +143,11 @@ it('calculates mixed taxability with order discount prorating scenario', functio
         ],
     ]);
 
-    $this->assertEquals(200, $repository->sub_total);
-    $this->assertEquals(20, $repository->order_discount_total);
-    $this->assertEquals(10, $repository->taxable_discount);
-    $this->assertEquals(9, $repository->tax_total);
-    $this->assertEquals(189, $repository->grand_total);
+    expect($repository->sub_total)->toEqual(200);
+    expect($repository->order_discount_total)->toEqual(20);
+    expect($repository->taxable_discount)->toEqual(10);
+    expect($repository->tax_total)->toEqual(9);
+    expect($repository->grand_total)->toEqual(189);
 });
 
 it('calculates compounding taxes scenario', function () {
@@ -168,9 +168,9 @@ it('calculates compounding taxes scenario', function () {
         ],
     ]);
 
-    $this->assertEquals(10, $repository->default_tax_total);
-    $this->assertEquals(15.5, $repository->tax_total);
-    $this->assertEquals(115.5, $repository->grand_total);
+    expect($repository->default_tax_total)->toEqual(10);
+    expect($repository->tax_total)->toEqual(15.5);
+    expect($repository->grand_total)->toEqual(115.5);
 });
 
 it('calculates quantities and rounding scenario', function () {
@@ -199,9 +199,9 @@ it('calculates quantities and rounding scenario', function () {
         ],
     ]);
 
-    $this->assertEquals(110.49, $repository->sub_total);
-    $this->assertEquals(10.52, $repository->tax_total);
-    $this->assertEquals(115.76, $repository->grand_total);
+    expect($repository->sub_total)->toEqual(110.49);
+    expect($repository->tax_total)->toEqual(10.52);
+    expect($repository->grand_total)->toEqual(115.76);
 });
 
 it('calculates combined discounts scenario', function () {
@@ -229,12 +229,12 @@ it('calculates combined discounts scenario', function () {
         ],
     ]);
 
-    $this->assertEquals(100, $repository->sub_total);
-    $this->assertEquals(20, $repository->line_discount_total);
-    $this->assertEquals(10, $repository->order_discount_total);
-    $this->assertEquals(30, $repository->discount_total);
-    $this->assertEquals(7, $repository->tax_total);
-    $this->assertEquals(77, $repository->grand_total);
+    expect($repository->sub_total)->toEqual(100);
+    expect($repository->line_discount_total)->toEqual(20);
+    expect($repository->order_discount_total)->toEqual(10);
+    expect($repository->discount_total)->toEqual(30);
+    expect($repository->tax_total)->toEqual(7);
+    expect($repository->grand_total)->toEqual(77);
 });
 
 it('calculates concurrent taxes indian gst scenario', function () {
@@ -254,12 +254,12 @@ it('calculates concurrent taxes indian gst scenario', function () {
         ],
     ]);
 
-    $this->assertEquals(100, $repository->sub_total);
-    $this->assertEquals(18, $repository->tax_total);
-    $this->assertEquals(118, $repository->grand_total);
-    $this->assertCount(2, $repository->tax_lines);
-    $this->assertEquals(9, $repository->tax_lines[0]['amount']);
-    $this->assertEquals(9, $repository->tax_lines[1]['amount']);
+    expect($repository->sub_total)->toEqual(100);
+    expect($repository->tax_total)->toEqual(18);
+    expect($repository->grand_total)->toEqual(118);
+    expect($repository->tax_lines)->toHaveCount(2);
+    expect($repository->tax_lines[0]['amount'])->toEqual(9);
+    expect($repository->tax_lines[1]['amount'])->toEqual(9);
 });
 
 it('calculates compounded taxes with discount scenario', function () {
@@ -283,9 +283,9 @@ it('calculates compounded taxes with discount scenario', function () {
         ],
     ]);
 
-    $this->assertEquals(100, $repository->sub_total);
-    $this->assertEquals(20, $repository->discount_total);
-    $this->assertEquals(8, $repository->default_tax_total);
-    $this->assertEquals(12.4, $repository->tax_total);
-    $this->assertEquals(92.4, $repository->grand_total);
+    expect($repository->sub_total)->toEqual(100);
+    expect($repository->discount_total)->toEqual(20);
+    expect($repository->default_tax_total)->toEqual(8);
+    expect($repository->tax_total)->toEqual(12.4);
+    expect($repository->grand_total)->toEqual(92.4);
 });

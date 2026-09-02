@@ -51,14 +51,14 @@ it('subscription features are reset when plan is swapped via api route', functio
         ->saveWithoutInvoice();
 
     // Verify initial state
-    $this->assertEquals($basicPlan->id, $subscription->plan_id);
-    $this->assertCount(1, $subscription->features);
-    $this->assertEquals(5, $subscription->getFeatureValue('basic-users'));
-    $this->assertNull($subscription->getFeatureValue('pro-analytics'));
+    expect($subscription->plan_id)->toEqual($basicPlan->id);
+    expect($subscription->features)->toHaveCount(1);
+    expect($subscription->getFeatureValue('basic-users'))->toEqual(5);
+    expect($subscription->getFeatureValue('pro-analytics'))->toBeNull();
 
     // User uses 3 out of 5 basic users
     $subscription->recordFeatureUsage('basic-users', 3);
-    $this->assertEquals(3, $subscription->getFeatureUsage('basic-users'));
+    expect($subscription->getFeatureUsage('basic-users'))->toEqual(3);
 
     // ===== UPGRADE TO PRO PLAN (simulating /api/subscription/subscribe or /api/users/{user}/subscription) =====
     $subscription->swap($proPlan->id, false);
@@ -67,17 +67,17 @@ it('subscription features are reset when plan is swapped via api route', functio
     $subscription->refresh();
 
     // VERIFICATION: Features should be reset from the swapped plan
-    $this->assertEquals($proPlan->id, $subscription->plan_id, 'Plan should be updated to Pro');
+    expect($subscription->plan_id)->toEqual($proPlan->id);
 
     // Should have 2 features now (basic-users and pro-analytics)
-    $this->assertCount(2, $subscription->features, 'Should have 2 features from Pro plan');
+    expect($subscription->features)->toHaveCount(2);
 
     // Feature values should be from Pro plan
-    $this->assertEquals(20, $subscription->getFeatureValue('basic-users'), 'Basic users should be 20 from Pro plan');
-    $this->assertEquals(1, $subscription->getFeatureValue('pro-analytics'), 'Pro analytics should be available');
+    expect($subscription->getFeatureValue('basic-users'))->toEqual(20);
+    expect($subscription->getFeatureValue('pro-analytics'))->toEqual(1);
 
     // Usage should be reset to 0
-    $this->assertEquals(0, $subscription->getFeatureUsage('basic-users'), 'Usage should be reset to 0 after swap');
+    expect($subscription->getFeatureUsage('basic-users'))->toEqual(0);
 });
 
 it('subscription features are reset when downgrading from pro to basic', function () {
@@ -124,26 +124,26 @@ it('subscription features are reset when downgrading from pro to basic', functio
 
     // Use 50GB of storage
     $subscription->recordFeatureUsage('storage-gb', 50);
-    $this->assertEquals(50, $subscription->getFeatureUsage('storage-gb'));
+    expect($subscription->getFeatureUsage('storage-gb'))->toEqual(50);
 
     // ===== DOWNGRADE TO BASIC PLAN =====
     $subscription->swap($basicPlan->id, false);
     $subscription->refresh();
 
     // VERIFICATION: Features should be reset from the downgraded plan
-    $this->assertEquals($basicPlan->id, $subscription->plan_id, 'Plan should be downgraded to Basic');
+    expect($subscription->plan_id)->toEqual($basicPlan->id);
 
     // Should only have 1 feature (storage-gb), premium-support should be removed
-    $this->assertCount(1, $subscription->features, 'Should only have 1 feature from Basic plan');
+    expect($subscription->features)->toHaveCount(1);
 
     // Storage should be reduced to 10GB
-    $this->assertEquals(10, $subscription->getFeatureValue('storage-gb'), 'Storage should be 10GB from Basic plan');
+    expect($subscription->getFeatureValue('storage-gb'))->toEqual(10);
 
     // Premium support should be removed
-    $this->assertNull($subscription->getFeatureValue('premium-support'), 'Premium support should be removed');
+    expect($subscription->getFeatureValue('premium-support'))->toBeNull();
 
     // Usage should be reset to 0
-    $this->assertEquals(0, $subscription->getFeatureUsage('storage-gb'), 'Usage should be reset to 0 after downgrade');
+    expect($subscription->getFeatureUsage('storage-gb'))->toEqual(0);
 });
 
 it('scheduled downgrade syncs features on renewal', function () {
@@ -203,19 +203,19 @@ it('scheduled downgrade syncs features on renewal', function () {
     $subscription->refresh();
 
     // VERIFICATION: Features should be synced from the downgraded plan
-    $this->assertEquals($basicPlan->id, $subscription->plan_id, 'Plan should be downgraded to Basic on renewal');
+    expect($subscription->plan_id)->toEqual($basicPlan->id);
 
     // Should only have 1 feature
-    $this->assertCount(1, $subscription->features, 'Should only have 1 feature from Basic plan');
+    expect($subscription->features)->toHaveCount(1);
 
     // API calls should be reduced
-    $this->assertEquals(1000, $subscription->getFeatureValue('api-calls'), 'API calls should be 1000 from Basic plan');
+    expect($subscription->getFeatureValue('api-calls'))->toEqual(1000);
 
     // Webhooks should be removed
-    $this->assertNull($subscription->getFeatureValue('webhooks'), 'Webhooks should be removed');
+    expect($subscription->getFeatureValue('webhooks'))->toBeNull();
 
     // Usage should be reset
-    $this->assertEquals(0, $subscription->getFeatureUsage('api-calls'), 'Usage should be reset on renewal');
+    expect($subscription->getFeatureUsage('api-calls'))->toEqual(0);
 });
 
 it('swap subscription syncs feature values from new plan', function () {
@@ -241,21 +241,21 @@ it('swap subscription syncs feature values from new plan', function () {
         ->saveAndInvoice([], true);
 
     // Verify initial state
-    $this->assertEquals(10, $subscription->getFeatureValue('test-limit'), 'Initial feature value should be 10');
-    $this->assertEquals(0, $subscription->getFeatureUsage('test-limit'), 'Initial feature usage should be 0');
+    expect($subscription->getFeatureValue('test-limit'))->toEqual(10);
+    expect($subscription->getFeatureUsage('test-limit'))->toEqual(0);
 
     // Record usage
     $subscription->recordFeatureUsage('test-limit', 5);
-    $this->assertEquals(5, $subscription->getFeatureUsage('test-limit'), 'Usage should be 5');
+    expect($subscription->getFeatureUsage('test-limit'))->toEqual(5);
 
     // Swap to Plan B
     $subscription->swap($planB->id);
 
     // Verify state after swap
-    $this->assertEquals(0, $subscription->getFeatureUsage('test-limit'), 'Usage should be reset to 0 after swap');
+    expect($subscription->getFeatureUsage('test-limit'))->toEqual(0);
 
     // Feature value should be updated to Plan B's value (20)
-    $this->assertEquals(20, $subscription->getFeatureValue('test-limit'), 'Feature value should update to 20 after swap');
+    expect($subscription->getFeatureValue('test-limit'))->toEqual(20);
 });
 
 it('subscription features are created on subscription creation', function () {
@@ -296,13 +296,13 @@ it('subscription features are created on subscription creation', function () {
     $subscription->refresh();
 
     // Check if subscription features were created
-    $this->assertCount(1, $subscription->features);
+    expect($subscription->features)->toHaveCount(1);
 
     $subscriptionFeature = $subscription->features->first();
-    $this->assertEquals($feature->slug, $subscriptionFeature->slug);
-    $this->assertEquals($feature->label, $subscriptionFeature->label);
-    $this->assertEquals(10, $subscriptionFeature->value);
-    $this->assertEquals(0, $subscriptionFeature->used);
+    expect($subscriptionFeature->slug)->toEqual($feature->slug);
+    expect($subscriptionFeature->label)->toEqual($feature->label);
+    expect($subscriptionFeature->value)->toEqual(10);
+    expect($subscriptionFeature->used)->toEqual(0);
 });
 
 it('can use feature works with subscription features', function () {
@@ -343,7 +343,7 @@ it('can use feature works with subscription features', function () {
     $subscription->refresh();
 
     // Test canUseFeature
-    $this->assertTrue($subscription->canUseFeature($feature->slug));
+    expect($subscription->canUseFeature($feature->slug))->toBeTrue();
 });
 
 it('record feature usage works with subscription features', function () {
@@ -387,8 +387,8 @@ it('record feature usage works with subscription features', function () {
     $subscription->recordFeatureUsage($feature->slug, 3);
 
     // Check usage
-    $this->assertEquals(3, $subscription->getFeatureUsage($feature->slug));
-    $this->assertEquals(7, $subscription->getFeatureRemainings($feature->slug));
+    expect($subscription->getFeatureUsage($feature->slug))->toEqual(3);
+    expect($subscription->getFeatureRemainings($feature->slug))->toEqual(7);
 });
 
 it('reduce feature usage works with subscription features', function () {
@@ -435,8 +435,8 @@ it('reduce feature usage works with subscription features', function () {
     $subscription->reduceFeatureUsage($feature->slug, 2);
 
     // Check usage
-    $this->assertEquals(3, $subscription->getFeatureUsage($feature->slug));
-    $this->assertEquals(7, $subscription->getFeatureRemainings($feature->slug));
+    expect($subscription->getFeatureUsage($feature->slug))->toEqual(3);
+    expect($subscription->getFeatureRemainings($feature->slug))->toEqual(7);
 });
 
 it('reset usages works with subscription features', function () {
@@ -483,8 +483,8 @@ it('reset usages works with subscription features', function () {
     $subscription->resetUsages();
 
     // Check usage
-    $this->assertEquals(0, $subscription->getFeatureUsage($feature->slug));
-    $this->assertEquals(10, $subscription->getFeatureRemainings($feature->slug));
+    expect($subscription->getFeatureUsage($feature->slug))->toEqual(0);
+    expect($subscription->getFeatureRemainings($feature->slug))->toEqual(10);
 });
 
 it('cannot use feature with expired subscription', function () {
@@ -495,11 +495,11 @@ it('cannot use feature with expired subscription', function () {
 
     // Get the first subscription feature
     $subscriptionFeature = $subscription->features->first();
-    $this->assertNotNull($subscriptionFeature, 'No subscription features found');
+    expect($subscriptionFeature)->not->toBeNull();
 
     // Even though the feature has remaining usage, it should not be usable
     // because the subscription itself is expired/invalid
-    $this->assertFalse($subscription->canUseFeature($subscriptionFeature->slug));
+    expect($subscription->canUseFeature($subscriptionFeature->slug))->toBeFalse();
 });
 
 it('swap updates billing interval', function () {
@@ -535,24 +535,24 @@ it('swap updates billing interval', function () {
         ->saveWithoutInvoice();
 
     // Verify initial state
-    $this->assertEquals('month', $subscription->billing_interval);
-    $this->assertEquals(1, $subscription->billing_interval_count);
+    expect($subscription->billing_interval)->toEqual('month');
+    expect($subscription->billing_interval_count)->toEqual(1);
 
     // Swap to yearly plan
     $subscription->swap($yearlyPlan->id, false);
     $subscription->refresh();
 
     // Verify billing interval is updated
-    $this->assertEquals('year', $subscription->billing_interval, 'Billing interval should be updated to year');
-    $this->assertEquals(1, $subscription->billing_interval_count, 'Billing interval count should be 1');
+    expect($subscription->billing_interval)->toEqual('year');
+    expect($subscription->billing_interval_count)->toEqual(1);
 
     // Swap to quarterly plan
     $subscription->swap($quarterlyPlan->id, false);
     $subscription->refresh();
 
     // Verify fields are updated again
-    $this->assertEquals('month', $subscription->billing_interval, 'Billing interval should be month');
-    $this->assertEquals(3, $subscription->billing_interval_count, 'Billing interval count should be 3');
+    expect($subscription->billing_interval)->toEqual('month');
+    expect($subscription->billing_interval_count)->toEqual(3);
 });
 
 it('force swap updates billing interval', function () {
@@ -584,7 +584,7 @@ it('force swap updates billing interval', function () {
     $subscription->refresh();
 
     // Verify all fields are updated
-    $this->assertEquals('year', $subscription->billing_interval);
-    $this->assertEquals(1, $subscription->billing_interval_count);
-    $this->assertEquals($yearlyPlan->id, $subscription->plan_id);
+    expect($subscription->billing_interval)->toEqual('year');
+    expect($subscription->billing_interval_count)->toEqual(1);
+    expect($subscription->plan_id)->toEqual($yearlyPlan->id);
 });

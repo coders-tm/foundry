@@ -19,9 +19,9 @@ it('renders default app shortcodes', function () {
 
     $result = $this->renderer->render($template, []);
 
-    $this->assertStringContainsString('Welcome to Test App', $result);
-    $this->assertStringContainsString('at https://test.com', $result);
-    $this->assertStringContainsString('Contact: admin@test.com', $result);
+    expect($result)->toContain('Welcome to Test App');
+    expect($result)->toContain('at https://test.com');
+    expect($result)->toContain('Contact: admin@test.com');
 });
 
 it('renders all default shortcodes', function () {
@@ -42,11 +42,11 @@ BLADE;
 
     $result = $this->renderer->render($template, []);
 
-    $this->assertStringContainsString('App: MyApp', $result);
-    $this->assertStringContainsString('Domain: myapp.com', $result);
-    $this->assertStringContainsString('URL: https://myapp.com', $result);
-    $this->assertStringContainsString('Support: support@myapp.com', $result);
-    $this->assertStringContainsString('Admin Page: https://myapp.com/admin', $result);
+    expect($result)->toContain('App: MyApp');
+    expect($result)->toContain('Domain: myapp.com');
+    expect($result)->toContain('URL: https://myapp.com');
+    expect($result)->toContain('Support: support@myapp.com');
+    expect($result)->toContain('Admin Page: https://myapp.com/admin');
 });
 
 it('merges custom app shortcodes', function () {
@@ -61,8 +61,8 @@ it('merges custom app shortcodes', function () {
 
     $result = $this->renderer->render($template, []);
 
-    $this->assertStringContainsString('Company: Acme Corp', $result);
-    $this->assertStringContainsString('Phone: +1-555-0123', $result);
+    expect($result)->toContain('Company: Acme Corp');
+    expect($result)->toContain('Phone: +1-555-0123');
 
     Foundry\Foundry::$appShortCodes = [];
 });
@@ -80,7 +80,7 @@ it('custom app shortcodes can override defaults', function () {
 
     $result = $this->renderer->render($template, []);
 
-    $this->assertStringContainsString('Legacy: Override App', $result);
+    expect($result)->toContain('Legacy: Override App');
 
     Foundry\Foundry::$appShortCodes = [];
 });
@@ -97,8 +97,8 @@ it('custom app shortcodes can add new nested data', function () {
 
     $result = $this->renderer->render($template, []);
 
-    $this->assertStringContainsString('Contact Acme Corporation', $result);
-    $this->assertStringContainsString('at +1-555-0123', $result);
+    expect($result)->toContain('Contact Acme Corporation');
+    expect($result)->toContain('at +1-555-0123');
 
     Foundry\Foundry::$appShortCodes = [];
 });
@@ -113,9 +113,9 @@ it('default shortcodes used as fallback when not in user data', function () {
         'custom_value' => 'User Value',
     ]);
 
-    $this->assertStringContainsString('App: Default App Name', $result);
-    $this->assertStringContainsString('Domain: default.com', $result);
-    $this->assertStringContainsString('Custom: User Value', $result);
+    expect($result)->toContain('App: Default App Name');
+    expect($result)->toContain('Domain: default.com');
+    expect($result)->toContain('Custom: User Value');
 });
 
 it('default shortcodes work with blade directives', function () {
@@ -129,7 +129,7 @@ BLADE;
 
     $result = $this->renderer->render($template, []);
 
-    $this->assertStringContainsString('Welcome to Test Application!', $result);
+    expect($result)->toContain('Welcome to Test Application!');
 });
 
 it('billing page shortcode renders correctly', function () {
@@ -137,8 +137,8 @@ it('billing page shortcode renders correctly', function () {
 
     $result = $this->renderer->render($template, []);
 
-    $this->assertStringContainsString('Visit your billing page:', $result);
-    $this->assertStringContainsString('billing', $result);
+    expect($result)->toContain('Visit your billing page:');
+    expect($result)->toContain('billing');
 });
 
 it('custom app shortcodes support both scalar and nested', function () {
@@ -157,9 +157,9 @@ BLADE;
 
     $result = $this->renderer->render($template, []);
 
-    $this->assertStringContainsString('Acme Corporation', $result);
-    $this->assertStringContainsString('123 Main St', $result);
-    $this->assertStringContainsString('Tagline: Excellence in Everything', $result);
+    expect($result)->toContain('Acme Corporation');
+    expect($result)->toContain('123 Main St');
+    expect($result)->toContain('Tagline: Excellence in Everything');
 
     Foundry\Foundry::$appShortCodes = [];
 });

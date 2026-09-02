@@ -31,10 +31,10 @@ it('new signups metrics', function () {
     $metrics = new MetricsService(['start_date' => now()->subMonth()->toDateTimeString()]);
     $result = $metrics->only(['new_customers', 'new_subscriptions']);
 
-    $this->assertEquals(1, $result['new_customers']['current']);
-    $this->assertEquals(1, $result['new_customers']['previous']);
-    $this->assertEquals(1, $result['new_subscriptions']['current']);
-    $this->assertEquals(1, $result['new_subscriptions']['previous']);
+    expect($result['new_customers']['current'])->toEqual(1);
+    expect($result['new_customers']['previous'])->toEqual(1);
+    expect($result['new_subscriptions']['current'])->toEqual(1);
+    expect($result['new_subscriptions']['previous'])->toEqual(1);
 });
 
 it('revenue and mrr metrics', function () {
@@ -77,7 +77,7 @@ it('revenue and mrr metrics', function () {
     $results = $metrics->only(['mrr']);
 
     // Assert MRR: 80 (sub1) + 110 (sub2) = 190
-    $this->assertEquals(190, $results['mrr']['raw_current']);
+    expect($results['mrr']['raw_current'])->toEqual(190);
 });
 
 it('net revenue and refund metrics', function () {
@@ -102,7 +102,7 @@ it('net revenue and refund metrics', function () {
     $results = $metrics->only(['net_revenue']);
 
     // Revenue (PAID only): 100. Refunds = 50. Net = 50.
-    $this->assertEquals(50, $results['net_revenue']['raw_current']);
+    expect($results['net_revenue']['raw_current'])->toEqual(50);
 });
 
 it('churn metrics', function () {
@@ -146,11 +146,11 @@ it('churn metrics', function () {
     $results = $metrics->only(['churn', 'revenue_churn']);
 
     // Churn Rate: 1 / 11 = 0.0909
-    $this->assertEquals(0.0909, $results['churn']['raw_current']);
+    expect($results['churn']['raw_current'])->toEqual(0.0909);
 
     // Revenue Churn: 100 lost MRR.
-    $this->assertEquals(100, $results['revenue_churn']['lost_mrr']);
-    $this->assertEquals(1.0, $results['revenue_churn']['raw_current']);
+    expect($results['revenue_churn']['lost_mrr'])->toEqual(100);
+    expect($results['revenue_churn']['raw_current'])->toEqual(1.0);
 });
 
 it('order count metric', function () {
@@ -169,7 +169,7 @@ it('order count metric', function () {
     $metrics = new MetricsService([]);
     $results = $metrics->only(['order_count']);
 
-    $this->assertEquals(3, $results['order_count']['raw_current']);
+    expect($results['order_count']['raw_current'])->toEqual(3);
 });
 
 it('active users metrics', function () {
@@ -192,7 +192,7 @@ it('active users metrics', function () {
     $metrics = new MetricsService([]);
     $results = $metrics->only(['active_users']);
 
-    $this->assertEquals(2, $results['active_users']['raw_current']);
+    expect($results['active_users']['raw_current'])->toEqual(2);
 });
 
 it('ltv and arpu metrics', function () {
@@ -241,11 +241,11 @@ it('ltv and arpu metrics', function () {
     $results = $metrics->only(['arpu', 'churn', 'ltv']);
 
     // ARPU = 100 / 22 = 4.55
-    $this->assertEquals(4.55, $results['arpu']['raw_current']);
-    $this->assertEquals(0.0455, $results['churn']['raw_current']);
+    expect($results['arpu']['raw_current'])->toEqual(4.55);
+    expect($results['churn']['raw_current'])->toEqual(0.0455);
 
     // LTV = 4.55 / 0.0455 = 100
-    $this->assertEquals(100, $results['ltv']['raw_current']);
+    expect($results['ltv']['raw_current'])->toEqual(100);
 });
 
 it('grace period and trial active users', function () {
@@ -295,5 +295,5 @@ it('grace period and trial active users', function () {
     $results = $metrics->only(['active_users']);
 
     // Total should be 4 (u1, u2, u4, u5). u3 is EXCLUDED.
-    $this->assertEquals(4, $results['active_users']['raw_current']);
+    expect($results['active_users']['raw_current'])->toEqual(4);
 });

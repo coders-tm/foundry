@@ -13,22 +13,22 @@ afterEach(function () {
 it('can register new report type', function () {
     ReportService::register('test-report', TestReport::class);
 
-    $this->assertTrue(ReportService::has('test-report'));
-    $this->assertEquals(TestReport::class, ReportService::getServiceClass('test-report'));
+    expect(ReportService::has('test-report'))->toBeTrue();
+    expect(ReportService::getServiceClass('test-report'))->toEqual(TestReport::class);
 });
 
 it('can register new report with label', function () {
     ReportService::register('test-report', TestReport::class, 'My Test Report');
 
-    $this->assertEquals('My Test Report', ReportService::getLabel('test-report'));
+    expect(ReportService::getLabel('test-report'))->toEqual('My Test Report');
 });
 
 it('can register new report with category', function () {
     ReportService::register('test-report', TestReport::class, 'My Test Report', 'revenue');
 
     $grouped = ReportService::grouped();
-    $this->assertContains('test-report', $grouped['revenue']);
-    $this->assertEquals('revenue', ReportService::getCategory('test-report'));
+    expect($grouped['revenue'])->toContain('test-report');
+    expect(ReportService::getCategory('test-report'))->toEqual('revenue');
 });
 
 it('can register new category', function () {
@@ -36,12 +36,12 @@ it('can register new category', function () {
     ReportService::register('test-report', TestReport::class, 'My Test Report', 'custom-category');
 
     $categoryLabels = ReportService::getCategoryLabels();
-    $this->assertArrayHasKey('custom-category', $categoryLabels);
-    $this->assertEquals('Custom Category', $categoryLabels['custom-category']);
+    expect($categoryLabels)->toHaveKey('custom-category');
+    expect($categoryLabels['custom-category'])->toEqual('Custom Category');
 
     $grouped = ReportService::grouped();
-    $this->assertArrayHasKey('custom-category', $grouped);
-    $this->assertContains('test-report', $grouped['custom-category']);
+    expect($grouped)->toHaveKey('custom-category');
+    expect($grouped['custom-category'])->toContain('test-report');
 });
 
 class TestReport extends AbstractReport

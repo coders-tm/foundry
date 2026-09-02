@@ -28,14 +28,14 @@ it('setup fee is charged on first ever subscription', function () {
     $subscription->saveAndInvoice();
 
     $invoice = $subscription->fresh()->latestInvoice;
-    $this->assertNotNull($invoice);
+    expect($invoice)->not->toBeNull();
 
     // Items: Plan fee (40000) + Admission Fee (15000)
-    $this->assertEquals(55000, (float) $invoice->sub_total);
-    $this->assertCount(2, $invoice->line_items);
+    expect($invoice->sub_total)->toEqual(55000);
+    expect($invoice->line_items)->toHaveCount(2);
 
-    $this->assertEquals('Admission Fee', $invoice->line_items[1]['title']);
-    $this->assertEquals(15000, (float) $invoice->line_items[1]['price']);
+    expect($invoice->line_items[1]['title'])->toEqual('Admission Fee');
+    expect($invoice->line_items[1]['price'])->toEqual(15000);
 });
 
 it('plan specific setup fee overrides global', function () {
@@ -53,8 +53,8 @@ it('plan specific setup fee overrides global', function () {
     $subscription->saveAndInvoice();
 
     $invoice = $subscription->fresh()->latestInvoice;
-    $this->assertEquals(60000, (float) $invoice->sub_total);
-    $this->assertEquals(20000, (float) $invoice->line_items[1]['price']);
+    expect($invoice->sub_total)->toEqual(60000);
+    expect($invoice->line_items[1]['price'])->toEqual(20000);
 });
 
 it('setup fee can be disabled per plan', function () {
@@ -72,8 +72,8 @@ it('setup fee can be disabled per plan', function () {
     $subscription->saveAndInvoice();
 
     $invoice = $subscription->fresh()->latestInvoice;
-    $this->assertEquals(40000, (float) $invoice->sub_total);
-    $this->assertCount(1, $invoice->line_items);
+    expect($invoice->sub_total)->toEqual(40000);
+    expect($invoice->line_items)->toHaveCount(1);
 });
 
 it('setup fee is not charged on second subscription', function () {
@@ -89,8 +89,8 @@ it('setup fee is not charged on second subscription', function () {
     $subscription2->saveAndInvoice();
 
     $invoice2 = $subscription2->fresh()->latestInvoice;
-    $this->assertEquals(20000, (float) $invoice2->sub_total);
-    $this->assertCount(1, $invoice2->line_items);
+    expect($invoice2->sub_total)->toEqual(20000);
+    expect($invoice2->line_items)->toHaveCount(1);
 });
 
 it('setup fee is not charged on plan swap', function () {
@@ -100,7 +100,7 @@ it('setup fee is not charged on plan swap', function () {
     $subscription->saveAndInvoice();
 
     // Verify first invoice has setup fee
-    $this->assertEquals(55000, (float) $subscription->fresh()->latestInvoice->sub_total);
+    expect($subscription->fresh()->latestInvoice->sub_total)->toEqual(55000);
 
     // Swap to another plan
     $plan2 = Plan::factory()->create(['price' => 60000, 'trial_days' => 0, 'default_interval' => 'month', 'interval' => 'month', 'interval_count' => 1]);
@@ -108,8 +108,8 @@ it('setup fee is not charged on plan swap', function () {
 
     // Verify swap invoice DOES NOT have setup fee
     $swapInvoice = $subscription->invoices()->orderBy('id', 'desc')->first();
-    $this->assertEquals(60000, (float) $swapInvoice->sub_total);
-    $this->assertCount(1, $swapInvoice->line_items);
+    expect($swapInvoice->sub_total)->toEqual(60000);
+    expect($swapInvoice->line_items)->toHaveCount(1);
 });
 
 it('setup fee is not charged on renewal', function () {
@@ -122,6 +122,6 @@ it('setup fee is not charged on renewal', function () {
     $subscription->renew();
 
     $renewalInvoice = $subscription->invoices()->orderBy('id', 'desc')->first();
-    $this->assertEquals(40000, (float) $renewalInvoice->sub_total);
-    $this->assertCount(1, $renewalInvoice->line_items);
+    expect($renewalInvoice->sub_total)->toEqual(40000);
+    expect($renewalInvoice->line_items)->toHaveCount(1);
 });

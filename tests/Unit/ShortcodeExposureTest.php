@@ -25,7 +25,7 @@ it('exposes array keys as shortcodes', function () {
         }
     }
 
-    $this->assertStringContainsString('visible', $message);
-    $this->assertStringContainsString('hidden_value', $message);
-    $this->assertStringContainsString('super_secret', $message);
+    expect($message)->toContain('visible');
+    expect($message)->toContain('hidden_value');
+    expect($message)->toContain('super_secret');
 });

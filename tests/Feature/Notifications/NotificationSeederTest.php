@@ -16,10 +16,10 @@ it('loads notification templates from blade files', function () {
     $seeder = new NotificationSeeder;
     $seeder->run();
 
-    $this->assertGreaterThan(0, Notification::count());
-    $this->assertTrue(Notification::where('type', 'user:signup')->exists());
-    $this->assertTrue(Notification::where('type', 'admin:hold-release')->exists());
-    $this->assertTrue(Notification::where('type', 'admin:import-completed')->exists());
+    expect(Notification::count())->toBeGreaterThan(0);
+    expect(Notification::where('type', 'user:signup')->exists())->toBeTrue();
+    expect(Notification::where('type', 'admin:hold-release')->exists())->toBeTrue();
+    expect(Notification::where('type', 'admin:import-completed')->exists())->toBeTrue();
 });
 
 it('parses metadata from blade comments correctly', function () {
@@ -28,11 +28,11 @@ it('parses metadata from blade comments correctly', function () {
 
     $notification = Notification::where('type', 'user:signup')->first();
 
-    $this->assertNotNull($notification);
-    $this->assertEquals('Signup', $notification->label);
-    $this->assertEquals('Welcome to {{$app->name}} - Your Subscription Details', $notification->subject);
-    $this->assertTrue($notification->is_default);
-    $this->assertNotEmpty($notification->content);
+    expect($notification)->not->toBeNull();
+    expect($notification->label)->toBe('Signup');
+    expect($notification->subject)->toBe('Welcome to {{$app->name}} - Your Subscription Details');
+    expect($notification->is_default)->toBeTrue();
+    expect($notification->content)->not->toBeEmpty();
 });
 
 it('parses import completed notification', function () {
@@ -41,14 +41,14 @@ it('parses import completed notification', function () {
 
     $notification = Notification::where('type', 'admin:import-completed')->first();
 
-    $this->assertNotNull($notification);
-    $this->assertEquals('Import Completed', $notification->label);
-    $this->assertStringContainsString('[{{ $app->name }}] {{ $import->model }} import completed', $notification->subject);
+    expect($notification)->not->toBeNull();
+    expect($notification->label)->toBe('Import Completed');
+    expect($notification->subject)->toContain('[{{ $app->name }}] {{ $import->model }} import completed');
 
     $normalizedContent = preg_replace('/\s+/', ' ', $notification->content);
-    $this->assertStringContainsString('{{ $import->successed }}', $normalizedContent);
-    $this->assertStringContainsString('{{ $import->failed }}', $normalizedContent);
-    $this->assertStringContainsString('{{ $import->skipped }}', $normalizedContent);
+    expect($normalizedContent)->toContain('{{ $import->successed }}');
+    expect($normalizedContent)->toContain('{{ $import->failed }}');
+    expect($normalizedContent)->toContain('{{ $import->skipped }}');
 });
 
 it('updates existing notifications without duplicates', function () {
@@ -60,20 +60,20 @@ it('updates existing notifications without duplicates', function () {
         'content' => 'Old content',
     ]);
 
-    $this->assertEquals(1, Notification::count());
+    expect(Notification::count())->toEqual(1);
 
     $seeder = new NotificationSeeder;
     $seeder->run();
 
     $notification = Notification::where('type', 'user:signup')->first();
-    $this->assertEquals('Signup', $notification->label);
-    $this->assertNotEquals('Old Label', $notification->label);
+    expect($notification->label)->toBe('Signup');
+    expect($notification->label)->not->toBe('Old Label');
 
     $totalNotifications = Notification::count();
-    $this->assertGreaterThan(1, $totalNotifications);
+    expect($totalNotifications)->toBeGreaterThan(1);
 
     $uniqueTypes = Notification::pluck('type')->unique()->count();
-    $this->assertEquals($totalNotifications, $uniqueTypes);
+    expect($totalNotifications)->toEqual($uniqueTypes);
 });
 
 it('seeds all notification types', function () {
@@ -98,10 +98,10 @@ it('seeds all notification types', function () {
     $seededTypes = Notification::pluck('type')->toArray();
 
     foreach ($expectedTypes as $type) {
-        $this->assertContains($type, $seededTypes);
+        expect($seededTypes)->toContain($type);
     }
 
-    $this->assertCount(count($expectedTypes), $seededTypes);
+    expect($seededTypes)->toHaveCount(count($expectedTypes));
 });
 
 it('handles missing optional metadata fields', function () {
@@ -111,8 +111,8 @@ it('handles missing optional metadata fields', function () {
     $notifications = Notification::all();
 
     foreach ($notifications as $notification) {
-        $this->assertNotEmpty($notification->type);
-        $this->assertNotEmpty($notification->label);
-        $this->assertNotNull($notification->is_default);
+        expect($notification->type)->not->toBeEmpty();
+        expect($notification->label)->not->toBeEmpty();
+        expect($notification->is_default)->not->toBeNull();
     }
 });

@@ -37,7 +37,7 @@ it('store creates item and redirects', function () {
     $this->actingAs($this->admin, 'admin')->post(route('admin.orders.store'), $data)->assertSessionHasNoErrors()->assertRedirect();
     $this->assertDatabaseHas('orders', ['customer_id' => $data['customer_id'], 'status' => $data['status']]);
     $order = Order::where('customer_id', $user->id)->first();
-    $this->assertNotNull($order->number);
+    expect($order->number)->not->toBeNull();
     $this->assertDatabaseHas('line_items', ['title' => 'Product 1', 'itemable_id' => $order->id, 'itemable_type' => 'Order']);
 });
 
@@ -46,7 +46,7 @@ it('store marks as paid if payment method provided', function () {
     $data = ['customer_id' => $user->id, 'status' => OrderStatus::PENDING->value, 'payment_method' => 'manual', 'line_items' => [['title' => 'Product 1', 'price' => 100, 'quantity' => 1]]];
     $this->actingAs($this->admin, 'admin')->post(route('admin.orders.store'), $data)->assertRedirect();
     $order = Order::where('customer_id', $user->id)->first();
-    $this->assertTrue($order->is_paid);
+    expect($order->is_paid)->toBeTrue();
 });
 
 it('store sends invoice if invoice data provided', function () {
@@ -64,20 +64,20 @@ it('update modifies item', function () {
     $item = Order::factory()->create(['status' => OrderStatus::PENDING]);
     $data = ['status' => OrderStatus::COMPLETED->value, 'line_items' => [['title' => 'Updated Product', 'price' => 150, 'quantity' => 1]]];
     $this->actingAs($this->admin, 'admin')->patch(route('admin.orders.update', $item), $data)->assertSessionHasNoErrors()->assertRedirect();
-    $this->assertEquals($data['status'], $item->refresh()->status->value);
+    expect($item->refresh()->status->value)->toBe($data['status']);
     $this->assertDatabaseHas('line_items', ['itemable_id' => $item->id, 'itemable_type' => 'Order', 'title' => 'Updated Product']);
 });
 
 it('cancel marks order as cancelled', function () {
     $item = Order::factory()->create(['status' => OrderStatus::PENDING]);
     $this->actingAs($this->admin, 'admin')->post(route('admin.orders.cancel', $item))->assertRedirect();
-    $this->assertEquals(OrderStatus::CANCELLED, $item->refresh()->status);
+    expect($item->refresh()->status)->toBe(OrderStatus::CANCELLED);
 });
 
 it('mark as paid updates payment status', function () {
     $item = Order::factory()->create(['payment_status' => PaymentStatus::PAYMENT_PENDING]);
     $this->actingAs($this->admin, 'admin')->post(route('admin.orders.mark-as-paid', $item))->assertRedirect();
-    $this->assertTrue($item->refresh()->is_paid);
+    expect($item->refresh()->is_paid)->toBeTrue();
 });
 
 it('send invoice sends notification', function () {
@@ -103,7 +103,7 @@ it('refund processes refund', function () {
     $item = Order::factory()->create(['customer_id' => $user->id, 'payment_status' => PaymentStatus::PAID, 'status' => OrderStatus::COMPLETED, 'grand_total' => 100, 'paid_total' => 100]);
     $item->payments()->create(['transaction_id' => 'txn_123', 'amount' => 100, 'status' => Payment::STATUS_COMPLETED, 'processed_at' => now(), 'currency' => 'USD', 'provider' => 'manual']);
     $this->actingAs($this->admin, 'admin')->post(route('admin.orders.refund', $item), ['to_wallet' => true])->assertRedirect();
-    $this->assertEquals(OrderStatus::REFUNDED, $item->refresh()->status);
+    expect($item->refresh()->status)->toBe(OrderStatus::REFUNDED);
 });
 
 it('show subscription invoice includes line items', function () {
@@ -111,19 +111,19 @@ it('show subscription invoice includes line items', function () {
     $plan = Plan::factory()->create(['price' => 19.99, 'trial_days' => 0]);
     $this->actingAs($this->admin, 'admin')->post(route('admin.subscriptions.store'), ['user_id' => $user->id, 'plan' => $plan->id, 'starts_at' => now()->toDateTimeString(), 'generate_invoice' => true, 'mark_as_paid' => true, 'payment_method' => 'manual'])->assertSuccessful();
     $subscription = Foundry::$subscriptionModel::where('user_id', $user->id)->first();
-    $this->assertNotNull($subscription);
+    expect($subscription)->not->toBeNull();
     $subscription->refresh();
     $invoice = $subscription->latestInvoice;
-    $this->assertNotNull($invoice);
-    $this->assertEquals('Subscription', $invoice->orderable_type);
+    expect($invoice)->not->toBeNull();
+    expect($invoice->orderable_type)->toBe('Subscription');
     $this->assertDatabaseHas('line_items', ['itemable_id' => $invoice->id, 'itemable_type' => 'Order']);
     $response = $this->actingAs($this->admin, 'admin')->getJson(route('admin.orders.show', $invoice->id))->assertSuccessful();
     $response->assertJsonStructure(['id', 'line_items' => ['*' => ['title', 'price']]]);
     $data = $response->json();
-    $this->assertCount(1, $data['line_items']);
+    expect($data['line_items'])->toHaveCount(1);
     $lineItem = $data['line_items'][0];
-    $this->assertEquals(19.99, $lineItem['price']);
-    $this->assertIsString($lineItem['title']);
+    expect($lineItem['price'])->toEqual(19.99);
+    expect($lineItem['title'])->toBeString();
 });
 
 it('store with fixed discount creates discount line', function () {
@@ -131,14 +131,14 @@ it('store with fixed discount creates discount line', function () {
     $data = ['customer_id' => $user->id, 'status' => OrderStatus::PENDING->value, 'line_items' => [['title' => 'Product 1', 'price' => 100, 'quantity' => 1]], 'discount' => ['type' => 'fixed_amount', 'value' => 10, 'description' => 'Test discount'], 'sub_total' => 100, 'discount_total' => 10, 'grand_total' => 90];
     $this->actingAs($this->admin, 'admin')->post(route('admin.orders.store'), $data)->assertSessionHasNoErrors()->assertRedirect();
     $order = (Foundry::$orderModel)::where('customer_id', $user->id)->first();
-    $this->assertNotNull($order);
-    $this->assertEquals(10, $order->discount_total);
+    expect($order)->not->toBeNull();
+    expect($order->discount_total)->toEqual(10);
     $this->assertDatabaseHas('discount_lines', ['discountable_id' => $order->id, 'discountable_type' => 'Order', 'type' => 'fixed_amount', 'value' => 10, 'description' => 'Test discount']);
     $order->refresh();
-    $this->assertNotNull($order->discount);
-    $this->assertEquals('fixed_amount', $order->discount->type);
-    $this->assertEquals(10, $order->discount->value);
-    $this->assertEquals('Test discount', $order->discount->description);
+    expect($order->discount)->not->toBeNull();
+    expect($order->discount->type)->toBe('fixed_amount');
+    expect($order->discount->value)->toEqual(10);
+    expect($order->discount->description)->toBe('Test discount');
 });
 
 it('store with percentage discount creates discount line', function () {
@@ -146,13 +146,13 @@ it('store with percentage discount creates discount line', function () {
     $data = ['customer_id' => $user->id, 'status' => OrderStatus::PENDING->value, 'line_items' => [['title' => 'Product 1', 'price' => 100, 'quantity' => 1]], 'discount' => ['type' => 'percentage', 'value' => 10, 'description' => '10% off'], 'sub_total' => 100, 'discount_total' => 10, 'grand_total' => 90];
     $this->actingAs($this->admin, 'admin')->post(route('admin.orders.store'), $data)->assertSessionHasNoErrors()->assertRedirect();
     $order = (Foundry::$orderModel)::where('customer_id', $user->id)->first();
-    $this->assertNotNull($order);
-    $this->assertEquals(10, $order->discount_total);
+    expect($order)->not->toBeNull();
+    expect($order->discount_total)->toEqual(10);
     $this->assertDatabaseHas('discount_lines', ['discountable_id' => $order->id, 'discountable_type' => 'Order', 'type' => 'percentage', 'value' => 10, 'description' => '10% off']);
     $order->refresh();
-    $this->assertNotNull($order->discount);
-    $this->assertEquals('percentage', $order->discount->type);
-    $this->assertEquals(10, $order->discount->value);
+    expect($order->discount)->not->toBeNull();
+    expect($order->discount->type)->toBe('percentage');
+    expect($order->discount->value)->toEqual(10);
 });
 
 it('update with discount creates or updates discount line', function () {
@@ -162,7 +162,7 @@ it('update with discount creates or updates discount line', function () {
     $data = ['status' => 'pending', 'sub_total' => 100, 'tax_total' => 0, 'discount_total' => 15, 'grand_total' => 85, 'line_items' => [['title' => 'Product 1', 'price' => 100, 'quantity' => 1]], 'discount' => ['type' => 'fixed_amount', 'value' => 15, 'description' => 'Updated discount']];
     $this->actingAs($this->admin, 'admin')->patch(route('admin.orders.update', $order), $data)->assertSessionHasNoErrors()->assertRedirect();
     $order->refresh();
-    $this->assertEquals(15, $order->discount_total);
+    expect($order->discount_total)->toEqual(15);
     $this->assertDatabaseHas('discount_lines', ['discountable_id' => $order->id, 'discountable_type' => 'Order', 'type' => 'fixed_amount', 'value' => 15, 'description' => 'Updated discount']);
 });
 
@@ -175,29 +175,29 @@ it('show order includes all necessary relationships', function () {
 it('order create calculates correctly with compounded taxes and discount', function () {
     $user = User::factory()->create();
     $order = Order::create(['customer_id' => $user->id, 'status' => OrderStatus::PENDING->value, 'line_items' => [['title' => 'Product 1', 'price' => 100, 'quantity' => 1, 'taxable' => true], ['title' => 'Product 2', 'price' => 100, 'quantity' => 1, 'taxable' => true]], 'discount' => ['type' => 'percentage', 'value' => 10], 'tax_lines' => [['label' => 'GST', 'rate' => 10, 'type' => 'normal'], ['label' => 'Cess', 'rate' => 5, 'type' => 'compounded']]]);
-    $this->assertEquals(200.00, (float) $order->sub_total);
-    $this->assertEquals(20.00, (float) $order->discount_total);
-    $this->assertEquals(27.90, (float) $order->tax_total);
-    $this->assertEquals(207.90, (float) $order->grand_total);
-    $this->assertCount(2, $order->tax_lines);
-    $this->assertEquals(18.00, (float) $order->tax_lines->where('label', 'GST')->first()->amount);
-    $this->assertEquals(9.90, (float) $order->tax_lines->where('label', 'Cess')->first()->amount);
+    expect((float) $order->sub_total)->toEqual(200.00);
+    expect((float) $order->discount_total)->toEqual(20.00);
+    expect((float) $order->tax_total)->toEqual(27.90);
+    expect((float) $order->grand_total)->toEqual(207.90);
+    expect($order->tax_lines)->toHaveCount(2);
+    expect((float) $order->tax_lines->where('label', 'GST')->first()->amount)->toEqual(18.00);
+    expect((float) $order->tax_lines->where('label', 'Cess')->first()->amount)->toEqual(9.90);
 });
 
 it('order update recalculates correctly when data changes', function () {
     $user = User::factory()->create();
     $order = Order::create(['customer_id' => $user->id, 'line_items' => [['title' => 'Initial Item', 'price' => 100, 'quantity' => 1]], 'collect_tax' => false]);
-    $this->assertEquals(100.00, (float) $order->grand_total);
+    expect((float) $order->grand_total)->toEqual(100.00);
     $order->update(['line_items' => [['title' => 'New Item', 'price' => 200, 'quantity' => 1, 'taxable' => true]], 'tax_lines' => [['label' => 'Updated Tax', 'rate' => 10]]]);
     $order->refresh();
     $order->load(['tax_lines', 'line_items']);
-    $this->assertEquals(200.00, (float) $order->sub_total);
-    $this->assertEquals(20.00, (float) $order->tax_total);
-    $this->assertEquals(220.00, (float) $order->grand_total);
-    $this->assertCount(1, $order->line_items);
-    $this->assertEquals('New Item', $order->line_items->first()->title);
-    $this->assertCount(1, $order->tax_lines);
-    $this->assertEquals(20.00, (float) $order->tax_lines->first()->amount);
+    expect((float) $order->sub_total)->toEqual(200.00);
+    expect((float) $order->tax_total)->toEqual(20.00);
+    expect((float) $order->grand_total)->toEqual(220.00);
+    expect($order->line_items)->toHaveCount(1);
+    expect($order->line_items->first()->title)->toBe('New Item');
+    expect($order->tax_lines)->toHaveCount(1);
+    expect((float) $order->tax_lines->first()->amount)->toEqual(20.00);
 });
 
 it('store endpoint calculates correctly', function () {
@@ -206,11 +206,11 @@ it('store endpoint calculates correctly', function () {
     $this->actingAs($this->admin, 'admin')->post(route('admin.orders.store'), $data)->assertRedirect();
     $order = (Foundry::$orderModel)::where('customer_id', $user->id)->latest()->first();
     $order->load(['tax_lines', 'line_items']);
-    $this->assertEquals(200.00, (float) $order->sub_total);
-    $this->assertEquals(50.00, (float) $order->discount_total);
-    $this->assertEquals(30.00, (float) $order->tax_total);
-    $this->assertEquals(180.00, (float) $order->grand_total);
-    $this->assertCount(1, $order->tax_lines);
-    $this->assertEquals(30.00, (float) $order->tax_lines->first()->amount);
-    $this->assertEquals(30.00, (float) TaxLine::where('taxable_id', $order->id)->first()->amount);
+    expect((float) $order->sub_total)->toEqual(200.00);
+    expect((float) $order->discount_total)->toEqual(50.00);
+    expect((float) $order->tax_total)->toEqual(30.00);
+    expect((float) $order->grand_total)->toEqual(180.00);
+    expect($order->tax_lines)->toHaveCount(1);
+    expect((float) $order->tax_lines->first()->amount)->toEqual(30.00);
+    expect((float) TaxLine::where('taxable_id', $order->id)->first()->amount)->toEqual(30.00);
 });

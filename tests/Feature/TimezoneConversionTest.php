@@ -31,12 +31,8 @@ it('serialize date converts utc carbon to app timezone', function () {
 
     $data = $subscription->toArray();
 
-    $this->assertStringContainsString('17:30:00', $data['starts_at'],
-        'Serialized date should be in app timezone (IST 17:30), not UTC 12:00'
-    );
-    $this->assertStringContainsString('+05:30', $data['starts_at'],
-        'Serialized date should carry the IST offset'
-    );
+    expect($data['starts_at'])->toContain('17:30:00');
+    expect($data['starts_at'])->toContain('+05:30');
 });
 
 it('serialize date keeps utc when app timezone is utc', function () {
@@ -52,8 +48,8 @@ it('serialize date keeps utc when app timezone is utc', function () {
 
     $data = $subscription->toArray();
 
-    $this->assertStringContainsString('12:00:00', $data['starts_at']);
-    $this->assertStringContainsString('+00:00', $data['starts_at']);
+    expect($data['starts_at'])->toContain('12:00:00');
+    expect($data['starts_at'])->toContain('+00:00');
 });
 
 it('setting datetime string without timezone stores as utc', function () {
@@ -63,10 +59,7 @@ it('setting datetime string without timezone stores as utc', function () {
         'starts_at' => '2024-06-15 17:30:00',
     ]);
 
-    $this->assertDatabaseHas('subscriptions', [
-        'id' => $subscription->id,
-        'starts_at' => '2024-06-15 12:00:00',
-    ]);
+    $this->assertDatabaseHas('subscriptions', ['id' => $subscription->id, 'starts_at' => '2024-06-15 12:00:00']);
 });
 
 it('setting carbon utc instance stores as utc', function () {
@@ -78,10 +71,7 @@ it('setting carbon utc instance stores as utc', function () {
         'starts_at' => $utcCarbon,
     ]);
 
-    $this->assertDatabaseHas('subscriptions', [
-        'id' => $subscription->id,
-        'starts_at' => '2024-06-15 12:00:00',
-    ]);
+    $this->assertDatabaseHas('subscriptions', ['id' => $subscription->id, 'starts_at' => '2024-06-15 12:00:00']);
 });
 
 it('setting carbon ist instance stores equivalent utc', function () {
@@ -93,10 +83,7 @@ it('setting carbon ist instance stores equivalent utc', function () {
         'starts_at' => $istCarbon,
     ]);
 
-    $this->assertDatabaseHas('subscriptions', [
-        'id' => $subscription->id,
-        'starts_at' => '2024-06-15 06:30:00',
-    ]);
+    $this->assertDatabaseHas('subscriptions', ['id' => $subscription->id, 'starts_at' => '2024-06-15 06:30:00']);
 });
 
 it('round trip preserves absolute moment', function () {
@@ -109,22 +96,16 @@ it('round trip preserves absolute moment', function () {
     $fresh = $subscription->fresh();
 
     $serialized = $fresh->toArray()['starts_at'];
-    $this->assertStringContainsString('17:30:00', $serialized);
-    $this->assertStringContainsString('+05:30', $serialized);
+    expect($serialized)->toContain('17:30:00');
+    expect($serialized)->toContain('+05:30');
 
-    $this->assertDatabaseHas('subscriptions', [
-        'id' => $subscription->id,
-        'starts_at' => '2024-06-15 12:00:00',
-    ]);
+    $this->assertDatabaseHas('subscriptions', ['id' => $subscription->id, 'starts_at' => '2024-06-15 12:00:00']);
 });
 
 it('app timezone date cast converts input to utc', function () {
     $cast = new AppTimezoneDate;
 
-    $this->assertEquals(
-        '2024-06-15 12:00:00',
-        $cast->set(null, 'field', '2024-06-15 17:30:00', [])
-    );
+    expect($cast->set(null, 'field', '2024-06-15 17:30:00', []))->toEqual('2024-06-15 12:00:00');
 });
 
 it('app timezone date cast returns carbon in app timezone', function () {
@@ -132,7 +113,7 @@ it('app timezone date cast returns carbon in app timezone', function () {
 
     $carbon = $cast->get(null, 'field', '2024-06-15 12:00:00', []);
 
-    $this->assertInstanceOf(Carbon::class, $carbon);
-    $this->assertEquals('17:30:00', $carbon->format('H:i:s'));
-    $this->assertEquals('+05:30', $carbon->format('P'));
+    expect($carbon)->toBeInstanceOf(Carbon::class);
+    expect($carbon->format('H:i:s'))->toEqual('17:30:00');
+    expect($carbon->format('P'))->toEqual('+05:30');
 });

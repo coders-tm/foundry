@@ -65,7 +65,7 @@ it('initializes case insensitively', function () {
 it('initializes chainable', function () {
     $result = Currency::initialize('GBP');
 
-    expect($result)->toBeInstanceOf(\Foundry\Services\Currency::class);
+    expect($result)->toBeInstanceOf(Foundry\Services\Currency::class);
     expect(Currency::code())->toBe('GBP');
 });
 

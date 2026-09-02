@@ -16,34 +16,34 @@ beforeEach(function () {
 
 it('retrieves gocardless provider config', function () {
     $gocardless = PaymentProvider::find(PaymentProvider::GOCARDLESS);
-    $this->assertNotNull($gocardless);
-    $this->assertEquals(PaymentProvider::GOCARDLESS, $gocardless['provider']);
+    expect($gocardless)->not->toBeNull();
+    expect($gocardless['provider'])->toBe(PaymentProvider::GOCARDLESS);
 });
 
 it('creates gocardless client instance', function () {
     $client = Foundry::gocardless();
-    $this->assertInstanceOf(Client::class, $client);
+    expect($client)->toBeInstanceOf(Client::class);
 });
 
 it('supports multiple country payment schemes', function () {
     $schemes = config('foundry.payment_providers.gocardless.schemes');
-    $this->assertEquals('bacs', $schemes['GB']);
-    $this->assertEquals('sepa_core', $schemes['DE']);
-    $this->assertEquals('sepa_core', $schemes['FR']);
-    $this->assertEquals('sepa_core', $schemes['ES']);
-    $this->assertEquals('sepa_core', $schemes['IT']);
-    $this->assertEquals('sepa_core', $schemes['NL']);
-    $this->assertEquals('sepa_core', $schemes['BE']);
-    $this->assertEquals('becs', $schemes['AU']);
-    $this->assertEquals('becs_nz', $schemes['NZ']);
-    $this->assertEquals('ach', $schemes['US']);
-    $this->assertEquals('pad', $schemes['CA']);
-    $this->assertEquals('autogiro', $schemes['SE']);
+    expect($schemes['GB'])->toBe('bacs');
+    expect($schemes['DE'])->toBe('sepa_core');
+    expect($schemes['FR'])->toBe('sepa_core');
+    expect($schemes['ES'])->toBe('sepa_core');
+    expect($schemes['IT'])->toBe('sepa_core');
+    expect($schemes['NL'])->toBe('sepa_core');
+    expect($schemes['BE'])->toBe('sepa_core');
+    expect($schemes['AU'])->toBe('becs');
+    expect($schemes['NZ'])->toBe('becs_nz');
+    expect($schemes['US'])->toBe('ach');
+    expect($schemes['CA'])->toBe('pad');
+    expect($schemes['SE'])->toBe('autogiro');
 });
 
 it('validates access token format', function () {
     $token = config('foundry.payment_providers.gocardless.access_token');
     $provider = PaymentProvider::find(PaymentProvider::GOCARDLESS);
-    $this->assertNotEmpty($token);
-    $this->assertIsString($token);
+    expect($token)->not->toBeEmpty();
+    expect($token)->toBeString();
 });

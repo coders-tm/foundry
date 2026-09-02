@@ -24,152 +24,152 @@ afterEach(function () {
 
 it('use user model sets static property', function () {
     Foundry\Foundry::useUserModel(User::class);
-    $this->assertSame(User::class, Foundry\Foundry::$userModel);
+    expect(Foundry\Foundry::$userModel)->toBe(User::class);
 });
 
 it('use user model also sets subscription user model', function () {
     Foundry\Foundry::useUserModel(User::class);
-    $this->assertSame(User::class, Foundry\Foundry::$subscriptionUserModel);
+    expect(Foundry\Foundry::$subscriptionUserModel)->toBe(User::class);
 });
 
 it('use user model registers morph map', function () {
     Foundry\Foundry::useUserModel(User::class);
     $morphMap = Relation::morphMap();
-    $this->assertArrayHasKey('User', $morphMap);
-    $this->assertSame(User::class, $morphMap['User']);
+    expect($morphMap)->toHaveKey('User');
+    expect($morphMap['User'])->toBe(User::class);
 });
 
 it('use user model morph class matches map', function () {
     Foundry\Foundry::useUserModel(User::class);
-    $this->assertSame('User', (new User)->getMorphClass());
+    expect((new User)->getMorphClass())->toBe('User');
 });
 
 it('use admin model sets static property', function () {
     Foundry\Foundry::useAdminModel(Admin::class);
-    $this->assertSame(Admin::class, Foundry\Foundry::$adminModel);
+    expect(Foundry\Foundry::$adminModel)->toBe(Admin::class);
 });
 
 it('use admin model registers morph map', function () {
     Foundry\Foundry::useAdminModel(Admin::class);
     $morphMap = Relation::morphMap();
-    $this->assertArrayHasKey('Admin', $morphMap);
-    $this->assertSame(Admin::class, $morphMap['Admin']);
+    expect($morphMap)->toHaveKey('Admin');
+    expect($morphMap['Admin'])->toBe(Admin::class);
 });
 
 it('use admin model morph class matches map', function () {
     Foundry\Foundry::useAdminModel(Admin::class);
-    $this->assertSame('Admin', (new Admin)->getMorphClass());
+    expect((new Admin)->getMorphClass())->toBe('Admin');
 });
 
 it('use order model sets static property', function () {
     Foundry\Foundry::useOrderModel(Order::class);
-    $this->assertSame(Order::class, Foundry\Foundry::$orderModel);
+    expect(Foundry\Foundry::$orderModel)->toBe(Order::class);
 });
 
 it('use order model registers morph map', function () {
     Foundry\Foundry::useOrderModel(Order::class);
     $morphMap = Relation::morphMap();
-    $this->assertArrayHasKey('Order', $morphMap);
-    $this->assertSame(Order::class, $morphMap['Order']);
+    expect($morphMap)->toHaveKey('Order');
+    expect($morphMap['Order'])->toBe(Order::class);
 });
 
 it('use order model morph class matches map', function () {
     Foundry\Foundry::useOrderModel(Order::class);
-    $this->assertSame('Order', (new Order)->getMorphClass());
+    expect((new Order)->getMorphClass())->toBe('Order');
 });
 
 it('use subscription model sets static property', function () {
     Foundry\Foundry::useSubscriptionModel(Subscription::class);
-    $this->assertSame(Subscription::class, Foundry\Foundry::$subscriptionModel);
+    expect(Foundry\Foundry::$subscriptionModel)->toBe(Subscription::class);
 });
 
 it('use subscription model registers morph map', function () {
     Foundry\Foundry::useSubscriptionModel(Subscription::class);
     $morphMap = Relation::morphMap();
-    $this->assertArrayHasKey('Subscription', $morphMap);
-    $this->assertSame(Subscription::class, $morphMap['Subscription']);
+    expect($morphMap)->toHaveKey('Subscription');
+    expect($morphMap['Subscription'])->toBe(Subscription::class);
 });
 
 it('use subscription model morph class matches map', function () {
     Foundry\Foundry::useSubscriptionModel(Subscription::class);
-    $this->assertSame('Subscription', (new Subscription)->getMorphClass());
+    expect((new Subscription)->getMorphClass())->toBe('Subscription');
 });
 
 it('custom subscription model morph class matches map', function () {
     Foundry\Foundry::useSubscriptionModel(Workbench\App\Models\Subscription::class);
-    $this->assertSame('Subscription', (new Workbench\App\Models\Subscription)->getMorphClass());
+    expect((new Workbench\App\Models\Subscription)->getMorphClass())->toBe('Subscription');
 });
 
 it('use plan model sets static property', function () {
     Foundry\Foundry::usePlanModel(Plan::class);
-    $this->assertSame(Plan::class, Foundry\Foundry::$planModel);
+    expect(Foundry\Foundry::$planModel)->toBe(Plan::class);
 });
 
 it('use plan model registers morph map', function () {
     Foundry\Foundry::usePlanModel(Plan::class);
     $morphMap = Relation::morphMap();
-    $this->assertArrayHasKey('Plan', $morphMap);
-    $this->assertSame(Plan::class, $morphMap['Plan']);
+    expect($morphMap)->toHaveKey('Plan');
+    expect($morphMap['Plan'])->toBe(Plan::class);
 });
 
 it('use plan model morph class matches map', function () {
     Foundry\Foundry::usePlanModel(Plan::class);
-    $this->assertSame('Plan', (new Plan)->getMorphClass());
+    expect((new Plan)->getMorphClass())->toBe('Plan');
 });
 
 it('custom plan model morph class matches map', function () {
     Foundry\Foundry::usePlanModel(Workbench\App\Models\Plan::class);
-    $this->assertSame('Plan', (new Workbench\App\Models\Plan)->getMorphClass());
+    expect((new Workbench\App\Models\Plan)->getMorphClass())->toBe('Plan');
 });
 
 it('use coupon model sets static property', function () {
     Foundry\Foundry::useCouponModel(Coupon::class);
-    $this->assertSame(Coupon::class, Foundry\Foundry::$couponModel);
+    expect(Foundry\Foundry::$couponModel)->toBe(Coupon::class);
 });
 
 it('use coupon model registers morph map', function () {
     Foundry\Foundry::useCouponModel(Coupon::class);
     $morphMap = Relation::morphMap();
-    $this->assertArrayHasKey('Coupon', $morphMap);
-    $this->assertSame(Coupon::class, $morphMap['Coupon']);
+    expect($morphMap)->toHaveKey('Coupon');
+    expect($morphMap['Coupon'])->toBe(Coupon::class);
 });
 
 it('use coupon model morph class matches map', function () {
     Foundry\Foundry::useCouponModel(Coupon::class);
-    $this->assertSame('Coupon', (new Coupon)->getMorphClass());
+    expect((new Coupon)->getMorphClass())->toBe('Coupon');
 });
 
 it('custom coupon model morph class matches map', function () {
     Foundry\Foundry::useCouponModel(Workbench\App\Models\Coupon::class);
-    $this->assertSame('Coupon', (new Workbench\App\Models\Coupon)->getMorphClass());
+    expect((new Workbench\App\Models\Coupon)->getMorphClass())->toBe('Coupon');
 });
 
 it('use support ticket model sets static property', function () {
     Foundry\Foundry::useSupportTicketModel(SupportTicket::class);
-    $this->assertSame(SupportTicket::class, Foundry\Foundry::$supportTicketModel);
+    expect(Foundry\Foundry::$supportTicketModel)->toBe(SupportTicket::class);
 });
 
 it('use support ticket model registers morph map', function () {
     Foundry\Foundry::useSupportTicketModel(SupportTicket::class);
     $morphMap = Relation::morphMap();
-    $this->assertArrayHasKey('SupportTicket', $morphMap);
-    $this->assertSame(SupportTicket::class, $morphMap['SupportTicket']);
+    expect($morphMap)->toHaveKey('SupportTicket');
+    expect($morphMap['SupportTicket'])->toBe(SupportTicket::class);
 });
 
 it('use support ticket model morph class matches map', function () {
     Foundry\Foundry::useSupportTicketModel(SupportTicket::class);
-    $this->assertSame('SupportTicket', (new SupportTicket)->getMorphClass());
+    expect((new SupportTicket)->getMorphClass())->toBe('SupportTicket');
 });
 
 it('use subscription user model sets static property', function () {
     Foundry\Foundry::useSubscriptionUserModel(User::class);
-    $this->assertSame(User::class, Foundry\Foundry::$subscriptionUserModel);
+    expect(Foundry\Foundry::$subscriptionUserModel)->toBe(User::class);
 });
 
 it('use subscription user model does not alter user model', function () {
     $originalUserModel = Foundry\Foundry::$userModel;
     Foundry\Foundry::useSubscriptionUserModel(User::class);
-    $this->assertSame($originalUserModel, Foundry\Foundry::$userModel);
+    expect(Foundry\Foundry::$userModel)->toBe($originalUserModel);
 });
 
 it('all default morph map keys resolve to expected classes', function () {
@@ -181,11 +181,11 @@ it('all default morph map keys resolve to expected classes', function () {
 
     $morphMap = Relation::morphMap();
 
-    $this->assertSame(Order::class, $morphMap['Order']);
-    $this->assertSame(Subscription::class, $morphMap['Subscription']);
-    $this->assertSame(Plan::class, $morphMap['Plan']);
-    $this->assertSame(Coupon::class, $morphMap['Coupon']);
-    $this->assertSame(SupportTicket::class, $morphMap['SupportTicket']);
+    expect($morphMap['Order'])->toBe(Order::class);
+    expect($morphMap['Subscription'])->toBe(Subscription::class);
+    expect($morphMap['Plan'])->toBe(Plan::class);
+    expect($morphMap['Coupon'])->toBe(Coupon::class);
+    expect($morphMap['SupportTicket'])->toBe(SupportTicket::class);
 });
 
 it('all default models get morph class equal to morph map key', function () {
@@ -195,9 +195,9 @@ it('all default models get morph class equal to morph map key', function () {
     Foundry\Foundry::useCouponModel(Coupon::class);
     Foundry\Foundry::useSupportTicketModel(SupportTicket::class);
 
-    $this->assertSame('Order', (new Order)->getMorphClass());
-    $this->assertSame('Subscription', (new Subscription)->getMorphClass());
-    $this->assertSame('Plan', (new Plan)->getMorphClass());
-    $this->assertSame('Coupon', (new Coupon)->getMorphClass());
-    $this->assertSame('SupportTicket', (new SupportTicket)->getMorphClass());
+    expect((new Order)->getMorphClass())->toBe('Order');
+    expect((new Subscription)->getMorphClass())->toBe('Subscription');
+    expect((new Plan)->getMorphClass())->toBe('Plan');
+    expect((new Coupon)->getMorphClass())->toBe('Coupon');
+    expect((new SupportTicket)->getMorphClass())->toBe('SupportTicket');
 });

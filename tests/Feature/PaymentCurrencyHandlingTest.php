@@ -35,8 +35,8 @@ it('stores correct gateway amount and currency in payment metadata', function ()
 
     $payable = Payable::fromOrder($order);
 
-    $this->assertEquals('EUR', $payable->getCurrency());
-    $this->assertEquals(85.00, $payable->getGatewayAmount());
+    expect($payable->getCurrency())->toBe('EUR');
+    expect($payable->getGatewayAmount())->toEqual(85.00);
 
     $payment = Payment::createForOrder($order, [
         'provider' => PaymentProvider::STRIPE,
@@ -49,9 +49,9 @@ it('stores correct gateway amount and currency in payment metadata', function ()
         ],
     ]);
 
-    $this->assertEquals(100.00, $payment->amount, 'Payment amount should be in Base Currency');
-    $this->assertEquals(85.00, $payment->metadata['gateway_amount'], 'Metadata should store Gateway Amount');
+    expect($payment->amount)->toEqual(100.00);
+    expect($payment->metadata['gateway_amount'])->toEqual(85.00);
 
     $order->refresh();
-    $this->assertEquals(100.00, $order->paid_total);
+    expect($order->paid_total)->toEqual(100.00);
 });

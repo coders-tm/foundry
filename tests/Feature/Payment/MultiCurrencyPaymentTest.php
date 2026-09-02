@@ -40,7 +40,7 @@ it('uses user currency when supported by gateway', function () use ($mockStripeC
     Currency::set('EUR', 0.9);
     $this->order->customer->forceFill(['settings' => ['currency' => 'EUR']])->save();
     $this->order->update(['billing_address' => array_merge($this->order->billing_address ?? [], ['country_code' => 'DE', 'country' => 'Germany'])]);
-    $this->assertEquals('EUR', Currency::code());
+    expect(Currency::code())->toBe('EUR');
     $stripeMock = Mockery::mock('Stripe\StripeClient');
     $paymentIntentsMock = Mockery::mock();
     $stripeMock->paymentIntents = $paymentIntentsMock;
@@ -50,7 +50,7 @@ it('uses user currency when supported by gateway', function () use ($mockStripeC
     $mockStripeClient($stripeMock);
     $response = $this->postJson(route('payment.setup-intent'), ['provider' => PaymentProvider::STRIPE, 'token' => $this->order->id]);
     $response->assertOk();
-    $this->assertEquals('EUR', Currency::code());
+    expect(Currency::code())->toBe('EUR');
 });
 
 it('validates confirm payment currency logic', function () use ($mockStripeClient) {
@@ -66,12 +66,12 @@ it('validates confirm payment currency logic', function () use ($mockStripeClien
     $response = $this->postJson(route('payment.confirm'), ['provider' => PaymentProvider::STRIPE, 'token' => $this->order->id, 'payment_intent_id' => 'pi_confirm_test']);
     $response->assertOk();
     $order = $this->order->fresh();
-    $this->assertEquals(PaymentStatus::PAID, $order->payment_status);
+    expect($order->payment_status)->toBe(PaymentStatus::PAID);
     $payment = $order->payments->first();
-    $this->assertNotNull($payment);
-    $this->assertEquals(100.00, $payment->amount);
-    $this->assertEquals('GBP', $payment->metadata['gateway_currency']);
-    $this->assertEquals(80.00, $payment->metadata['gateway_amount']);
+    expect($payment)->not->toBeNull();
+    expect($payment->amount)->toEqual(100.00);
+    expect($payment->metadata['gateway_currency'])->toBe('GBP');
+    expect($payment->metadata['gateway_amount'])->toEqual(80.00);
 });
 
 it('accepts unsupported currency if processor allows it', function () use ($mockStripeClient) {

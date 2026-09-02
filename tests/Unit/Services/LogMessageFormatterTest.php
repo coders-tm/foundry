@@ -41,10 +41,10 @@ it('formats created log with resource name and admin', function () {
 
     $result = $this->formatter->format($log);
 
-    $this->assertStringContainsString('Admin', $result);
-    $this->assertStringContainsString('Alice Smith', $result);
-    $this->assertStringContainsString('created', $result);
-    $this->assertStringContainsString('Alice Smith', $result);
+    expect($result)->toContain('Admin');
+    expect($result)->toContain('Alice Smith');
+    expect($result)->toContain('created');
+    expect($result)->toContain('Alice Smith');
 });
 
 it('formats updated log', function () {
@@ -60,8 +60,8 @@ it('formats updated log', function () {
 
     $result = $this->formatter->format($log);
 
-    $this->assertStringContainsString('updated', $result);
-    $this->assertStringContainsString('Bob Jones', $result);
+    expect($result)->toContain('updated');
+    expect($result)->toContain('Bob Jones');
 });
 
 it('formats deleted log', function () {
@@ -77,8 +77,8 @@ it('formats deleted log', function () {
 
     $result = $this->formatter->format($log);
 
-    $this->assertStringContainsString('deleted', $result);
-    $this->assertStringContainsString('Carol White', $result);
+    expect($result)->toContain('deleted');
+    expect($result)->toContain('Carol White');
 });
 
 it('formats restored log', function () {
@@ -94,7 +94,7 @@ it('formats restored log', function () {
 
     $result = $this->formatter->format($log);
 
-    $this->assertStringContainsString('restored', $result);
+    expect($result)->toContain('restored');
 });
 
 it('formats force deleted log', function () {
@@ -110,8 +110,8 @@ it('formats force deleted log', function () {
 
     $result = $this->formatter->format($log);
 
-    $this->assertStringContainsString('force-deleted', $result);
-    $this->assertStringContainsString('Eve Black', $result);
+    expect($result)->toContain('force-deleted');
+    expect($result)->toContain('Eve Black');
 });
 
 it('formats login log in first person', function () {
@@ -123,9 +123,9 @@ it('formats login log in first person', function () {
 
     $result = $this->formatter->format($log, firstPerson: true);
 
-    $this->assertStringContainsString('You', $result);
-    $this->assertStringContainsString('127.0.0.1', $result);
-    $this->assertStringContainsString('Chrome', $result);
+    expect($result)->toContain('You');
+    expect($result)->toContain('127.0.0.1');
+    expect($result)->toContain('Chrome');
 });
 
 it('formats login log in third person', function () {
@@ -144,10 +144,10 @@ it('formats login log in third person', function () {
 
     $result = $this->formatter->format($log, firstPerson: false);
 
-    $this->assertStringContainsString('Frank Lee', $result);
-    $this->assertStringContainsString('192.168.1.1', $result);
-    $this->assertStringContainsString('Firefox', $result);
-    $this->assertStringNotContainsString('You', $result);
+    expect($result)->toContain('Frank Lee');
+    expect($result)->toContain('192.168.1.1');
+    expect($result)->toContain('Firefox');
+    expect($result)->not->toContain('You');
 });
 
 it('uses unknown for missing ip and device in login log', function () {
@@ -159,7 +159,7 @@ it('uses unknown for missing ip and device in login log', function () {
 
     $result = $this->formatter->format($log, firstPerson: true);
 
-    $this->assertStringContainsString('unknown', $result);
+    expect($result)->toContain('unknown');
 });
 
 it('returns raw message for unknown log type', function () {
@@ -170,7 +170,7 @@ it('returns raw message for unknown log type', function () {
 
     $result = $this->formatter->format($log);
 
-    $this->assertSame('Something custom happened', $result);
+    expect($result)->toBe('Something custom happened');
 });
 
 it('handles null logable gracefully', function () {
@@ -181,8 +181,8 @@ it('handles null logable gracefully', function () {
 
     $result = $this->formatter->format($log);
 
-    $this->assertIsString($result);
-    $this->assertStringContainsString('System', $result);
+    expect($result)->toBeString();
+    expect($result)->toContain('System');
 });
 
 it('handles null admin gracefully', function () {
@@ -197,7 +197,7 @@ it('handles null admin gracefully', function () {
 
     $result = $this->formatter->format($log);
 
-    $this->assertStringContainsString('System', $result);
+    expect($result)->toContain('System');
 });
 
 it('falls back to type as resource name when no mapper registered', function () {
@@ -217,8 +217,8 @@ it('falls back to type as resource name when no mapper registered', function () 
 
     $result = $this->formatter->format($log);
 
-    $this->assertStringContainsString('Admin', $result);
-    $this->assertStringContainsString('updated', $result);
+    expect($result)->toContain('Admin');
+    expect($result)->toContain('updated');
 });
 
 it('falls back to record when both type and name are null', function () {
@@ -226,5 +226,5 @@ it('falls back to record when both type and name are null', function () {
 
     $result = $this->formatter->format($log);
 
-    $this->assertStringContainsString('Record', $result);
+    expect($result)->toContain('Record');
 });

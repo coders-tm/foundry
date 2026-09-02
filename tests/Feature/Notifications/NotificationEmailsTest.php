@@ -73,13 +73,13 @@ function createCompleteOrder(array $overrides = []): Order
 it('sends user signup notification', function () {
     $this->user->notify(new UserSignupNotification($this->user));
 
-    $this->assertTrue(true, 'User signup notification sent');
+    expect(true)->toBeTrue();
 });
 
 it('sends subscription canceled notification to user', function () {
     $this->user->notify(new SubscriptionCanceledNotification($this->subscription));
 
-    $this->assertTrue(true, 'Subscription canceled notification (user) sent');
+    expect(true)->toBeTrue();
 });
 
 it('sends subscription downgrade notification', function () {
@@ -88,19 +88,19 @@ it('sends subscription downgrade notification', function () {
 
     $this->user->notify(new SubscriptionDowngradeNotification($this->subscription));
 
-    $this->assertTrue(true, 'Subscription downgrade notification sent');
+    expect(true)->toBeTrue();
 });
 
 it('sends subscription expired notification to user', function () {
     $this->user->notify(new SubscriptionExpiredNotification($this->subscription));
 
-    $this->assertTrue(true, 'Subscription expired notification (user) sent');
+    expect(true)->toBeTrue();
 });
 
 it('sends subscription renewed notification', function () {
     $this->user->notify(new SubscriptionRenewedNotification($this->subscription));
 
-    $this->assertTrue(true, 'Subscription renewed notification sent');
+    expect(true)->toBeTrue();
 });
 
 it('sends subscription upgrade notification', function () {
@@ -109,7 +109,7 @@ it('sends subscription upgrade notification', function () {
 
     $this->user->notify(new SubscriptionUpgradeNotification($this->subscription));
 
-    $this->assertTrue(true, 'Subscription upgrade notification sent');
+    expect(true)->toBeTrue();
 });
 
 it('sends order invoice notification', function () {
@@ -121,7 +121,7 @@ it('sends order invoice notification', function () {
 
     $this->user->notify(new OrderInvoiceNotification($order));
 
-    $this->assertTrue(true, 'Order invoice notification sent');
+    expect(true)->toBeTrue();
 });
 
 it('sends user reset password notification', function () {
@@ -133,7 +133,7 @@ it('sends user reset password notification', function () {
 
     $this->user->notify(new UserResetPasswordNotification($this->user, $resetData));
 
-    $this->assertTrue(true, 'User reset password notification sent');
+    expect(true)->toBeTrue();
 });
 
 it('sends new admin notification', function () {
@@ -147,7 +147,7 @@ it('sends new admin notification', function () {
 
     $newAdmin->notify(new NewAdminNotification($newAdmin, $password));
 
-    $this->assertTrue(true, 'New admin notification sent');
+    expect(true)->toBeTrue();
 });
 
 it('sends support ticket confirmation notification', function () {
@@ -160,7 +160,7 @@ it('sends support ticket confirmation notification', function () {
 
     $this->user->notify(new SupportTicketConfirmation($support_ticket));
 
-    $this->assertTrue(true, 'Support ticket confirmation notification sent');
+    expect(true)->toBeTrue();
 });
 
 it('sends support ticket reply notification', function () {
@@ -177,7 +177,7 @@ it('sends support ticket reply notification', function () {
 
     $this->user->notify(new SupportTicketReplyNotification($reply));
 
-    $this->assertTrue(true, 'Support ticket reply notification sent');
+    expect(true)->toBeTrue();
 });
 
 it('sends admin support ticket notification', function () {
@@ -190,13 +190,13 @@ it('sends admin support ticket notification', function () {
 
     $this->admin->notify(new AdminSupportTicketNotification($support_ticket));
 
-    $this->assertTrue(true, 'Admin support ticket notification sent');
+    expect(true)->toBeTrue();
 });
 
 it('sends hold member notification', function () {
     $this->admin->notify(new HoldMemberNotification($this->user));
 
-    $this->assertTrue(true, 'Hold member notification sent');
+    expect(true)->toBeTrue();
 });
 
 it('sends import completed notification', function () {
@@ -211,7 +211,7 @@ it('sends import completed notification', function () {
 
     $this->admin->notify(new ImportCompletedNotification($import));
 
-    $this->assertTrue(true, 'Import completed notification sent');
+    expect(true)->toBeTrue();
 });
 
 it('sends user login notification', function () {
@@ -229,23 +229,23 @@ it('sends user login notification', function () {
 
     $this->user->notify(new UserLogin($log));
 
-    $this->assertTrue(true, 'User login notification sent');
+    expect(true)->toBeTrue();
 });
 
 it('sends subscription cancel notification request', function () {
     $this->user->notify(new SubscriptionCancelNotification($this->subscription));
 
-    $this->assertTrue(true, 'Subscription cancel (request) notification sent');
+    expect(true)->toBeTrue();
 });
 
 it('sends admin subscription canceled notification', function () {
     $this->admin->notify(new AdminSubscriptionCanceledNotification($this->subscription));
 
-    $this->assertTrue(true, 'Admin subscription canceled notification sent');
+    expect(true)->toBeTrue();
 });
 
 it('sends admin subscription expired notification', function () {
     $this->admin->notify(new AdminSubscriptionExpiredNotification($this->subscription));
 
-    $this->assertTrue(true, 'Admin subscription expired notification sent');
+    expect(true)->toBeTrue();
 });

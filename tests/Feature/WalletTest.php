@@ -20,9 +20,9 @@ beforeEach(function () {
 it('can get or create wallet', function () {
     $wallet = $this->user->getOrCreateWallet();
 
-    $this->assertInstanceOf(WalletBalance::class, $wallet);
-    $this->assertEquals(0.00, $wallet->balance);
-    $this->assertEquals($this->user->id, $wallet->user_id);
+    expect($wallet)->toBeInstanceOf(WalletBalance::class);
+    expect($wallet->balance)->toEqual(0.00);
+    expect($wallet->user_id)->toEqual($this->user->id);
 });
 
 it('can credit wallet', function () {
@@ -32,10 +32,10 @@ it('can credit wallet', function () {
         description: 'Test credit'
     );
 
-    $this->assertInstanceOf(WalletTransaction::class, $transaction);
-    $this->assertEquals('credit', $transaction->type);
-    $this->assertEquals(100.00, $transaction->amount);
-    $this->assertEquals(100.00, $this->user->getWalletBalance());
+    expect($transaction)->toBeInstanceOf(WalletTransaction::class);
+    expect($transaction->type)->toEqual('credit');
+    expect($transaction->amount)->toEqual(100.00);
+    expect($this->user->getWalletBalance())->toEqual(100.00);
 });
 
 it('can debit wallet', function () {
@@ -47,25 +47,23 @@ it('can debit wallet', function () {
         description: 'Test debit'
     );
 
-    $this->assertEquals('debit', $transaction->type);
-    $this->assertEquals(50.00, $transaction->amount);
-    $this->assertEquals(50.00, $this->user->getWalletBalance());
+    expect($transaction->type)->toEqual('debit');
+    expect($transaction->amount)->toEqual(50.00);
+    expect($this->user->getWalletBalance())->toEqual(50.00);
 });
 
 it('cannot debit more than wallet balance', function () {
-    $this->expectException(Exception::class);
-    $this->expectExceptionMessage('Insufficient wallet balance');
-
     $this->user->creditWallet(50.00, 'test', 'Initial balance');
-    $this->user->debitWallet(100.00, 'test', 'Over limit');
+
+    expect(fn () => $this->user->debitWallet(100.00, 'test', 'Over limit'))->toThrow(Exception::class, 'Insufficient wallet balance');
 });
 
 it('tracks balance changes in wallet transactions', function () {
     $this->user->creditWallet(100.00, 'test', 'First credit');
     $transaction = $this->user->creditWallet(50.00, 'test', 'Second credit');
 
-    $this->assertEquals(100.00, $transaction->balance_before);
-    $this->assertEquals(150.00, $transaction->balance_after);
+    expect($transaction->balance_before)->toEqual(100.00);
+    expect($transaction->balance_after)->toEqual(150.00);
 });
 
 it('can refund order to wallet', function () {
@@ -87,9 +85,9 @@ it('can refund order to wallet', function () {
 
     $refund = $order->refundToWallet('Customer requested refund');
 
-    $this->assertEquals(100.00, $refund->amount);
-    $this->assertTrue($refund->to_wallet);
-    $this->assertEquals(100.00, $this->user->fresh()->getWalletBalance());
+    expect($refund->amount)->toEqual(100.00);
+    expect($refund->to_wallet)->toBeTrue();
+    expect($this->user->fresh()->getWalletBalance())->toEqual(100.00);
 });
 
 it('charges from wallet on renewal if balance available', function () {
@@ -119,15 +117,10 @@ it('charges from wallet on renewal if balance available', function () {
 
     $transactions = $this->user->walletTransactions()->orderBy('id', 'desc')->get();
 
-    $this->assertEquals(
-        45.00,
-        $walletBalance,
-        'Wallet balance should be 45 (100 - 55 with tax). Transactions: '.
-            $transactions->pluck('description', 'amount')->toJson()
-    );
+    expect($walletBalance)->toEqual(45.00);
 
-    $this->assertTrue($subscription->fresh()->active());
-    $this->assertNull($subscription->fresh()->ends_at);
+    expect($subscription->fresh()->active())->toBeTrue();
+    expect($subscription->fresh()->ends_at)->toBeNull();
 });
 
 it('enters grace period if wallet balance insufficient on renewal', function () {
@@ -150,9 +143,9 @@ it('enters grace period if wallet balance insufficient on renewal', function () 
 
     $subscription->renew();
 
-    $this->assertEquals(50.00, $this->user->fresh()->getWalletBalance());
+    expect($this->user->fresh()->getWalletBalance())->toEqual(50.00);
 
-    $this->assertNotNull($subscription->fresh()->ends_at);
+    expect($subscription->fresh()->ends_at)->not->toBeNull();
 });
 
 it('can setup payment intent via wallet processor', function () {
@@ -175,10 +168,10 @@ it('can setup payment intent via wallet processor', function () {
 
     $result = $processor->setupPaymentIntent($request, $payable);
 
-    $this->assertEquals('Wallet payment ready', $result['message']);
-    $this->assertEquals(50.00, $result['amount']);
-    $this->assertEquals(100.00, $result['wallet_balance']);
-    $this->assertTrue($result['has_sufficient_balance']);
+    expect($result['message'])->toEqual('Wallet payment ready');
+    expect($result['amount'])->toEqual(50.00);
+    expect($result['wallet_balance'])->toEqual(100.00);
+    expect($result['has_sufficient_balance'])->toBeTrue();
 });
 
 it('can confirm payment via wallet processor', function () {
@@ -198,9 +191,9 @@ it('can confirm payment via wallet processor', function () {
 
     $result = $processor->confirmPayment($request, $payable);
 
-    $this->assertTrue($result->isSuccess());
-    $this->assertEquals('succeeded', $result->getStatus());
-    $this->assertEquals(50.00, $this->user->fresh()->getWalletBalance());
+    expect($result->isSuccess())->toBeTrue();
+    expect($result->getStatus())->toEqual('succeeded');
+    expect($this->user->fresh()->getWalletBalance())->toEqual(50.00);
 });
 
 it('fails wallet payment processor with insufficient balance', function () {
@@ -218,10 +211,7 @@ it('fails wallet payment processor with insufficient balance', function () {
     $request = Request::create('/api/shop/wallet/confirm-payment');
     $request->setUserResolver(fn () => $this->user);
 
-    $this->expectException(PaymentException::class);
-    $this->expectExceptionMessage('Insufficient wallet balance');
-
-    $processor->confirmPayment($request, $payable);
+    expect(fn () => $processor->confirmPayment($request, $payable))->toThrow(PaymentException::class, 'Insufficient wallet balance');
 });
 
 it('can view wallet balance', function () {
@@ -266,8 +256,8 @@ it('links wallet transactions to transactionable', function () {
     $refund = $order->refundToWallet(50.00, 'Test refund');
     $transaction = $refund->walletTransaction;
 
-    $this->assertEquals(get_class($order), $transaction->transactionable_type);
-    $this->assertEquals($order->id, $transaction->transactionable_id);
+    expect(get_class($order))->toEqual($transaction->transactionable_type);
+    expect($order->id)->toEqual($transaction->transactionable_id);
 });
 
 it('can disable wallet auto charge via config', function () {
@@ -285,7 +275,7 @@ it('can disable wallet auto charge via config', function () {
     $subscription->update(['expires_at' => now()->subDay()]);
     $subscription->renew();
 
-    $this->assertEquals(100.00, $this->user->fresh()->getWalletBalance());
+    expect($this->user->fresh()->getWalletBalance())->toEqual(100.00);
 
-    $this->assertNotNull($subscription->fresh()->ends_at);
+    expect($subscription->fresh()->ends_at)->not->toBeNull();
 });

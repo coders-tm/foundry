@@ -48,8 +48,8 @@ it('resolves ip location', function () {
 
     $request = new Request;
     $request->attributes->set('ip_location', (object) ['countryCode' => 'US']);
-    $this->assertEquals('US', $request->ipLocation('countryCode'));
-    $this->assertEquals('Default', $request->ipLocation('invalid', 'Default'));
+    expect($request->ipLocation('countryCode'))->toEqual('US');
+    expect($request->ipLocation('invalid', 'Default'))->toEqual('Default');
 });
 
 it('resolves ip from cloudflare header', function () {

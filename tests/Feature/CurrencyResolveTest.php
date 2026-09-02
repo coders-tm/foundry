@@ -17,8 +17,8 @@ it('resolves currency from address country code', function () {
     $currency = new Currency;
     $currency->resolve(['country_code' => 'GB']);
 
-    $this->assertEquals('GBP', $currency->code());
-    $this->assertEquals(0.75, $currency->rate());
+    expect($currency->code())->toBe('GBP');
+    expect($currency->rate())->toBe(0.75);
 });
 
 it('resolves currency from address country name', function () {
@@ -31,8 +31,8 @@ it('resolves currency from address country name', function () {
     $currency = new Currency;
     $currency->resolve(['country' => 'Germany']);
 
-    $this->assertEquals('EUR', $currency->code());
-    $this->assertEquals(0.85, $currency->rate());
+    expect($currency->code())->toBe('EUR');
+    expect($currency->rate())->toBe(0.85);
 });
 
 it('resolves currency from ip when address is missing', function () {
@@ -51,8 +51,8 @@ it('resolves currency from ip when address is missing', function () {
     $currency = new Currency;
     $currency->resolve([]);
 
-    $this->assertEquals('CAD', $currency->code());
-    $this->assertEquals(1.25, $currency->rate());
+    expect($currency->code())->toBe('CAD');
+    expect($currency->rate())->toBe(1.25);
 });
 
 it('falls back to base currency if nothing resolves', function () {
@@ -61,6 +61,6 @@ it('falls back to base currency if nothing resolves', function () {
 
     $currency->resolve(['country_code' => 'XX']);
 
-    $this->assertEquals('USD', $currency->code());
-    $this->assertEquals(1.0, $currency->rate());
+    expect($currency->code())->toBe('USD');
+    expect($currency->rate())->toBe(1.0);
 });

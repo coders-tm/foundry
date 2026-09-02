@@ -7,38 +7,38 @@ uses(TestCase::class);
 
 it('resolves correct public key and environment per provider config', function () {
     $stripeConfig = ['provider' => PaymentProvider::STRIPE, 'key' => 'pk_stripe_123', 'test_mode' => true];
-    $this->assertEquals([
+    expect(PaymentProvider::getPublicKey($stripeConfig))->toBe([
         'public_key' => 'pk_stripe_123',
         'environment' => 'sandbox',
-    ], PaymentProvider::getPublicKey($stripeConfig));
+    ]);
 
     $razorpayConfig = ['provider' => PaymentProvider::RAZORPAY, 'key_id' => 'rzp_live_123'];
-    $this->assertEquals([
+    expect(PaymentProvider::getPublicKey($razorpayConfig))->toBe([
         'public_key' => 'rzp_live_123',
         'environment' => null,
-    ], PaymentProvider::getPublicKey($razorpayConfig));
+    ]);
 
     $paddleConfig = ['provider' => PaymentProvider::PADDLE, 'client_token' => 'live_ptok_123', 'environment' => 'sandbox'];
-    $this->assertEquals([
+    expect(PaymentProvider::getPublicKey($paddleConfig))->toBe([
         'public_key' => 'live_ptok_123',
         'environment' => 'sandbox',
-    ], PaymentProvider::getPublicKey($paddleConfig));
+    ]);
 
     $paypalConfig = ['provider' => PaymentProvider::PAYPAL, 'client_id' => 'paypal_client_123', 'mode' => 'sandbox'];
-    $this->assertEquals([
+    expect(PaymentProvider::getPublicKey($paypalConfig))->toBe([
         'public_key' => 'paypal_client_123',
         'environment' => 'sandbox',
-    ], PaymentProvider::getPublicKey($paypalConfig));
+    ]);
 
     $alipayConfig = ['provider' => PaymentProvider::ALIPAY, 'app_id' => 'alipay_app_123'];
-    $this->assertEquals([
+    expect(PaymentProvider::getPublicKey($alipayConfig))->toBe([
         'public_key' => 'alipay_app_123',
         'environment' => null,
-    ], PaymentProvider::getPublicKey($alipayConfig));
+    ]);
 
     $genericConfig = ['provider' => 'custom', 'public_key' => 'custom_pk_123'];
-    $this->assertEquals([
+    expect(PaymentProvider::getPublicKey($genericConfig))->toBe([
         'public_key' => 'custom_pk_123',
         'environment' => null,
-    ], PaymentProvider::getPublicKey($genericConfig));
+    ]);
 });

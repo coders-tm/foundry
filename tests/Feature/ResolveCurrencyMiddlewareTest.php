@@ -177,7 +177,7 @@ it('does not persist currency when same as base', function () {
     ]);
 
     $user->refresh();
-    $this->assertNull($user->currency);
+    expect($user->currency)->toBeNull();
 });
 
 it('works with invalid country code header', function () {

@@ -39,12 +39,12 @@ it('report generates sales summary data', function () {
     $result = $report->paginate($report->validate($filters), 25, 1);
 
     // Assert
-    $this->assertNotEmpty($result['data']);
+    expect($result['data'])->not->toBeEmpty();
     foreach ($result['data'] as $row) {
-        $this->assertArrayHasKey('period', $row);
-        $this->assertArrayHasKey('total_orders', $row);
-        $this->assertArrayHasKey('gmv', $row);
-        $this->assertArrayHasKey('net_revenue', $row);
+        expect($row)->toHaveKey('period');
+        expect($row)->toHaveKey('total_orders');
+        expect($row)->toHaveKey('gmv');
+        expect($row)->toHaveKey('net_revenue');
     }
 });
 
@@ -71,5 +71,5 @@ it('summary calculates totals', function () {
     $summary = $report->summarize($report->validate($filters));
 
     // Assert
-    $this->assertIsArray($summary);
+    expect($summary)->toBeArray();
 });

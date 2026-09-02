@@ -38,7 +38,7 @@ it('returns default tax for customer without address', function () {
     $response = $this->actingAs($this->admin, 'admin')->postJson(route('admin.orders.calculator'), $data);
     $response->assertStatus(200);
     $response->assertJsonPath('tax_lines.0.label', 'Global Tax');
-    $this->assertEquals(10, $response->json('tax_total'));
+    expect($response->json('tax_total'))->toEqual(10);
 });
 
 it('recalculates for existing order', function () {
@@ -52,8 +52,8 @@ it('recalculates for existing order', function () {
 
     $response = $this->actingAs($this->admin, 'admin')->postJson(route('admin.orders.calculator'), $data);
     $response->assertStatus(200);
-    $this->assertEquals(15, $response->json('tax_total'));
-    $this->assertEquals(115, $response->json('grand_total'));
+    expect($response->json('tax_total'))->toEqual(15);
+    expect($response->json('grand_total'))->toEqual(115);
     $response->assertJsonPath('tax_lines.0.label', 'Re-calc Tax');
 });
 
@@ -66,7 +66,7 @@ it('returns rest of world tax', function () {
     $response = $this->actingAs($this->admin, 'admin')->postJson(route('admin.orders.calculator'), $data);
     $response->assertStatus(200);
     $response->assertJsonPath('tax_lines.0.label', 'Global Tax');
-    $this->assertEquals(7, $response->json('tax_total'));
+    expect($response->json('tax_total'))->toEqual(7);
 });
 
 it('returns discount correctly', function () {
@@ -75,7 +75,7 @@ it('returns discount correctly', function () {
     $response = $this->actingAs($this->admin, 'admin')->postJson(route('admin.orders.calculator'), $data);
     $response->assertStatus(200);
     $response->assertJsonPath('discount.type', 'fixed_amount');
-    $this->assertEquals(20, $response->json('discount.value'));
-    $this->assertEquals(20, $response->json('discount_total'));
-    $this->assertEquals(80, $response->json('grand_total'));
+    expect($response->json('discount.value'))->toEqual(20);
+    expect($response->json('discount_total'))->toEqual(20);
+    expect($response->json('grand_total'))->toEqual(80);
 });

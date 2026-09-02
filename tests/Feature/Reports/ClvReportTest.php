@@ -53,18 +53,18 @@ it('report generates with customer lifetime value', function () {
     $result = $report->paginate($report->validate($filters), 25, 1);
 
     // Assert: report generates without errors
-    $this->assertNotEmpty($result['data']);
+    expect($result['data'])->not->toBeEmpty();
 
     // Verify data structure
     foreach ($result['data'] as $row) {
-        $this->assertArrayHasKey('user_id', $row);
-        $this->assertArrayHasKey('user_email', $row);
-        $this->assertArrayHasKey('total_revenue', $row);
-        $this->assertArrayHasKey('avg_monthly_revenue', $row);
-        $this->assertArrayHasKey('estimated_clv', $row);
-        $this->assertArrayHasKey('order_count', $row);
-        $this->assertIsNumeric($row['total_revenue']);
-        $this->assertIsNumeric($row['estimated_clv']);
+        expect($row)->toHaveKey('user_id');
+        expect($row)->toHaveKey('user_email');
+        expect($row)->toHaveKey('total_revenue');
+        expect($row)->toHaveKey('avg_monthly_revenue');
+        expect($row)->toHaveKey('estimated_clv');
+        expect($row)->toHaveKey('order_count');
+        expect($row['total_revenue'])->toBeNumeric();
+        expect($row['estimated_clv'])->toBeNumeric();
     }
 });
 
@@ -94,8 +94,8 @@ it('summary calculates correctly', function () {
     $summary = $report->summarize($report->validate($filters));
 
     // Assert
-    $this->assertArrayHasKey('total_customers', $summary);
-    $this->assertArrayHasKey('average_clv', $summary);
-    $this->assertArrayHasKey('total_projected_clv', $summary);
-    $this->assertGreaterThanOrEqual(1, $summary['total_customers']);
+    expect($summary)->toHaveKey('total_customers');
+    expect($summary)->toHaveKey('average_clv');
+    expect($summary)->toHaveKey('total_projected_clv');
+    expect($summary['total_customers'])->toBeGreaterThanOrEqual(1);
 });

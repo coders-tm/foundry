@@ -27,8 +27,8 @@ afterEach(function () {
 
 it('creates alipay processor instance', function () {
     $processor = Processor::make('alipay');
-    $this->assertInstanceOf(AlipayProcessor::class, $processor);
-    $this->assertEquals('alipay', $processor->getProvider());
+    expect($processor)->toBeInstanceOf(AlipayProcessor::class);
+    expect($processor->getProvider())->toBe('alipay');
 });
 
 it('sets up alipay payment intent', function () {
@@ -49,9 +49,9 @@ it('sets up alipay payment intent', function () {
 
     $result = $processor->setupPaymentIntent(new Request, $payable);
 
-    $this->assertEquals('https://alipay.com/pay', $result['redirect_url']);
-    $this->assertEquals('12345', $result['payment_intent_id']);
-    $this->assertArrayHasKey('state_id', $result);
+    expect($result['redirect_url'])->toBe('https://alipay.com/pay');
+    expect($result['payment_intent_id'])->toBe('12345');
+    expect($result)->toHaveKey('state_id');
     $this->assertDatabaseHas('payments', ['uuid' => $result['state_id'], 'status' => 'pending']);
 });
 
@@ -71,10 +71,10 @@ it('confirms alipay payment', function () {
 
     $result = $processor->confirmPayment($request, $payable);
 
-    $this->assertTrue($result->isSuccess());
-    $this->assertEquals('alipay_123', $result->getTransactionId());
-    $this->assertInstanceOf(AlipayPayment::class, $result->getPaymentData());
-    $this->assertEquals('Ant Credit Pay (Huabei)', $result->getPaymentData()->toString());
+    expect($result->isSuccess())->toBeTrue();
+    expect($result->getTransactionId())->toBe('alipay_123');
+    expect($result->getPaymentData())->toBeInstanceOf(AlipayPayment::class);
+    expect($result->getPaymentData()->toString())->toBe('Ant Credit Pay (Huabei)');
 });
 
 it('handles alipay success callback', function () {
@@ -92,8 +92,8 @@ it('handles alipay success callback', function () {
 
     $result = $processor->handleSuccessCallback($request);
 
-    $this->assertEquals('success', $result->getMessageType());
-    $this->assertEquals('Alipay payment was successful.', $result->getMessage());
+    expect($result->getMessageType())->toBe('success');
+    expect($result->getMessage())->toBe('Alipay payment was successful.');
     $this->assertDatabaseHas('payments', ['id' => $payment->id, 'transaction_id' => 'alipay_123', 'status' => 'completed']);
 });
 
@@ -104,7 +104,7 @@ it('handles alipay cancel callback', function () {
 
     $result = $processor->handleCancelCallback($request);
 
-    $this->assertEquals('success', $result->getMessageType());
-    $this->assertEquals('Alipay payment was cancelled.', $result->getMessage());
+    expect($result->getMessageType())->toBe('success');
+    expect($result->getMessage())->toBe('Alipay payment was cancelled.');
     $this->assertDatabaseHas('payments', ['id' => $payment->id, 'status' => 'failed']);
 });

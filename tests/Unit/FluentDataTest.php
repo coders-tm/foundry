@@ -10,15 +10,15 @@ it('can be instantiated with array', function () {
     $data = ['foo' => 'bar'];
     $fluent = new FluentData($data);
 
-    $this->assertEquals('bar', $fluent->foo);
-    $this->assertEquals('bar', $fluent['foo']);
+    expect($fluent->foo)->toBe('bar');
+    expect($fluent['foo'])->toBe('bar');
 });
 
 it('can be instantiated with object', function () {
     $data = (object) ['foo' => 'bar'];
     $fluent = new FluentData($data);
 
-    $this->assertEquals('bar', $fluent->foo);
+    expect($fluent->foo)->toBe('bar');
 });
 
 it('supports nested access', function () {
@@ -32,29 +32,29 @@ it('supports nested access', function () {
     ];
     $fluent = new FluentData($data);
 
-    $this->assertInstanceOf(FluentData::class, $fluent->user);
-    $this->assertEquals('John', $fluent->user->name);
-    $this->assertInstanceOf(FluentData::class, $fluent->user->address);
-    $this->assertEquals('New York', $fluent->user->address->city);
+    expect($fluent->user)->toBeInstanceOf(FluentData::class);
+    expect($fluent->user->name)->toBe('John');
+    expect($fluent->user->address)->toBeInstanceOf(FluentData::class);
+    expect($fluent->user->address->city)->toBe('New York');
 });
 
 it('returns safe object for undefined keys', function () {
     $fluent = new FluentData([]);
 
-    $this->assertNull($fluent->missing);
-    $this->assertNull($fluent->missing->nested);
+    expect($fluent->missing)->toBeNull();
+    expect($fluent->missing->nested)->toBeNull();
 });
 
 it('is countable', function () {
     $data = ['a' => 1, 'b' => 2];
     $fluent = new FluentData($data);
 
-    $this->assertCount(2, $fluent);
-    $this->assertEquals(2, $fluent->count());
+    expect($fluent)->toHaveCount(2);
+    expect($fluent->count())->toBe(2);
 
     $empty = new FluentData([]);
-    $this->assertCount(0, $empty);
-    $this->assertEquals(0, $empty->count());
+    expect($empty)->toHaveCount(0);
+    expect($empty->count())->toBe(0);
 });
 
 it('is iterable', function () {
@@ -66,7 +66,7 @@ it('is iterable', function () {
         $result[$key] = $value;
     }
 
-    $this->assertEquals($data, $result);
+    expect($result)->toBe($data);
 });
 
 it('wraps children during iteration', function () {
@@ -79,7 +79,7 @@ it('wraps children during iteration', function () {
     $fluent = new FluentData($data);
 
     foreach ($fluent->items as $item) {
-        $this->assertInstanceOf(FluentData::class, $item);
+        expect($item)->toBeInstanceOf(FluentData::class);
     }
 });
 
@@ -87,7 +87,7 @@ it('handles collection', function () {
     $collection = new Collection(['key' => 'value']);
     $fluent = new FluentData($collection);
 
-    $this->assertEquals('value', $fluent->key);
+    expect($fluent->key)->toBe('value');
 });
 
 it('handles explicit type conversions', function () {
@@ -99,7 +99,7 @@ it('handles explicit type conversions', function () {
     ];
     $fluent = new FluentData($data);
 
-    $this->assertEquals(42, $fluent->int_val);
-    $this->assertEquals(10.5, $fluent->float_val);
-    $this->assertNull($fluent->missing);
+    expect($fluent->int_val)->toBe(42);
+    expect($fluent->float_val)->toBe(10.5);
+    expect($fluent->missing)->toBeNull();
 });

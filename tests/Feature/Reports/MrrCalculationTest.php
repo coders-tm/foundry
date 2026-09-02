@@ -39,7 +39,7 @@ it('calculate mrr excludes free forever', function () {
     $mrr = $result['mrr']['raw_current'];
 
     // Assert
-    $this->assertEquals(0, $mrr, 'Actual MRR result: '.json_encode($result));
+    expect($mrr)->toEqual(0, 'Actual MRR result: '.json_encode($result));
 });
 
 it('calculate mrr uses latest paid order minus tax', function () {
@@ -84,7 +84,7 @@ it('calculate mrr uses latest paid order minus tax', function () {
     $mrr = $metrics->only(['mrr'])['mrr']['raw_current'];
 
     // Assert: 88 (grand) - 8 (tax) = 80 per month
-    $this->assertEquals(80, $mrr);
+    expect($mrr)->toEqual(80);
 });
 
 it('calculate mrr normalizes intervals', function () {
@@ -112,5 +112,5 @@ it('calculate mrr normalizes intervals', function () {
     $mrr = $metrics->only(['mrr'])['mrr']['raw_current'];
 
     // Assert
-    $this->assertEquals(100, $mrr);
+    expect($mrr)->toEqual(100);
 });

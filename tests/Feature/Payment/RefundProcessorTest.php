@@ -27,40 +27,36 @@ beforeEach(function () {
 
 it('refund result can create success', function () {
     $result = RefundResult::success(refundId: 'refund_123', amount: 50.00, status: 'succeeded', metadata: ['gateway' => 'stripe']);
-    $this->assertTrue($result->isSuccess());
-    $this->assertEquals('refund_123', $result->getRefundId());
-    $this->assertEquals(50.00, $result->getAmount());
-    $this->assertEquals('succeeded', $result->getStatus());
-    $this->assertEquals(['gateway' => 'stripe'], $result->getMetadata());
+    expect($result->isSuccess())->toBeTrue();
+    expect($result->getRefundId())->toBe('refund_123');
+    expect($result->getAmount())->toEqual(50.00);
+    expect($result->getStatus())->toBe('succeeded');
+    expect($result->getMetadata())->toBe(['gateway' => 'stripe']);
 });
 
 it('refund result to array', function () {
     $result = RefundResult::success(refundId: 'refund_456', amount: 75.00, status: 'completed');
     $array = $result->toArray();
-    $this->assertTrue($array['success']);
-    $this->assertEquals('refund_456', $array['refund_id']);
-    $this->assertEquals(75.00, $array['amount']);
-    $this->assertEquals('completed', $array['status']);
+    expect($array['success'])->toBeTrue();
+    expect($array['refund_id'])->toBe('refund_456');
+    expect($array['amount'])->toEqual(75.00);
+    expect($array['status'])->toBe('completed');
 });
 
 it('refund result failed throws exception', function () {
-    $this->expectException(RefundException::class);
-    $this->expectExceptionMessage('Refund failed: insufficient balance');
-    RefundResult::failed('Refund failed: insufficient balance');
+    expect(fn () => RefundResult::failed('Refund failed: insufficient balance'))->toThrow(RefundException::class, 'Refund failed: insufficient balance');
 });
 
 it('refund result not supported throws exception', function () {
-    $this->expectException(RefundException::class);
-    $this->expectExceptionMessage('Refund not supported for this payment method');
-    RefundResult::notSupported();
+    expect(fn () => RefundResult::notSupported())->toThrow(RefundException::class, 'Refund not supported for this payment method');
 });
 
 it('refund exception identifies not supported type', function () {
     try {
         RefundResult::notSupported('Custom reason');
     } catch (RefundException $e) {
-        $this->assertTrue($e->isNotSupported());
-        $this->assertEquals('Custom reason', $e->getMessage());
+        expect($e->isNotSupported())->toBeTrue();
+        expect($e->getMessage())->toBe('Custom reason');
 
         return;
     }
@@ -69,73 +65,69 @@ it('refund exception identifies not supported type', function () {
 
 it('stripe processor supports refund', function () {
     $processor = Processor::make(PaymentProvider::STRIPE);
-    $this->assertTrue($processor->supportsRefund());
+    expect($processor->supportsRefund())->toBeTrue();
 });
 
 it('paypal processor supports refund', function () {
     $processor = Processor::make(PaymentProvider::PAYPAL);
-    $this->assertTrue($processor->supportsRefund());
+    expect($processor->supportsRefund())->toBeTrue();
 });
 
 it('razorpay processor supports refund', function () {
     $processor = Processor::make(PaymentProvider::RAZORPAY);
-    $this->assertTrue($processor->supportsRefund());
+    expect($processor->supportsRefund())->toBeTrue();
 });
 
 it('flutterwave processor supports refund', function () {
     $processor = Processor::make(PaymentProvider::FLUTTERWAVE);
-    $this->assertTrue($processor->supportsRefund());
+    expect($processor->supportsRefund())->toBeTrue();
 });
 
 it('wallet processor does not support refund', function () {
     $processor = Processor::make(PaymentProvider::WALLET);
-    $this->assertFalse($processor->supportsRefund());
+    expect($processor->supportsRefund())->toBeFalse();
 });
 
 it('manual processor does not support refund', function () {
     $processor = Processor::make(PaymentProvider::MANUAL);
-    $this->assertFalse($processor->supportsRefund());
+    expect($processor->supportsRefund())->toBeFalse();
 });
 
 it('wallet processor throws on refund', function () {
     $processor = Processor::make(PaymentProvider::WALLET);
     $payment = ($this->createPayment)(PaymentProvider::WALLET);
-    $this->expectException(RefundException::class);
-    $this->expectExceptionMessage('Wallet payments cannot be refunded');
-    $processor->refund($payment, 50.00);
+    expect(fn () => $processor->refund($payment, 50.00))->toThrow(RefundException::class, 'Wallet payments cannot be refunded');
 });
 
 it('manual processor throws on refund', function () {
     $processor = Processor::make(PaymentProvider::MANUAL);
     $payment = ($this->createPayment)(PaymentProvider::MANUAL);
-    $this->expectException(RefundException::class);
-    $this->expectExceptionMessage('not supported');
-    $processor->refund($payment, 50.00);
+    expect(fn () => $processor->refund($payment, 50.00))->toThrow(RefundException::class, 'not supported');
 });
 
 it('payment calculates refundable amount', function () {
     $payment = ($this->createPayment)('stripe', 100.00);
-    $this->assertEquals(100.00, $payment->refundable_amount);
+    expect($payment->refundable_amount)->toEqual(100.00);
     $payment->processRefund();
     $payment->refresh();
-    $this->assertEquals(0, $payment->refundable_amount);
+    expect($payment->refundable_amount)->toEqual(0);
 });
 
 it('payment process refund updates status', function () {
     $payment = ($this->createPayment)('stripe', 100.00);
     $payment->processRefund(40.00, 'Refund request');
     $payment->refresh();
-    $this->assertEquals(PaymentStatus::REFUNDED, $payment->status);
-    $this->assertEquals(100.00, $payment->refund_amount);
-    $this->assertTrue($payment->isRefunded());
+    expect($payment->status)->toBe(PaymentStatus::REFUNDED);
+    expect($payment->refund_amount)->toEqual(100.00);
+    expect($payment->isRefunded())->toBeTrue();
 });
 
 it('payment is refunded check', function () {
     $payment = ($this->createPayment)('stripe', 100.00);
-    $this->assertFalse($payment->isRefunded());
+    expect($payment->isRefunded())->toBeFalse();
     $payment->update(['status' => PaymentStatus::REFUNDED]);
     $payment->refresh();
-    $this->assertTrue($payment->isRefunded());
+    expect($payment->isRefunded())->toBeTrue();
 });
 
 it('order refund creates refund record', function () {
@@ -149,14 +141,12 @@ it('order refund updates order totals', function () {
     $originalRefundTotal = $this->order->refund_total;
     $this->order->refundToWallet('Test refund');
     $this->order->refresh();
-    $this->assertEquals($originalRefundTotal + 100.00, $this->order->refund_total);
+    expect($this->order->refund_total)->toEqual($originalRefundTotal + 100.00);
 });
 
 it('order multiple refunds throws exception', function () {
     $payment = ($this->createPayment)('stripe');
     $this->order->refundToWallet('First refund');
     $this->order->refresh();
-    $this->expectException(Exception::class);
-    $this->expectExceptionMessage('Refund amount must be greater than zero');
-    $this->order->refundToWallet('Second refund');
+    expect(fn () => $this->order->refundToWallet('Second refund'))->toThrow(Exception::class, 'Refund amount must be greater than zero');
 });

@@ -65,13 +65,13 @@ it('upcoming invoice calculations', function () {
 
     // 5. Verification:
     // Expected: Subtotal 100, Discount 20, Grand Total 80 + Tax (8) = 88
-    $this->assertNotNull($upcomingInvoice);
+    expect($upcomingInvoice)->not->toBeNull();
 
     // Asserting the values that the user EXPECTS (which are currently different)
-    $this->assertEquals(100.00, $upcomingInvoice->sub_total, 'Sub total should be the gross amount ($100)');
-    $this->assertEquals(8.00, $upcomingInvoice->tax_total, 'Tax total should be correct ($8)');
-    $this->assertEquals(20.00, $upcomingInvoice->discount_total, 'Discount total should include line-item discounts ($20)');
-    $this->assertEquals(88.00, $upcomingInvoice->grand_total, 'Grand total should be correct ($88)');
+    expect($upcomingInvoice->sub_total)->toEqual(100.00);
+    expect($upcomingInvoice->tax_total)->toEqual(8.00);
+    expect($upcomingInvoice->discount_total)->toEqual(20.00);
+    expect($upcomingInvoice->grand_total)->toEqual(88.00);
 });
 
 it('generated invoice calculations', function () {
@@ -107,14 +107,14 @@ it('generated invoice calculations', function () {
     $invoice = $subscription->generateInvoice();
 
     foreach ($invoice->line_items as $item) {
-        $this->assertEquals(1, $item->quantity, 'Line item quantity should be 1');
-        $this->assertTrue($item->taxable, 'Line item should be taxable');
+        expect($item->quantity)->toEqual(1);
+        expect($item->taxable)->toBeTrue();
     }
 
     // 5. Verification:
-    $this->assertNotNull($invoice);
-    $this->assertEquals(100.00, $invoice->sub_total, 'Stored sub_total should be the gross amount ($100)');
-    $this->assertEquals(8.5, $invoice->tax_total, 'Stored tax_total should be the total tax ($10)');
-    $this->assertEquals(15.00, $invoice->discount_total, 'Stored discount_total should be the total discount ($15)');
-    $this->assertEquals(93.50, $invoice->grand_total, 'Stored grand_total should be correct ($93.50)');
+    expect($invoice)->not->toBeNull();
+    expect($invoice->sub_total)->toEqual(100.00);
+    expect($invoice->tax_total)->toEqual(8.5);
+    expect($invoice->discount_total)->toEqual(15.00);
+    expect($invoice->grand_total)->toEqual(93.50);
 });

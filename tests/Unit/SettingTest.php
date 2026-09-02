@@ -31,8 +31,8 @@ it('can set and get app setting', function () {
         'email' => 'test@example.com',
     ]);
 
-    $this->assertEquals('Test App', Settings::get('config.name'));
-    $this->assertEquals('test@example.com', Settings::get('config.email'));
+    expect(Settings::get('config.name'))->toBe('Test App');
+    expect(Settings::get('config.email'))->toBe('test@example.com');
 });
 
 it('can update app setting', function () {
@@ -43,8 +43,8 @@ it('can update app setting', function () {
 
     Settings::set('config.name', 'Updated Name');
 
-    $this->assertEquals('Updated Name', Settings::get('config.name'));
-    $this->assertEquals('original@example.com', Settings::get('config.email'));
+    expect(Settings::get('config.name'))->toBe('Updated Name');
+    expect(Settings::get('config.email'))->toBe('original@example.com');
 });
 
 it('maps email to multiple config keys', function () {
@@ -54,8 +54,8 @@ it('maps email to multiple config keys', function () {
 
     Settings::syncConfig();
 
-    $this->assertEquals('admin@example.com', config('foundry.admin_email'));
-    $this->assertEquals('admin@example.com', config('mail.from.address'));
+    expect(config('foundry.admin_email'))->toBe('admin@example.com');
+    expect(config('mail.from.address'))->toBe('admin@example.com');
 });
 
 it('maps name to mail from name', function () {
@@ -65,7 +65,7 @@ it('maps name to mail from name', function () {
 
     Settings::syncConfig();
 
-    $this->assertEquals('Test Application', config('mail.from.name'));
+    expect(config('mail.from.name'))->toBe('Test Application');
 });
 
 it('maps currency to app config', function () {
@@ -75,7 +75,7 @@ it('maps currency to app config', function () {
 
     Settings::syncConfig();
 
-    $this->assertEquals('EUR', config('app.currency'));
+    expect(config('app.currency'))->toBe('EUR');
 });
 
 it('maps timezone to app config', function () {
@@ -85,7 +85,7 @@ it('maps timezone to app config', function () {
 
     Settings::syncConfig();
 
-    $this->assertEquals('America/New_York', config('app.timezone'));
+    expect(config('app.timezone'))->toBe('America/New_York');
 });
 
 it('handles nested config overrides without replacing entire keys', function () {
@@ -103,8 +103,8 @@ it('handles nested config overrides without replacing entire keys', function () 
 
     Settings::syncConfig();
 
-    $this->assertEquals('127.0.0.1', config('mail.mailers.smtp.host'));
-    $this->assertEquals('ses-key', config('mail.mailers.ses.key'));
+    expect(config('mail.mailers.smtp.host'))->toBe('127.0.0.1');
+    expect(config('mail.mailers.ses.key'))->toBe('ses-key');
 });
 
 it('handles deeply nested dotted keys', function () {
@@ -113,8 +113,8 @@ it('handles deeply nested dotted keys', function () {
         'trial_days' => 14,
     ]);
 
-    $this->assertEquals('month', Settings::get('config.subscription.billing.interval'));
-    $this->assertEquals(14, Settings::get('config.subscription.billing.trial_days'));
+    expect(Settings::get('config.subscription.billing.interval'))->toBe('month');
+    expect(Settings::get('config.subscription.billing.trial_days'))->toBe(14);
 });
 
 it('merges nested values correctly in facade', function () {
@@ -124,8 +124,8 @@ it('merges nested values correctly in facade', function () {
 
     Settings::set('config.features.reports', true);
 
-    $this->assertTrue(Settings::get('config.features.analytics'));
-    $this->assertTrue(Settings::get('config.features.reports'));
+    expect(Settings::get('config.features.analytics'))->toBeTrue();
+    expect(Settings::get('config.features.reports'))->toBeTrue();
 });
 
 it('works with settings helper function', function () {
@@ -133,10 +133,10 @@ it('works with settings helper function', function () {
         'name' => 'Test App',
     ]);
 
-    $this->assertEquals('Test App', settings('app.name'));
+    expect(settings('app.name'))->toBe('Test App');
 
     settings(['app.name' => 'Helper Updated']);
-    $this->assertEquals('Helper Updated', Settings::get('app.name'));
+    expect(Settings::get('app.name'))->toBe('Helper Updated');
 });
 
 it('handles array values at any depth', function () {
@@ -145,8 +145,8 @@ it('handles array values at any depth', function () {
     ]);
 
     $adminPerms = Settings::get('permissions.roles.admin');
-    $this->assertIsArray($adminPerms);
-    $this->assertEquals(['create', 'read', 'update', 'delete'], $adminPerms);
+    expect($adminPerms)->toBeArray();
+    expect($adminPerms)->toBe(['create', 'read', 'update', 'delete']);
 });
 
 it('only fires event when value actually changes', function () {

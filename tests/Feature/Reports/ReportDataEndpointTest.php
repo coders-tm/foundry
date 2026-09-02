@@ -45,16 +45,16 @@ it('subscriptions export report returns correct data', function () {
     $response->assertStatus(200);
     $data = $response->json();
 
-    $this->assertArrayHasKey('data', $data);
-    $this->assertArrayHasKey('meta', $data);
-    $this->assertIsArray($data['data']);
-    $this->assertGreaterThanOrEqual(2, count($data['data']));
+    expect($data)->toHaveKey('data');
+    expect($data)->toHaveKey('meta');
+    expect($data['data'])->toBeArray();
+    expect(count($data['data']))->toBeGreaterThanOrEqual(2);
 
     // Verify subscription data structure
     $firstSub = $data['data'][0];
-    $this->assertArrayHasKey('id', $firstSub);
-    $this->assertArrayHasKey('status', $firstSub);
-    $this->assertIsArray($firstSub);
+    expect($firstSub)->toHaveKey('id');
+    expect($firstSub)->toHaveKey('status');
+    expect($firstSub)->toBeArray();
 });
 
 it('mrr movement report returns correct data', function () {
@@ -78,13 +78,13 @@ it('mrr movement report returns correct data', function () {
     $response->assertStatus(200);
     $data = $response->json();
 
-    $this->assertArrayHasKey('data', $data);
-    $this->assertIsArray($data['data']);
+    expect($data)->toHaveKey('data');
+    expect($data['data'])->toBeArray();
 
     if (count($data['data']) > 0) {
         $row = $data['data'][0];
-        $this->assertArrayHasKey('period', $row);
-        $this->assertIsArray($row);
+        expect($row)->toHaveKey('period');
+        expect($row)->toBeArray();
     }
 });
 
@@ -104,13 +104,13 @@ it('orders export report returns correct data', function () {
     $response->assertStatus(200);
     $data = $response->json();
 
-    $this->assertArrayHasKey('data', $data);
-    $this->assertIsArray($data['data']);
-    $this->assertGreaterThanOrEqual(2, count($data['data']));
+    expect($data)->toHaveKey('data');
+    expect($data['data'])->toBeArray();
+    expect(count($data['data']))->toBeGreaterThanOrEqual(2);
 
     $firstOrder = $data['data'][0];
-    $this->assertArrayHasKey('id', $firstOrder);
-    $this->assertIsArray($firstOrder);
+    expect($firstOrder)->toHaveKey('id');
+    expect($firstOrder)->toBeArray();
 });
 
 it('arpu report returns correct data', function () {
@@ -140,15 +140,15 @@ it('arpu report returns correct data', function () {
     $response->assertStatus(200);
     $data = $response->json();
 
-    $this->assertArrayHasKey('data', $data);
-    $this->assertIsArray($data['data']);
+    expect($data)->toHaveKey('data');
+    expect($data['data'])->toBeArray();
 
     if (count($data['data']) > 0) {
         $row = $data['data'][0];
-        $this->assertArrayHasKey('period', $row);
-        $this->assertArrayHasKey('arpu', $row);
+        expect($row)->toHaveKey('period');
+        expect($row)->toHaveKey('arpu');
         // ARPU may be formatted as string like "$0.00", so just check it exists
-        $this->assertNotNull($row['arpu']);
+        expect($row['arpu'])->not->toBeNull();
     }
 });
 
@@ -171,13 +171,13 @@ it('users export report returns correct data', function () {
     $response->assertStatus(200);
     $data = $response->json();
 
-    $this->assertArrayHasKey('data', $data);
-    $this->assertIsArray($data['data']);
-    $this->assertGreaterThanOrEqual(2, count($data['data']));
+    expect($data)->toHaveKey('data');
+    expect($data['data'])->toBeArray();
+    expect(count($data['data']))->toBeGreaterThanOrEqual(2);
 
     $userData = $data['data'][0];
-    $this->assertArrayHasKey('id', $userData);
-    $this->assertArrayHasKey('email', $userData);
+    expect($userData)->toHaveKey('id');
+    expect($userData)->toHaveKey('email');
 });
 
 it('report data endpoint validates date filters', function () {
@@ -186,8 +186,8 @@ it('report data endpoint validates date filters', function () {
     $response->assertStatus(200);
     $data = $response->json();
 
-    $this->assertArrayHasKey('data', $data);
-    $this->assertIsArray($data['data']);
+    expect($data)->toHaveKey('data');
+    expect($data['data'])->toBeArray();
 });
 
 it('report data endpoint handles pagination', function () {
@@ -208,14 +208,14 @@ it('report data endpoint handles pagination', function () {
     $response->assertStatus(200);
     $data = $response->json();
 
-    $this->assertArrayHasKey('data', $data);
-    $this->assertArrayHasKey('meta', $data);
-    $this->assertIsArray($data['data']);
-    $this->assertLessThanOrEqual(10, count($data['data']));
+    expect($data)->toHaveKey('data');
+    expect($data)->toHaveKey('meta');
+    expect($data['data'])->toBeArray();
+    expect(count($data['data']))->toBeLessThanOrEqual(10);
 
     // Check pagination meta
-    $this->assertArrayHasKey('current_page', $data['meta']);
-    $this->assertArrayHasKey('per_page', $data['meta']);
-    $this->assertEquals(1, $data['meta']['current_page']);
-    $this->assertEquals(10, $data['meta']['per_page']);
+    expect($data['meta'])->toHaveKey('current_page');
+    expect($data['meta'])->toHaveKey('per_page');
+    expect($data['meta']['current_page'])->toEqual(1);
+    expect($data['meta']['per_page'])->toEqual(10);
 });

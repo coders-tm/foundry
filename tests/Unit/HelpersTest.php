@@ -51,57 +51,57 @@ function mockRequest($user = null, $path = '/')
 
 it('guard function returns user guard', function () {
     mockRequest();
-    $this->assertEquals('user', guard());
+    expect(guard())->toBe('user');
 });
 
 it('guard function returns null if no user', function () {
     $this->actingAsGuest();
-    $this->assertEquals('user', guard());
+    expect(guard())->toBe('user');
 });
 
 it('guard function checks single guard', function () {
     mockRequest();
-    $this->assertTrue(guard('user'));
-    $this->assertFalse(guard('admin'));
+    expect(guard('user'))->toBeTrue();
+    expect(guard('admin'))->toBeFalse();
 });
 
 it('guard function checks multiple guards', function () {
     mockRequest();
-    $this->assertTrue(guard('user', 'admin'));
-    $this->assertTrue(guard('admin', 'user'));
-    $this->assertFalse(guard('admin', 'superadmin'));
+    expect(guard('user', 'admin'))->toBeTrue();
+    expect(guard('admin', 'user'))->toBeTrue();
+    expect(guard('admin', 'superadmin'))->toBeFalse();
 });
 
 it('user function returns user object', function () {
     $user = user();
-    $this->assertNotNull($user);
-    $this->assertEquals(1, $user->id);
-    $this->assertEquals('Test User', $user->name);
+    expect($user)->not->toBeNull();
+    expect($user->id)->toBe(1);
+    expect($user->name)->toBe('Test User');
 });
 
 it('user function returns specific user property', function () {
     $name = user('name');
-    $this->assertEquals('Test User', $name);
+    expect($name)->toBe('Test User');
 
     $id = user('id');
-    $this->assertEquals(1, $id);
+    expect($id)->toBe(1);
 });
 
 it('user function returns null if no user', function () {
     $this->actingAsGuest();
 
     $user = user();
-    $this->assertNull($user);
+    expect($user)->toBeNull();
 
     $name = user('name');
-    $this->assertNull($name);
+    expect($name)->toBeNull();
 });
 
 it('is user function returns true for user guard', function () {
     $user = User::factory()->make();
     $user->guard = 'user';
     mockRequest($user);
-    $this->assertTrue(is_user());
+    expect(is_user())->toBeTrue();
 });
 
 it('is user function returns false for non user guard', function () {
@@ -109,12 +109,12 @@ it('is user function returns false for non user guard', function () {
     $user->guard = 'admin';
     mockRequest($user, 'admin');
 
-    $this->assertFalse(is_user());
+    expect(is_user())->toBeFalse();
 });
 
 it('is user function returns false if no user', function () {
     $this->actingAsGuest();
-    $this->assertFalse(is_user());
+    expect(is_user())->toBeFalse();
 });
 
 it('is admin function returns true for admin guard', function () {
@@ -122,85 +122,85 @@ it('is admin function returns true for admin guard', function () {
     $user->guard = 'admin';
     mockRequest($user, 'admin');
 
-    $this->assertTrue(is_admin());
+    expect(is_admin())->toBeTrue();
 });
 
 it('is admin function returns false for non admin guard', function () {
     $user = User::factory()->make();
     $user->guard = 'user';
     mockRequest($user);
-    $this->assertFalse(is_admin());
+    expect(is_admin())->toBeFalse();
 });
 
 it('is admin function returns false if no user', function () {
     $this->actingAsGuest();
-    $this->assertFalse(is_admin());
+    expect(is_admin())->toBeFalse();
 });
 
 it('app url with relative path', function () {
-    $this->assertEquals('http://localhost/about', app_url('about'));
+    expect(app_url('about'))->toBe('http://localhost/about');
 });
 
 it('app url with absolute path', function () {
-    $this->assertEquals('http://localhost/about', app_url('/about'));
+    expect(app_url('/about'))->toBe('http://localhost/about');
 });
 
 it('admin url with default path', function () {
-    $this->assertEquals('http://localhost/admin', admin_url());
-    $this->assertEquals('http://localhost/admin/dashboard', admin_url('dashboard'));
-    $this->assertEquals('http://localhost/admin/dashboard', admin_url('/dashboard'));
+    expect(admin_url())->toBe('http://localhost/admin');
+    expect(admin_url('dashboard'))->toBe('http://localhost/admin/dashboard');
+    expect(admin_url('/dashboard'))->toBe('http://localhost/admin/dashboard');
 });
 
 it('app url with default path', function () {
-    $this->assertEquals('http://localhost', app_url());
-    $this->assertEquals('http://localhost/dashboard', app_url('dashboard'));
-    $this->assertEquals('http://localhost/dashboard', app_url('/dashboard'));
+    expect(app_url())->toBe('http://localhost');
+    expect(app_url('dashboard'))->toBe('http://localhost/dashboard');
+    expect(app_url('/dashboard'))->toBe('http://localhost/dashboard');
 });
 
 it('user route with default prefix', function () {
-    $this->assertEquals('/', user_route());
-    $this->assertEquals('/dashboard', user_route('dashboard'));
-    $this->assertEquals('/dashboard', user_route('/dashboard'));
+    expect(user_route())->toBe('/');
+    expect(user_route('dashboard'))->toBe('/dashboard');
+    expect(user_route('/dashboard'))->toBe('/dashboard');
 });
 
 it('admin route with default prefix', function () {
-    $this->assertEquals('/admin', admin_route());
-    $this->assertEquals('/admin/dashboard', admin_route('dashboard'));
-    $this->assertEquals('/admin/dashboard', admin_route('/dashboard'));
+    expect(admin_route())->toBe('/admin');
+    expect(admin_route('dashboard'))->toBe('/admin/dashboard');
+    expect(admin_route('/dashboard'))->toBe('/admin/dashboard');
 });
 
 it('is active', function () {
     $this->get('home');
     $result = is_active('home');
-    $this->assertEquals('active', $result);
+    expect($result)->toBe('active');
 });
 
 it('is active returns empty for non matching route', function () {
     $this->get('dashboard');
     $result = is_active('home');
-    $this->assertEquals('', $result);
+    expect($result)->toBe('');
 });
 
 it('is active handles multiple routes', function () {
     $this->get('about');
     $result = is_active('home', 'about', 'contact');
-    $this->assertEquals('active', $result);
+    expect($result)->toBe('active');
 
     $result = is_active('services', 'portfolio');
-    $this->assertEquals('', $result);
+    expect($result)->toBe('');
 });
 
 it('has recaptcha', function () {
     Config::set('recaptcha.site_key', 'site_key');
-    $this->assertTrue(has_recaptcha());
+    expect(has_recaptcha())->toBeTrue();
 });
 
 it('string to hex', function () {
-    $this->assertEquals('#000d05', string_to_hex('A'));
+    expect(string_to_hex('A'))->toBe('#000d05');
 });
 
 it('string to hsl', function () {
-    $this->assertEquals('hsl(65, 35%, 65%)', string_to_hsl('A'));
+    expect(string_to_hsl('A'))->toBe('hsl(65, 35%, 65%)');
 });
 
 it('model log name', function () {
@@ -208,35 +208,35 @@ it('model log name', function () {
     {
         public $logName = 'Custom Log Name';
     };
-    $this->assertEquals('Custom Log Name', model_log_name($model));
+    expect(model_log_name($model))->toBe('Custom Log Name');
 });
 
 it('format amount', function () {
-    $this->assertEquals('$100.00', format_amount(100, 'USD', 'en'));
+    expect(format_amount(100, 'USD', 'en'))->toBe('$100.00');
 });
 
 it('currency symbol', function () {
     $currenciesMock = Mockery::mock('Symfony\Polyfill\Intl\Icu\Currencies');
     $currenciesMock->shouldReceive('getSymbol')->with('USD')->andReturn('$');
-    $this->assertEquals('$', currency_symbol('USD'));
+    expect(currency_symbol('USD'))->toBe('$');
 });
 
 it('get lang code', function () {
-    $this->assertEquals('en', get_lang_code('en-US'));
+    expect(get_lang_code('en-US'))->toBe('en');
 });
 
 it('app lang', function () {
-    $this->assertEquals('en', app_lang());
+    expect(app_lang())->toBe('en');
 });
 
 it('replace short code', function () {
-    $this->assertEquals('Welcome to AppName', replace_short_code('Welcome to {{APP_NAME}}'));
+    expect(replace_short_code('Welcome to {{APP_NAME}}'))->toBe('Welcome to AppName');
 });
 
 it('has', function () {
-    $this->assertInstanceOf(Optional::class, has(null));
+    expect(has(null))->toBeInstanceOf(Optional::class);
 });
 
 it('get country code', function () {
-    $this->assertEquals('*', BaseRepository::getCountryCode(null));
+    expect(BaseRepository::getCountryCode(null))->toBe('*');
 });

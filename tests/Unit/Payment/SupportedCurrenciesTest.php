@@ -17,58 +17,58 @@ uses(BaseTestCase::class)->use(RefreshDatabase::class);
 
 it('stripe processor has supported currencies', function () {
     $processor = new StripeProcessor;
-    $this->assertNotEmpty($processor->supportedCurrencies());
-    $this->assertContains('USD', $processor->supportedCurrencies());
+    expect($processor->supportedCurrencies())->not->toBeEmpty();
+    expect($processor->supportedCurrencies())->toContain('USD');
 });
 
 it('paypal processor has supported currencies', function () {
     $processor = new PaypalProcessor;
-    $this->assertNotEmpty($processor->supportedCurrencies());
-    $this->assertContains('USD', $processor->supportedCurrencies());
+    expect($processor->supportedCurrencies())->not->toBeEmpty();
+    expect($processor->supportedCurrencies())->toContain('USD');
 });
 
 it('klarna processor has supported currencies', function () {
     $processor = new KlarnaProcessor;
-    $this->assertNotEmpty($processor->supportedCurrencies());
-    $this->assertContains('USD', $processor->supportedCurrencies());
+    expect($processor->supportedCurrencies())->not->toBeEmpty();
+    expect($processor->supportedCurrencies())->toContain('USD');
 });
 
 it('xendit processor has supported currencies', function () {
     $processor = new XenditProcessor;
-    $this->assertNotEmpty($processor->supportedCurrencies());
-    $this->assertContains('IDR', $processor->supportedCurrencies());
+    expect($processor->supportedCurrencies())->not->toBeEmpty();
+    expect($processor->supportedCurrencies())->toContain('IDR');
 });
 
 it('paystack processor has supported currencies', function () {
     $processor = new PaystackProcessor;
-    $this->assertNotEmpty($processor->supportedCurrencies());
-    $this->assertContains('NGN', $processor->supportedCurrencies());
+    expect($processor->supportedCurrencies())->not->toBeEmpty();
+    expect($processor->supportedCurrencies())->toContain('NGN');
 });
 
 it('razorpay processor has supported currencies', function () {
     $processor = new RazorpayProcessor;
-    $this->assertNotEmpty($processor->supportedCurrencies());
-    $this->assertContains('INR', $processor->supportedCurrencies());
+    expect($processor->supportedCurrencies())->not->toBeEmpty();
+    expect($processor->supportedCurrencies())->toContain('INR');
 });
 
 it('flutterwave processor has supported currencies', function () {
     $processor = new FlutterwaveProcessor;
-    $this->assertNotEmpty($processor->supportedCurrencies());
-    $this->assertContains('NGN', $processor->supportedCurrencies());
+    expect($processor->supportedCurrencies())->not->toBeEmpty();
+    expect($processor->supportedCurrencies())->toContain('NGN');
 });
 
 it('mercadopago processor has supported currencies', function () {
     $processor = new MercadoPagoProcessor;
-    $this->assertNotEmpty($processor->supportedCurrencies());
-    $this->assertContains('BRL', $processor->supportedCurrencies());
+    expect($processor->supportedCurrencies())->not->toBeEmpty();
+    expect($processor->supportedCurrencies())->toContain('BRL');
 });
 
 it('manual processor supports all currencies', function () {
     $processor = new ManualProcessor;
-    $this->assertEmpty($processor->supportedCurrencies());
+    expect($processor->supportedCurrencies())->toBeEmpty();
 });
 
 it('wallet processor supports all currencies', function () {
     $processor = new WalletProcessor;
-    $this->assertEmpty($processor->supportedCurrencies());
+    expect($processor->supportedCurrencies())->toBeEmpty();
 });

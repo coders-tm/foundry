@@ -15,7 +15,7 @@ it('sends subscription expired notification', function () {
     $expiration = now()->subDay();
     $subscription = Subscription::factory()->create(['user_id' => $user->id, 'expires_at' => $expiration]);
 
-    $this->assertEquals($subscription->expires_at->format('Y-m-d'), $expiration->format('Y-m-d'));
+    expect($expiration->format('Y-m-d'))->toBe($subscription->expires_at->format('Y-m-d'));
 
     $notification = new SubscriptionExpiredNotification($subscription);
 

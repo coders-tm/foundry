@@ -43,11 +43,11 @@ BLADE
         'features' => ['Feature 1', 'Feature 2', 'Feature 3'],
     ]);
 
-    $this->assertStringContainsString('John Doe', $result['subject']);
-    $this->assertStringContainsString('John Doe', $result['content']);
-    $this->assertStringContainsString('Premium', $result['content']);
-    $this->assertStringContainsString('Feature 1', $result['content']);
-    $this->assertStringContainsString('Thank you', $result['content']);
+    expect($result['subject'])->toContain('John Doe');
+    expect($result['content'])->toContain('John Doe');
+    expect($result['content'])->toContain('Premium');
+    expect($result['content'])->toContain('Feature 1');
+    expect($result['content'])->toContain('Thank you');
 });
 
 it('blocks dangerous functions in notification template', function () {
@@ -57,10 +57,7 @@ it('blocks dangerous functions in notification template', function () {
         'content' => 'Hello {{ exec("whoami") }}',
     ]);
 
-    $this->expectException(InvalidArgumentException::class);
-    $this->expectExceptionMessage('not allowed for security reasons');
-
-    $notification->render(['name' => 'Test']);
+    expect(fn () => $notification->render(['name' => 'Test']))->toThrow(InvalidArgumentException::class, 'not allowed for security reasons');
 });
 
 it('blocks dangerous functions inside php directive', function () {
@@ -70,10 +67,7 @@ it('blocks dangerous functions inside php directive', function () {
         'content' => '@php exec("whoami"); @endphp',
     ]);
 
-    $this->expectException(InvalidArgumentException::class);
-    $this->expectExceptionMessage('not allowed for security reasons');
-
-    $notification->render(['name' => 'Test']);
+    expect(fn () => $notification->render(['name' => 'Test']))->toThrow(InvalidArgumentException::class, 'not allowed for security reasons');
 });
 
 it('masks env calls in notification template', function () {
@@ -85,8 +79,8 @@ it('masks env calls in notification template', function () {
 
     $result = $notification->render([]);
 
-    $this->assertStringContainsString('****', $result['content']);
-    $this->assertStringNotContainsString('APP_KEY', $result['content']);
+    expect($result['content'])->toContain('****');
+    expect($result['content'])->not->toContain('APP_KEY');
 });
 
 it('masks settings calls in notification template', function () {
@@ -98,7 +92,7 @@ it('masks settings calls in notification template', function () {
 
     $result = $notification->render([]);
 
-    $this->assertStringContainsString('****', $result['content']);
+    expect($result['content'])->toContain('****');
 });
 
 it('masks sensitive config in notification template', function () {
@@ -110,8 +104,8 @@ it('masks sensitive config in notification template', function () {
 
     $result = $notification->render([]);
 
-    $this->assertStringContainsString('****', $result['content']);
-    $this->assertStringNotContainsString('app.key', $result['content']);
+    expect($result['content'])->toContain('****');
+    expect($result['content'])->not->toContain('app.key');
 });
 
 it('allows safe config in notification template', function () {
@@ -123,7 +117,7 @@ it('allows safe config in notification template', function () {
 
     $result = $notification->render([]);
 
-    $this->assertStringContainsString(config('app.name'), $result['content']);
+    expect($result['content'])->toContain(config('app.name'));
 });
 
 it('blocks mutation calls in notification template', function () {
@@ -133,10 +127,7 @@ it('blocks mutation calls in notification template', function () {
         'content' => '@php config(["app.name" => "Hacked"]); @endphp',
     ]);
 
-    $this->expectException(InvalidArgumentException::class);
-    $this->expectExceptionMessage('Mutation calls');
-
-    $notification->render([]);
+    expect(fn () => $notification->render([]))->toThrow(InvalidArgumentException::class, 'Mutation calls');
 });
 
 it('validates safe notification template', function () {
@@ -160,8 +151,8 @@ BLADE
 
     $result = $notification->validate();
 
-    $this->assertTrue($result['subject']['valid']);
-    $this->assertTrue($result['content']['valid']);
+    expect($result['subject']['valid'])->toBeTrue();
+    expect($result['content']['valid'])->toBeTrue();
 });
 
 it('validates and rejects dangerous notification template', function () {
@@ -173,9 +164,9 @@ it('validates and rejects dangerous notification template', function () {
 
     $result = $notification->validate();
 
-    $this->assertTrue($result['subject']['valid']);
-    $this->assertFalse($result['content']['valid']);
-    $this->assertArrayHasKey('error', $result['content']);
+    expect($result['subject']['valid'])->toBeTrue();
+    expect($result['content']['valid'])->toBeFalse();
+    expect($result['content'])->toHaveKey('error');
 });
 
 it('supports shortcode replacement in notifications', function () {
@@ -197,9 +188,9 @@ BLADE;
         'showDetails' => true,
     ]);
 
-    $this->assertStringContainsString('John', $result);
-    $this->assertStringContainsString('Premium Plan', $result);
-    $this->assertStringContainsString('$99/month', $result);
+    expect($result)->toContain('John');
+    expect($result)->toContain('Premium Plan');
+    expect($result)->toContain('$99/month');
 });
 
 it('allows all safe blade directives in notifications', function () {
@@ -248,11 +239,11 @@ BLADE
         'bonus' => 'Free trial',
     ]);
 
-    $this->assertStringContainsString('Test Subject', $result['subject']);
-    $this->assertStringContainsString('John', $result['content']);
-    $this->assertStringContainsString('Item 1', $result['content']);
-    $this->assertStringContainsString('Upgrade to premium', $result['content']);
-    $this->assertStringContainsString('Free trial', $result['content']);
+    expect($result['subject'])->toContain('Test Subject');
+    expect($result['content'])->toContain('John');
+    expect($result['content'])->toContain('Item 1');
+    expect($result['content'])->toContain('Upgrade to premium');
+    expect($result['content'])->toContain('Free trial');
 });
 
 it('blocks update function in notification template', function () {
@@ -262,10 +253,7 @@ it('blocks update function in notification template', function () {
         'content' => '@php $user->update(["role" => "admin"]); @endphp',
     ]);
 
-    $this->expectException(InvalidArgumentException::class);
-    $this->expectExceptionMessage('not allowed for security reasons');
-
-    $notification->render(['user' => new stdClass]);
+    expect(fn () => $notification->render(['user' => new stdClass]))->toThrow(InvalidArgumentException::class, 'not allowed for security reasons');
 });
 
 it('masks env inside php blocks in notifications', function () {
@@ -282,5 +270,5 @@ BLADE
 
     $result = $notification->render([]);
 
-    $this->assertStringContainsString('****', $result['content']);
+    expect($result['content'])->toContain('****');
 });

@@ -67,11 +67,11 @@ it('period labels are correct strings', function () {
     $result = $report->paginate($report->validate($filters), 25, 1);
 
     // Assert: period labels are strings like YYYY-MM, not integers or 'completed'
-    $this->assertNotEmpty($result['data']);
+    expect($result['data'])->not->toBeEmpty();
 
     foreach ($result['data'] as $row) {
-        $this->assertIsString($row['period']);
-        $this->assertMatchesRegularExpression('/^\d{4}-\d{2}$/', $row['period']);
-        $this->assertNotEquals('completed', $row['period']);
+        expect($row['period'])->toBeString();
+        expect($row['period'])->toMatch('/^\d{4}-\d{2}$/');
+        expect($row['period'])->not->toBe('completed');
     }
 });
