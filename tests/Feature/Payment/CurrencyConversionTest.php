@@ -61,7 +61,7 @@ $mockRazorpayClient = function ($mock) {
 };
 
 it('stores payment in base currency when paid in foreign currency with paypal', function () use ($mockPaypalClient) {
-    Config::set('foundry.payment_providers.paypal.enabled', true);
+    Config::set('foundry.payment-providers.paypal.enabled', true);
     ExchangeRate::updateOrCreate(['currency' => 'EUR'], ['rate' => 0.9]);
     $position = new Position;
     $position->countryCode = 'DE';
@@ -91,7 +91,7 @@ it('stores payment in base currency when paid in foreign currency with stripe', 
     $position->countryCode = 'DE';
     Location::shouldReceive('get')->andReturn($position);
     Currency::resolve(['country_code' => 'DE']);
-    Config::set('foundry.payment_providers.paypal.enabled', true);
+    Config::set('foundry.payment-providers.paypal.enabled', true);
     $this->order->update(['billing_address' => ['country_code' => 'DE', 'line1' => 'Test Strasse']]);
     $stripeMock = Mockery::mock('Stripe\StripeClient');
     $paymentIntentsMock = Mockery::mock();
@@ -116,7 +116,7 @@ it('stores payment in base currency when paid in foreign currency with razorpay'
     $position->countryCode = 'IN';
     Location::shouldReceive('get')->andReturn($position);
     Currency::resolve(['country_code' => 'IN']);
-    Config::set('foundry.payment_providers.razorpay.enabled', true);
+    Config::set('foundry.payment-providers.razorpay.enabled', true);
     $this->order->update(['billing_address' => ['country_code' => 'IN', 'line1' => 'Test Road']]);
     $razorpayMock = Mockery::mock('Razorpay\Api\Api');
     $utilityMock = Mockery::mock();

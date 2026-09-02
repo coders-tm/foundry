@@ -19,7 +19,7 @@ class PaddleController extends Controller
      */
     public function __construct()
     {
-        if (config('foundry.payment_providers.paddle.webhook_secret')) {
+        if (config('foundry.payment-providers.paddle.webhook_secret')) {
             $this->middleware(VerifyPaddleWebhookSignature::class);
         }
     }

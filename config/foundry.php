@@ -151,7 +151,7 @@ return [
     |
     */
 
-    'payment_providers' => [
+    'payment-providers' => [
         'stripe' => [
             'name' => 'Stripe',
             'label' => 'Credit / Debit Card (Stripe)',

@@ -13,13 +13,13 @@ class PaddleClient
      */
     public static function make(array $options = []): Client
     {
-        $apiKey = $options['api_key'] ?? config('foundry.payment_providers.paddle.api_key');
+        $apiKey = $options['api_key'] ?? config('foundry.payment-providers.paddle.api_key');
 
         if (empty($apiKey)) {
             throw new \InvalidArgumentException('Paddle API key is required.');
         }
 
-        $envSetting = $options['environment'] ?? config('foundry.payment_providers.paddle.environment', 'sandbox');
+        $envSetting = $options['environment'] ?? config('foundry.payment-providers.paddle.environment', 'sandbox');
 
         $environment = $envSetting === 'sandbox' ? Environment::SANDBOX : Environment::PRODUCTION;
 

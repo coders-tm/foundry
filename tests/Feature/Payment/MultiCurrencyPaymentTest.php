@@ -15,7 +15,7 @@ uses(FeatureTestCase::class);
 beforeEach(function () {
     Config::set('app.currency', 'USD');
     Currency::set('USD', 1.0);
-    Config::set('foundry.payment_providers.stripe.enabled', true);
+    Config::set('foundry.payment-providers.stripe.enabled', true);
     $user = User::factory()->create();
     $this->order = Order::factory()->create(['grand_total' => 100.00, 'customer_id' => $user->id]);
     $this->order->load('customer');

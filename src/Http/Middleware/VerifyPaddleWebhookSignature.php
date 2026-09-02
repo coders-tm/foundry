@@ -18,7 +18,7 @@ class VerifyPaddleWebhookSignature
      */
     public function handle(Request $request, Closure $next)
     {
-        $secret = config('foundry.payment_providers.paddle.webhook_secret');
+        $secret = config('foundry.payment-providers.paddle.webhook_secret');
         $signature = $request->header('Paddle-Signature');
 
         if ($secret && $signature) {

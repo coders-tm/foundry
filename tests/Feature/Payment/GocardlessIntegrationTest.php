@@ -11,7 +11,7 @@ beforeEach(function () {
     if (! env('GOCARDLESS_ACCESS_TOKEN')) {
         $this->markTestSkipped('GoCardless credentials not configured.');
     }
-    config(['foundry.payment_providers.gocardless.enabled' => true]);
+    config(['foundry.payment-providers.gocardless.enabled' => true]);
 });
 
 it('retrieves gocardless provider config', function () {
@@ -26,7 +26,7 @@ it('creates gocardless client instance', function () {
 });
 
 it('supports multiple country payment schemes', function () {
-    $schemes = config('foundry.payment_providers.gocardless.schemes');
+    $schemes = config('foundry.payment-providers.gocardless.schemes');
     expect($schemes['GB'])->toBe('bacs');
     expect($schemes['DE'])->toBe('sepa_core');
     expect($schemes['FR'])->toBe('sepa_core');
@@ -42,7 +42,7 @@ it('supports multiple country payment schemes', function () {
 });
 
 it('validates access token format', function () {
-    $token = config('foundry.payment_providers.gocardless.access_token');
+    $token = config('foundry.payment-providers.gocardless.access_token');
     $provider = PaymentProvider::find(PaymentProvider::GOCARDLESS);
     expect($token)->not->toBeEmpty();
     expect($token)->toBeString();

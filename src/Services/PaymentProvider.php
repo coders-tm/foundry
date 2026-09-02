@@ -43,14 +43,14 @@ class PaymentProvider
      */
     public static function add(string $provider, array $config): void
     {
-        $existing = config("foundry.payment_providers.{$provider}", []);
+        $existing = config("foundry.payment-providers.{$provider}", []);
 
         $merged = array_merge([
             'provider' => $provider,
             'enabled' => true,
         ], $existing, $config);
 
-        config(["foundry.payment_providers.{$provider}" => $merged]);
+        config(["foundry.payment-providers.{$provider}" => $merged]);
     }
 
     /**
@@ -58,7 +58,7 @@ class PaymentProvider
      */
     public static function remove(string $provider): void
     {
-        config()->offsetUnset("foundry.payment_providers.{$provider}");
+        config()->offsetUnset("foundry.payment-providers.{$provider}");
     }
 
     /**
@@ -68,7 +68,7 @@ class PaymentProvider
      */
     public static function all(): Collection
     {
-        $providers = config('foundry.payment_providers', []);
+        $providers = config('foundry.payment-providers', []);
 
         return collect($providers)->map(function ($config, $key) {
             if (! is_array($config)) {
@@ -109,7 +109,7 @@ class PaymentProvider
      */
     public static function find(string $provider): ?array
     {
-        $config = config("foundry.payment_providers.{$provider}");
+        $config = config("foundry.payment-providers.{$provider}");
 
         if (! is_array($config) || ! ($config['enabled'] ?? false)) {
             return null;

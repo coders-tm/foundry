@@ -407,8 +407,8 @@ class Foundry
             return static::$gocardlessClient;
         }
 
-        $environment = $options['environment'] ?? config('foundry.payment_providers.gocardless.environment', 'sandbox');
-        $accessToken = $options['access_token'] ?? config('foundry.payment_providers.gocardless.access_token');
+        $environment = $options['environment'] ?? config('foundry.payment-providers.gocardless.environment', 'sandbox');
+        $accessToken = $options['access_token'] ?? config('foundry.payment-providers.gocardless.access_token');
 
         $clientOptions = array_merge([
             'environment' => $environment,
@@ -429,7 +429,7 @@ class Foundry
             return static::$paypalClient;
         }
 
-        $paypalConfig = config('foundry.payment_providers.paypal', []);
+        $paypalConfig = config('foundry.payment-providers.paypal', []);
         $options = array_merge($paypalConfig, $options);
 
         $mode = $options['mode'] ?? 'sandbox';
@@ -465,8 +465,8 @@ class Foundry
             return static::$razorpayClient;
         }
 
-        $keyId = $options['key_id'] ?? config('foundry.payment_providers.razorpay.key_id');
-        $keySecret = $options['key_secret'] ?? config('foundry.payment_providers.razorpay.key_secret');
+        $keyId = $options['key_id'] ?? config('foundry.payment-providers.razorpay.key_id');
+        $keySecret = $options['key_secret'] ?? config('foundry.payment-providers.razorpay.key_secret');
 
         return static::$razorpayClient = new Api($keyId, $keySecret);
     }
@@ -489,7 +489,7 @@ class Foundry
             return static::$stripeClient;
         }
 
-        $secret = $options['api_key'] ?? config('foundry.payment_providers.stripe.secret');
+        $secret = $options['api_key'] ?? config('foundry.payment-providers.stripe.secret');
 
         $config = array_merge([
             'api_key' => $secret,
@@ -504,9 +504,9 @@ class Foundry
      */
     public static function formatAmount(int $amount, ?string $currency = null, ?string $locale = null, array $options = []): string
     {
-        $money = new Money($amount, new Currency(strtoupper($currency ?? config('foundry.payment_providers.stripe.currency', config('app.currency', 'USD')))));
+        $money = new Money($amount, new Currency(strtoupper($currency ?? config('foundry.payment-providers.stripe.currency', config('app.currency', 'USD')))));
 
-        $locale = $locale ?? config('foundry.payment_providers.stripe.currency_locale', config('app.locale', 'en'));
+        $locale = $locale ?? config('foundry.payment-providers.stripe.currency_locale', config('app.locale', 'en'));
 
         try {
             $numberFormatter = new NumberFormatter($locale, NumberFormatter::CURRENCY);
@@ -582,7 +582,7 @@ class Foundry
         if (static::$paystackClient) {
             return static::$paystackClient;
         }
-        $secretKey = $options['secret_key'] ?? config('foundry.payment_providers.paystack.secret_key');
+        $secretKey = $options['secret_key'] ?? config('foundry.payment-providers.paystack.secret_key');
         if ($secretKey) {
             return static::$paystackClient = new Paystack($secretKey);
         }
@@ -630,7 +630,7 @@ class Foundry
             return static::$flutterwaveClient;
         }
 
-        $fwConfig = config('foundry.payment_providers.flutterwave') ?? [];
+        $fwConfig = config('foundry.payment-providers.flutterwave') ?? [];
         $publicKey = $options['public_key'] ?? $fwConfig['public_key'] ?? null;
         $secretKey = $options['secret_key'] ?? $fwConfig['secret_key'] ?? null;
         $encryptionKey = $options['encryption_key'] ?? $fwConfig['encryption_key'] ?? null;
@@ -726,7 +726,7 @@ class Foundry
             return static::$alipayClient;
         }
 
-        $config = config('foundry.payment_providers.alipay') ?? [];
+        $config = config('foundry.payment-providers.alipay') ?? [];
 
         if ($config && ! empty($config['app_id'])) {
             Pay::config([
@@ -790,7 +790,7 @@ class Foundry
             return static::$payuClient;
         }
 
-        $options = array_merge(config('foundry.payment_providers.payu', []), $options);
+        $options = array_merge(config('foundry.payment-providers.payu', []), $options);
 
         if (empty($options['merchant_key']) || empty($options['merchant_salt'])) {
             throw new \InvalidArgumentException('PayU credentials are not configured.');

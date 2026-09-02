@@ -77,7 +77,7 @@ class GoCardlessController extends Controller
         }
 
         // Get webhook secret from config
-        $webhookSecret = config('foundry.payment_providers.gocardless.webhook_secret');
+        $webhookSecret = config('foundry.payment-providers.gocardless.webhook_secret');
 
         if (empty($webhookSecret)) {
             return false;
@@ -170,7 +170,7 @@ class GoCardlessController extends Controller
      */
     protected function isPaymentAlreadyProcessed(string $paymentId): bool
     {
-        $providerId = config('foundry.payment_providers.gocardless.provider', PaymentProvider::GOCARDLESS);
+        $providerId = config('foundry.payment-providers.gocardless.provider', PaymentProvider::GOCARDLESS);
 
         return ModelsPayment::where('payment_method_id', $providerId)
             ->where('transaction_id', $paymentId)
@@ -195,7 +195,7 @@ class GoCardlessController extends Controller
         }
 
         try {
-            $providerId = config('foundry.payment_providers.gocardless.provider', PaymentProvider::GOCARDLESS);
+            $providerId = config('foundry.payment-providers.gocardless.provider', PaymentProvider::GOCARDLESS);
 
             // Get the payment details from GoCardless
             $payment = Foundry::gocardless()->payments()->get($paymentId);
@@ -261,7 +261,7 @@ class GoCardlessController extends Controller
         }
 
         try {
-            $providerId = config('foundry.payment_providers.gocardless.provider', PaymentProvider::GOCARDLESS);
+            $providerId = config('foundry.payment-providers.gocardless.provider', PaymentProvider::GOCARDLESS);
 
             // Get the payment details from GoCardless
             $payment = Foundry::gocardless()->payments()->get($paymentId);
