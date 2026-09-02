@@ -94,7 +94,8 @@ it('admin can filter exports by type', function () {
     $admin = Foundry\Models\Admin::factory()->create();
 
     ReportExport::factory()->create([
-        'admin_id' => $this->admin->id, 'type' => 'subscriptions'
+        'admin_id' => $this->admin->id,
+        'type' => 'subscriptions',
     ]);
     ReportExport::factory()->create(['admin_id' => $this->admin->id, 'type' => 'orders']);
 
